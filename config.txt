@@ -1,0 +1,17 @@
+config file for NuLeptonSim
+
+starting_type = 2   
+sim_angles = 0
+low_angle = 90        
+high_angle = 180
+regen = 1
+conversion = 1
+energy_distribution = 0
+
+
+keys: particle type code 0=NuE, 1=NuM, 2=NuT, 3=E, 4=m, 5=T
+//lower angle to consider. has to be >90 or >95 ish for icecube
+//max angle <180, 180 is vertical
+// regnerations:nu -> lepton, lepton -> nu
+// tau decay to light mass generations
+// sim angles, regn, convrsions, and energy distribution are true false
