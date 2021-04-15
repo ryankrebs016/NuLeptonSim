@@ -25,6 +25,9 @@
 // calling the code is the form ./Simu_elost 1E+20 95.0 1E+4 0 0 4.0 0.92 test ./
 // if energy dist is used or angles are simulated over then the two values for them is ignored
 
+//updated on 4/15/2021
+
+
 #include <vector>
 #include <algorithm>
 #include <string>
@@ -95,6 +98,7 @@ typedef struct {
 } reaction_tables_def;
 
 typedef struct {
+  string data_dir;            //directory to store the data files
   int starting_type;          // starting type of neutrinos
   bool sim_angles;            // true or false to simulate all angles in the range
   double low_angle;           // smallest angle in the simulation range
@@ -298,13 +302,13 @@ int main(int argc, char **argv)
   cout << "Tau Data Table Initialized: " << InitTau << endl << endl;
   cout << "Moun Data Table Initialized: " << InitMuon << endl << endl;
 
-  bool useEnergyDistribution = false;
+  //bool useEnergyDistribution = false;
   if (atof(argv[1]) == 0) {
-    useEnergyDistribution = true;
+    config.energy_distribution = true;
     cout << "Will throw uniformly random x neutrinos energy between log10(E_nu/eV) = 15 and  log21(E_nu/eV)" << endl;
   }
   // The finalstate array gets filled by sampling of TauData
-  double finalstate[6];      // 0=nu_tau, 1=nu_mu, 2=nu_e, 3=hadron, 4=muon, 5=electron
+  //double finalstate[6];      // 0=nu_tau, 1=nu_mu, 2=nu_e, 3=hadron, 4=muon, 5=electron
   
   // Initialize Random number generator.
   struct timeval time_struct;
@@ -329,12 +333,12 @@ int main(int argc, char **argv)
     // Declare several variables
     double rndm;           // random number throughout the code
     
-    double Ldist;         // Distance along chord length in Earth
+    //double Ldist;         // Distance along chord length in Earth
     double Depth1=2.45e5;          // Depth of IceCube bottom layer
     double Depth2=1.45e5;          // Depth of IceCube top layer
     double Lmax1;          // Chord length in Earth to bottom layer
     double Lmax2;          // Chord length in Earth to top layer
-    double Lmax;
+    //double Lmax;
     double dL=0.;	 	  // Propagation step along chord length. Initialized to zero but it varies for each step.
     double frac=1e-3;	  // Fraction of energy lost by tau in each step. This value stays constant
     double dPdes;         // Probability of tau decay in dL
@@ -342,10 +346,10 @@ int main(int argc, char **argv)
     double Energy_GeV;	  // Particle energy
     double Bjorken_y;     // Bjorken y value for interactions CC & NC
     
-    int brkcnt=0, brkcnt2=0; // These are used to flag particles that have fallen below the energy threshold (Elim)
-    int prop_mode=0;	  // Used in tau propagation
+    //int brkcnt=0, brkcnt2=0; // These are used to flag particles that have fallen below the energy threshold (Elim)
+    //int prop_mode=0;	  // Used in tau propagation
     
-    int AntiNu=0;
+    //int AntiNu=0;
 
     double finalstatecc[2],finalstatenc[2]; // will contain Bjorken (1-y) and y
     
@@ -393,8 +397,8 @@ int main(int argc, char **argv)
       nameEnergies+=argv[9];
     }
     */
-    nameEnergies+="data/";
-    nameEnergies+="particles_";
+    nameEnergies+=config.data_dir;
+    nameEnergies+="/particles_";
     nameEnergies+=es_temp;
     nameEnergies+="_";
     nameEnergies+=angs_temp;
@@ -414,7 +418,7 @@ int main(int argc, char **argv)
     };
     nameEnergies+=".dat";
     ofstream outEnergies(nameEnergies.c_str());
-    outEnergies << "10^"<< log10(tot_evt)<<" initial neutrinos of type "<<config.starting_type<<" at energy "<<argv[1]<<". \nKey: type,NC,CC,DC,Gen,Energy.\n";
+    outEnergies << "10^"<< log10(tot_evt)<<" initial neutrinos of type "<<config.starting_type<<" at energy "<<argv[1]<<". \ntype, NC, CC, DC, InitNuNum, Gen, OutEnergy, InitEnergy.\n";
     
     // Get cross-section mode to use
     int CCmode = 0;
@@ -534,6 +538,13 @@ int main(int argc, char **argv)
       { 
         if(loop_num!=0)cout<<"stack loop number:"<<loop_num<<endl;
         loop_num++;
+        if(loop_num>10)
+        {
+          cout<<part_type<<" "<<part_energy<<" "<<i<<part_pos<<endl;
+          return 0;
+
+
+        }
 
         //pop all particle data from the stacks to working variables
         //======================================================
@@ -558,12 +569,11 @@ int main(int argc, char **argv)
           particle_data.CC_num.pop();
           particle_data.dc_num.pop();
         }
-        int reaction_types[6]={-1,-1,-1,-1,-1,-1};
-        double reaction_energies[6]={-1,-1,-1,-1,-1,-1};
-        int loops=0;
+        
+     
         if(part_type==0||part_type==3) continue; //ignores particles below threshold or of electron generation
         if(part_energy<Elim) continue;
-        //create holding arrays for reactions
+        
         
 
         // Flag to see how fast code is running
@@ -598,19 +608,21 @@ int main(int argc, char **argv)
         event.v2[npart] = -1;
         event.id[npart]=0;
         */
-        brkcnt=0;
-        prop_mode =0;
+        //brkcnt=0;
+        //prop_mode =0;
         traversed_grammage = 0.; //initialize traversed grammage for each event
         
         //======================= Start propagation along chord of length Lmax
         //printf("Ldist, Lmax %1.2e %1.2e\n", Ldist, Lmax);
         //Ldist=0.;
         
-        for(part_pos;!(((Lmax1<=part_pos) && (part_pos<=Lmax2))||part_pos>=Lmax2);)
+        for(part_pos=part_pos;!(((Lmax1<=part_pos) && (part_pos<=Lmax2))||part_pos>=Lmax2);)
         {
-          loops++;
+          //create holding arrays for reactions
+          int reaction_types[6]={-1,-1,-1,-1,-1,-1};
+          double reaction_energies[6]={-1,-1,-1,-1,-1,-1};
           //cout <<"distance is "<< part_pos << "and energy is "<<part_energy<<endl;
-          // Get the local density for this part of the chord.
+          // Get the local density for this pa rt of the chord.
           dens = earthdens(&part_pos,&Lmax2);
           //cout<<"In dist loop - type: "<<part_type<<". energy: "<<part_energy<<". pos: "<<part_pos<<". gen: "<< generation<<endl;
           bool change=false; //is needed so in case a NuTau becomes a Tau it won't be seen by the "is tau" section
@@ -634,7 +646,7 @@ int main(int argc, char **argv)
             traversed_grammage += X_int;
             
             // Initialize the interaction length distance for this step to zero.
-            double Lint = 0.;
+            //double Lint = 0.;
           
             // If too large, make sure it exits the volume.
             // NOTE: use floats for this condition. Using ints is bad if float > 2^32, then you get negative int.
@@ -653,7 +665,7 @@ int main(int argc, char **argv)
               double slope = (grammage_distance[ii_grammage] - grammage_distance[ii_grammage-1])/d_grammage;
             
               double intercept = grammage_distance[ii_grammage] - slope*cumulative_grammage[ii_grammage];
-              Lint = slope*traversed_grammage + intercept - part_pos; // keep track of this step's interaction length.
+              //Lint = slope*traversed_grammage + intercept - part_pos; // keep track of this step's interaction length.
               part_pos = slope*traversed_grammage + intercept ;
             }
           
@@ -695,7 +707,7 @@ int main(int argc, char **argv)
                 
                 // Increment the cc interaction counter in the event structure.
                 //event.ncc++;
-                NC_num++;
+                CC_num++;
                 // Increment the particle counter in the event structure
                 //event.npart++;
                 //npart++;
@@ -812,7 +824,7 @@ int main(int argc, char **argv)
               dc_num++;
               // Advance the propagation distance by the step dL
               
-              cout<<"decay"<<endl;
+              
               // Account for the tau lepton energy lost in the step dL
               
             
@@ -831,16 +843,17 @@ int main(int argc, char **argv)
               //if tau
               if(part_type==5)
               { 
+                cout<<"tau decay"<<endl;
   
                 if(config.conversion)
                 {
-                  for(int i=1;i<6;i++)
+                  for(int j=1;j<6;j++)
                   {
-                    if(reaction_data.tau_type[reaction_index][i]!=-1) 
+                    if(reaction_data.tau_type[reaction_index][j]!=-1) 
                     { 
-                      reaction_types[i]=reaction_data.tau_type[reaction_index][i];
-                      reaction_energies[i]=part_energy*reaction_data.tau_energy[reaction_index][i];
-                      cout<<"tau decay with type is "<<reaction_types[i]<<" and reaction energy is "<<reaction_energies[i]<<endl;
+                      reaction_types[j]=reaction_data.tau_type[reaction_index][j];
+                      reaction_energies[j]=part_energy*reaction_data.tau_energy[reaction_index][j];
+                      cout<<"tau decay with type is "<<reaction_types[j]<<" and reaction energy is "<<reaction_energies[j]<<endl;
                     }
                   }
                 
@@ -852,15 +865,16 @@ int main(int argc, char **argv)
               }
               if(part_type==4)
               {
+                cout<<"muon decay"<<endl;
                 if(config.conversion)
                 {
-                for(int i=1;i<6;i++)
+                for(int j=1;j<6;j++)
                   {
-                    if(reaction_data.mu_type[reaction_index][i]!=-1) 
+                    if(reaction_data.mu_type[reaction_index][j]!=-1) 
                     {
-                      reaction_types[i]=reaction_data.mu_type[reaction_index][i];
-                      reaction_energies[i]=part_energy*reaction_data.mu_energy[reaction_index][i];
-                      cout<<"muon decay with type is "<<reaction_types[i]<<" and reaction energy is "<<reaction_energies[i]<<endl;
+                      reaction_types[j]=reaction_data.mu_type[reaction_index][j];
+                      reaction_energies[j]=part_energy*reaction_data.mu_energy[reaction_index][j];
+                      cout<<"muon decay with type is "<<reaction_types[j]<<" and reaction energy is "<<reaction_energies[j]<<endl;
                     }
                   }
                 
@@ -903,14 +917,14 @@ int main(int argc, char **argv)
           //time to pop all the extra particles back in the stack to be looped over after
           if(config.conversion)
           {
-            for( int i=1;i<6;i++)
+            for( int j=1;j<6;j++)
             {
                 
-              if((reaction_energies[i]>Elim)&&(part_pos<Lmax2)&&(reaction_types[i]!=-1)) //particles inside earth and above threshold are stacked
+              if((reaction_energies[j]>Elim)&&(part_pos<Lmax2)&&(reaction_types[j]!=-1)) //particles inside earth and above threshold are stacked
               {
                 cout<<"pushing new particle to stack \n";
-                particle_data.part_type.push(reaction_types[i]);
-                particle_data.part_energy.push(reaction_energies[i]);
+                particle_data.part_type.push(reaction_types[j]);
+                particle_data.part_energy.push(reaction_energies[j]);
                 particle_data.part_pos.push(part_pos);
                 particle_data.anti.push(anti);
                 particle_data.generation.push(generation);
@@ -922,6 +936,7 @@ int main(int argc, char **argv)
           }
           if(part_energy<Elim)break; //uncomment to try to save partoic;e that fa;; below threshold
         } // ends loop 'for(Ldist=0.;Ldist<Lmax;)'
+
         // If the propagation was not terminated, then save the final energy of the particle in the event structure.
         //if(brkcnt!=1) event.Eend = Energy_GeV;
         
@@ -948,27 +963,19 @@ int main(int argc, char **argv)
         //=================================================
         //cout<<"save- type: "<<part_type<<" .energy: "<<part_energy<<".pos: "<<part_pos<<". gen: "<< generation<<endl;
       
-        for(int i=0; i<4;i++)
+        for(int j=0; j<4;j++)
         {
           //cout<<type_to_save[i]<<","<<part_type<<endl;
           //cout<<"part energy is "<<part_energy<<"with threshold "<<Elim<<endl;
-          if((part_type==type_to_save[i])&&(part_energy>Elim))//changge to just poarticle tyoe if saving all particls even below thrwhpold
+          if((part_type==type_to_save[j])&&(part_energy>Elim))//changge to just poarticle tyoe if saving all particls even below thrwhpold
             {
               //cout<< "saving one particle of type "<<part_type<<endl;
-              if (!config.energy_distribution) 
-              {
-                //cout<<"particlesaved!!!"<<endl;
-                outEnergies << part_type<<" "<<NC_num << " " << CC_num << " " <<
-                dc_num << " " << generation << " " <<
-                setprecision(7)  << log10(part_energy)+9 << " " << log10(Energy_GeV)+9<<" "<<log10(Elim)+9<<endl;
-              } 
-              else 
-              {
-                outEnergies << part_type<<" "<< NC_num << " " << CC_num << " " <<
-                dc_num << " " << generation << " " <<
-                setprecision(7)  << part_energy << " " <<  //log10(event.Estart)+9.0 << " " << endl;
-                endl;
-              }
+              
+              //cout<<"particlesaved!!!"<<endl;
+              outEnergies <<part_type<<" "<<NC_num << " " << CC_num << " " <<
+              dc_num << " " <<i<<" "<< generation << " " <<
+              setprecision(7)  << log10(part_energy)+9 << " " << log10(Energy_GeV)+9<<" "<<endl;
+            
             }
           
         }//if the main particle isn't saved then it is forgetten falling below thrshold
@@ -1000,13 +1007,14 @@ void load_config()
   while (getline(fin,line))
   {
      istringstream sin(line.substr(line.find("=")+1));
-     if (line.find("starting_type")!=-1) sin>>config.starting_type;
-     else if (line.find("sim_angles")!=-1) sin>>config.sim_angles;
-     else if (line.find("low_angle")!=-1) sin>>config.low_angle;
-     else if (line.find("high_angle")!=-1) sin>>config.high_angle;
-     else if (line.find("regen")!=-1) sin>>config.regen;
-     else if (line.find("conversion")!=-1) sin>>config.conversion;
-     else if (line.find("energy_distribution")!=-1) sin>>config.energy_distribution;
+     if((int)line.find("data_dir")!=-1) sin>>config.data_dir;
+     else if ((int)line.find("starting_type")!=-1) sin>>config.starting_type;
+     else if ((int)line.find("sim_angles")!=-1) sin>>config.sim_angles;
+     else if ((int)line.find("low_angle")!=-1) sin>>config.low_angle;
+     else if ((int)line.find("high_angle")!=-1) sin>>config.high_angle;
+     else if ((int)line.find("regen")!=-1) sin>>config.regen;
+     else if ((int)line.find("conversion")!=-1) sin>>config.conversion;
+     else if ((int)line.find("energy_distribution")!=-1) sin>>config.energy_distribution;
   }
 }
 // ########################################################
@@ -1145,9 +1153,10 @@ double dsigCC(double E, int CCmode, int type,int AntiNu )
 
 double dsigNC(double E, int CCmode, int type,int AntiNu)
 {
+    double f=0.; 
     if(type==1||type==4)
     {
-        double f=0.;
+        
         double p[4];
 
         // The value below determines when we switch from the parameterizations 
@@ -1196,7 +1205,7 @@ double dsigNC(double E, int CCmode, int type,int AntiNu)
     }
     if(type==2||type==5)
     {
-        double f=0.;
+       
         
         // 	double l1=log10(E);
         // 	double l2=l1*l1;
@@ -1252,8 +1261,9 @@ double dsigNC(double E, int CCmode, int type,int AntiNu)
             f = pow(10,f);
             // printf("NC upper %1.2e %1.2f %1.2e %1.2f\n", E, log10_E_eV, f, log10(f));
         }
-        return f;
-    }
+      
+    }  
+    return f;
 }
 
 // ###################################################
@@ -1320,10 +1330,11 @@ double elost(double E, double dens, int ELOSSmode,int type)
 // ###################################################
 double funcalph(double *x, int *par, int type)
 // double tfuncalph(double *x)
-{
+{ 
+  double f;
   if(type==2||type==5)
   {
-    double f;
+    
     double p=sqrt(x[0]*x[0]-mtau2);
     double b=p/x[0];
     double b2=b*b;
@@ -1335,7 +1346,7 @@ double funcalph(double *x, int *par, int type)
     f=Cbb1/(b2)*(log(Cbb2*b2*gamma*gamma/I2)-2*b2+EE*EE/(4*x[0]*x[0])-delta(X));
     f *= factor[par[0]];
     //cout << "\tlyr " << par[0] << " factor " << factor[par[0]] << " val " << f << endl; 
-    return f;
+  
   }
   if(type==1||type==4)
   {
@@ -1351,9 +1362,9 @@ double funcalph(double *x, int *par, int type)
     f=Cbb1/(b2)*(log(Cbb2*b2*gamma*gamma/I2)-2*b2+EE*EE/(4*x[0]*x[0])-delta(X));
     f *= factor[par[0]];
     //cout << "\tlyr " << par[0] << " factor " << factor[par[0]] << " val " << f << endl; 
-    return f;
+    
   }
-
+  return f;
   
 }
 

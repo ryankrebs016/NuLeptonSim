@@ -1,11 +1,12 @@
 config file for NuLeptonSim
 
+data_dir = tau_data
 starting_type = 2   
-sim_angles = 0
-low_angle = 90        
+sim_angles = 1
+low_angle = 92        
 high_angle = 180
 regen = 1
-conversion = 1
+conversion = 0
 energy_distribution = 0
 
 
