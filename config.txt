@@ -1,9 +1,9 @@
 config file for NuLeptonSim
 
-data_dir = tau_data
+data_dir = testing
 starting_type = 2   
-sim_angles = 1
-low_angle = 92        
+sim_angles = 0
+low_angle = 91        
 high_angle = 180
 regen = 1
 conversion = 0
@@ -15,4 +15,4 @@ keys: particle type code 0=NuE, 1=NuM, 2=NuT, 3=E, 4=m, 5=T
 //max angle <180, 180 is vertical
 // regnerations:nu -> lepton, lepton -> nu
 // tau decay to light mass generations
-// sim angles, regn, convrsions, and energy distribution are true false
+// sim angles, regn, convrsions, and energy distribution are true/false

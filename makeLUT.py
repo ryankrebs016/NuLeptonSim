@@ -35,40 +35,46 @@ tag = '0.0km_ice_midCS_stdEL'
 
 def read_emerging(filename):
     lc = 0
+    num_type=[]
     num_CC = []
     num_NC = []
     num_decays = []
     num_particles = []
+    num_gen=[]
     energy = []
+    start_energy=[]
     for line in open(filename,mode='r',encoding='utf-8'):
-        if(lc!=0 and 'END' not in line):
-            num_CC.append(int(line.split()[0]))
+        if(lc!=0 and lc!=1 and 'END' not in line):
+            num_type.append(int(line.split()[0]))
             num_NC.append(int(line.split()[1]))
-            num_decays.append(int(line.split()[2]))
-            num_particles.append(int(line.split()[3]))
-            energy.append(float(line.split()[4]))
+            num_CC.append(int(line.split()[2]))
+            num_decays.append(int(line.split()[3]))
+            num_gen.append(int(line.split()[5]))
+            #num_particles.append(int(line.split()[5]))
+            energy.append(float(line.split()[6]))
+            start_energy.append(float(line.split()[7]))
             #print line
         lc+=1
-    return np.array(num_CC), np.array(num_NC), np.array(num_decays), np.array(num_particles), np.array(energy)
+    return np.array(num_type),np.array(num_CC), np.array(num_NC), np.array(num_decays), np.array(num_particles), np.array(energy)
 
-tag_list = []
-for thickness in ['0.0', '1.0', '2.0', '3.0', '4.0']:
-  for CS in ['low','mid', 'upp']:
-    #for EL in ['std', 'low']:
-    for EL in ['std', 'low']:
-        tag_list.append('%skm_ice_%sCS_%sEL'%(thickness, CS, EL))
+tag_list = [tag]
+#for thickness in ['0.0', '1.0', '2.0', '3.0', '4.0']:
+#  for CS in ['low','mid', 'upp']:
+#    #for EL in ['std', 'low']:
+#    for EL in ['std', 'low']:
+#       tag_list.append('%skm_ice_%sCS_%sEL'%(thickness, CS, EL))
 missing_count = 0
 #print (tag_list)
 for tag in tag_list:
-    data_dir = '/home/ryan/software/NuTauSim/data'
+    data_dir = 'all_data/'
     count = 0
     count_true=0
     ang_array = np.concatenate([ np.arange(90.0,95.0,0.1) , np.arange(95.0,180.0,1.0) ])
     th_exit_array = 90.0-ang_array
     e_array = np.array([1e15, 3e15, 1e16, 3e16, 1e17, 3e17, 1e18, 3e18, 1e19, 3e19, 1e20, 3e20, 1e21])
-
+    e_array=np.array([1e16,1e17,1e18,1e19,1e20])
    
-    outdir = '/home/ryan/software/NuTauSim/LUTs/%s'%tag
+    outdir = 'LUTs'
     if not os.path.exists(outdir):
         os.makedirs(outdir)
     
@@ -80,12 +86,16 @@ for tag in tag_list:
         mean_num_CC=[]
         mean_num_NC=[]
         mean_num_decays=[]
+        mean_num_gen=[]
         data_array  = []
+        type_array=[]
+        e_pow=log10(e)
         
         for ang in ang_array:
            
-            fnm = data_dir+'/Emerging_tau_info_reg_%s_%1.1f00000_%s.dat'%(e_s, ang, tag)
+            fnm = data_dir+"particles_%.1f_%.1f.dat"%(e_pow, ang)
             print (fnm)
+      
             #num_CC, num_NC, num_decays, num_particles, energy = read_emerging(fnm)
             #print(num_CC,num_NC,num_decays,num_particles,energy)
             
@@ -93,14 +103,16 @@ for tag in tag_list:
                 print (fnm, os.path.exists(fnm))
                 missing_count += 1
                 data_array.append([0])
+                type_array.append([0])
             if os.path.exists(fnm):
-                num_CC, num_NC, num_decays, num_particles, energy = read_emerging(fnm)
+                the_type,num_CC, num_NC, num_decays, num_particles, energy = read_emerging(fnm)
                 print (fnm, np.size(energy))
+                type_array.append(the_type)
                 data_array.append(energy)
                 mean_num_CC.append(np.mean(num_CC))
                 mean_num_NC.append(np.mean(num_NC))
                 mean_num_decays.append(np.mean(num_decays))
-                np.savez('%s/LUT_%s_eV.npz'%(outdir,e_s), data_array = data_array, th_exit_array = th_exit_array,mean_num_CC=mean_num_CC,mean_num_NC=mean_num_NC,mean_num_decays=mean_num_decays)
+                np.savez('%s/LUT_%s_eV.npz'%(outdir,e_s),type_array=type_array, data_array = data_array, th_exit_array = th_exit_array,mean_num_CC=mean_num_CC,mean_num_NC=mean_num_NC,mean_num_decays=mean_num_decays)
             
     
         

@@ -25,7 +25,7 @@
 // calling the code is the form ./Simu_elost 1E+20 95.0 1E+4 0 0 4.0 0.92 test ./
 // if energy dist is used or angles are simulated over then the two values for them is ignored
 
-//updated on 4/15/2021
+//updated on 4/20/2021
 
 
 #include <vector>
@@ -43,7 +43,7 @@
 #include <sys/time.h>
 #include <stack>
 #include "math.h"
-
+#include <time.h>
 #include "Table.hh"
 #include "Earth.hh"
 #include "Constantes.hh"
@@ -90,10 +90,10 @@ typedef struct {
 
 typedef struct {
 
-  int tau_type[10000][6];       // hold particle types created in tau decay
-  double tau_energy[10000][6];  // hold energy of created particle  in tau decay
-  int mu_type[10000][6];        // hold particle types created in muon decay
-  double mu_energy[10000][6];   // hold energy of created particles in muon decay
+  int tau_type[100000][6];       // hold particle types created in tau decay
+  double tau_energy[100000][6];  // hold energy of created particle  in tau decay
+  int mu_type[100000][6];        // hold particle types created in muon decay
+  double mu_energy[100000][6];   // hold energy of created particles in muon decay
     
 } reaction_tables_def;
 
@@ -173,10 +173,37 @@ Earth *terra = new Earth(0.0, 2.6);
 //#############################################################
 int main(int argc, char **argv)
 {
+  double time_start=time(NULL);
   load_config(); // call function to load config
- 
+  int total_CC=0;
+  int total_NC=0;
+  double energy_loss_by_neutrinos=0;
+  double num_neutrino_ints=0;
+  double energy_loss_by_taus=0;
+  double num_tau_decays=0;
+  double distance_loop_num=0;
+  /*
+  double energies[100];
+  double dsiggCC[100];
+  double dsiggNC[100];
+  int CCmode=0;
+  int AntiNu=1;
+  string output_file="lepton-anti_muon_cross_sectional_data.dat";
+  ofstream output(output_file.c_str());
+  output<<"energy (eV), disiggCC, dsiggNC"<<endl;
+  for(int i=0; i<10;i++)
+  {
+    energies[i]=pow(10,(i+12));
+    dsiggCC[i]=dsigCC(energies[i],CCmode,1,1);
+    dsiggNC[i]=dsigNC(energies[i],CCmode,1,1);
+    output<<energies[i]<<" "<<dsiggCC[i]<<" "<<dsiggNC[i]<<endl;
+  }
+
+  output.flush();
+  return 0;
+  */
   // loads reaction data from pythia table
-  for(int i=0;i<10000;i++){for(int j=0;j<6;j++){reaction_data.tau_type[i][j]=reaction_data.mu_type[i][j]=-1;reaction_data.tau_energy[i][j]=reaction_data.mu_energy[i][j]=0.0;};}  
+  for(int i=0;i<100000;i++){for(int j=0;j<6;j++){reaction_data.tau_type[i][j]=reaction_data.mu_type[i][j]=-1;reaction_data.tau_energy[i][j]=reaction_data.mu_energy[i][j]=0.0;};}  
   initialize_reaction(reaction_data.tau_type,reaction_data.mu_type,reaction_data.tau_energy,reaction_data.mu_energy);
   
   //bool sim_all_angles=false;
@@ -336,6 +363,7 @@ int main(int argc, char **argv)
     //double Ldist;         // Distance along chord length in Earth
     double Depth1=2.45e5;          // Depth of IceCube bottom layer
     double Depth2=1.45e5;          // Depth of IceCube top layer
+    double Lmax;
     double Lmax1;          // Chord length in Earth to bottom layer
     double Lmax2;          // Chord length in Earth to top layer
     //double Lmax;
@@ -369,6 +397,7 @@ int main(int argc, char **argv)
     //cccccccccccccccccccccccccccccccccccccccccccccccccccccc
     cout << "======================================" << endl;
     cout << "Number of neutrinos simulated = " << tot_evt << endl;
+    cout << "Type of initial neutrinos = "<<config.starting_type<<endl;
     cout << "Energy = " << atof(argv[1]) << " eV" << endl;
     cout << "Threshold energy = " << Elim*1.e9 << " eV" << endl;
     //cccccccccccccccccccccccccccccccccccccccccccccccccccccc
@@ -418,7 +447,7 @@ int main(int argc, char **argv)
     };
     nameEnergies+=".dat";
     ofstream outEnergies(nameEnergies.c_str());
-    outEnergies << "10^"<< log10(tot_evt)<<" initial neutrinos of type "<<config.starting_type<<" at energy "<<argv[1]<<". \ntype, NC, CC, DC, InitNuNum, Gen, OutEnergy, InitEnergy.\n";
+    outEnergies << ""<< log10(tot_evt)<<" pow of 10 initial neutrinos of type "<<config.starting_type<<" at energy "<<argv[1]<<". \ntype, NC, CC, DC, InitNuNum, Gen, OutEnergy, InitEnergy.\n";
     
     // Get cross-section mode to use
     int CCmode = 0;
@@ -450,7 +479,7 @@ int main(int argc, char **argv)
       cout << "Angle too steep to be measured by IceCube" << endl;
       break;
     }
-
+    Lmax=2.*R0*cos(PI*(1.-refTheta/180.));
     Lmax1=R0*cos(PI*(1.-refTheta/180.))+sqrt(pow(R0*cos(PI*(1.-refTheta/180.)), 2.0)-(2*R0*Depth1-pow(Depth1,2.0))); // chord length inside Earth in cm
     Lmax2=R0*cos(PI*(1.-refTheta/180.))+sqrt(pow(R0*cos(PI*(1.-refTheta/180.)), 2.0)-(2*R0*Depth2-pow(Depth2,2.0))); // chord length inside Earth in cm
     // Earth's chord (km) at thetaRef (deg) (R0 is radius of Earth in cm)
@@ -536,15 +565,9 @@ int main(int argc, char **argv)
       //======================= Loop over stacks until empty
       do 
       { 
-        if(loop_num!=0)cout<<"stack loop number:"<<loop_num<<endl;
+        //if(loop_num!=0)cout<<"stack loop number:"<<loop_num<<endl;
         loop_num++;
-        if(loop_num>10)
-        {
-          cout<<part_type<<" "<<part_energy<<" "<<i<<part_pos<<endl;
-          return 0;
-
-
-        }
+       
 
         //pop all particle data from the stacks to working variables
         //======================================================
@@ -619,6 +642,7 @@ int main(int argc, char **argv)
         for(part_pos=part_pos;!(((Lmax1<=part_pos) && (part_pos<=Lmax2))||part_pos>=Lmax2);)
         {
           //create holding arrays for reactions
+          distance_loop_num++;
           int reaction_types[6]={-1,-1,-1,-1,-1,-1};
           double reaction_energies[6]={-1,-1,-1,-1,-1,-1};
           //cout <<"distance is "<< part_pos << "and energy is "<<part_energy<<endl;
@@ -632,7 +656,8 @@ int main(int argc, char **argv)
           //===========================
           if(part_type==0||part_type==1||part_type==2)
             {
-        
+            energy_loss_by_neutrinos+=part_energy;
+            num_neutrino_ints++;
             // Number of interaction lengths propagated in this step is given by an exponentially distributed random number.
             double num_int_lens=-log((double) rand() / (double)(RAND_MAX)); // Randomly sampled number of interaction lengths.
             
@@ -674,7 +699,7 @@ int main(int argc, char **argv)
             //event.L0[npart]=Lint;
             
             // if the neutrino interaction is still inside Earth, simulate an NC or CC interaction and check that particle is still above the tracking energy threshold (Elim)
-            if(!((Lmax1<=part_pos) && (part_pos<=Lmax2)))
+            if(!((Lmax1<=part_pos) && (part_pos<=Lmax2))&&part_pos<=Lmax2)
             {
               // Check if it is CC or NC interaction
               bool CCTauhappens=((double) rand() / (double)(RAND_MAX))>=dsigNC(part_energy, CCmode,part_type,anti)/(dsigNC(part_energy, CCmode,part_type,anti)+dsigCC(part_energy, CCmode,part_type,anti));
@@ -684,7 +709,7 @@ int main(int argc, char **argv)
                 //=======================
                 // CC interaction occurs (the tracked particle changes from tau neutrino to tau lepton.)
                 //=======================
-                
+                total_CC++;
                 // Save the energy and position in the event structure
                 //event.E2[npart]=Energy_GeV;
                 //event.v2[npart]=Ldist;
@@ -731,7 +756,7 @@ int main(int argc, char **argv)
                 //=======================
                 // NC interaction occurs (the tracked particle remains a tau neutrino with reduced energy.)
                 //=======================
-                
+                total_NC++;
                 // Save the energy and position in the event structure
                 //event.E2[npart]=Energy_GeV;
                 //event.v2[npart]=Ldist;
@@ -768,7 +793,7 @@ int main(int argc, char **argv)
                 
               }
             }// end of 'if(Ldist<Lmax)'  (particle still inside Earth)
-            
+            energy_loss_by_neutrinos-=part_energy;
             // Energy of new tau or nu_tau produced below threshold => stop
             //if(part_energy < Elim){
               
@@ -824,7 +849,8 @@ int main(int argc, char **argv)
               dc_num++;
               // Advance the propagation distance by the step dL
               
-              
+              energy_loss_by_taus+=part_energy;
+              num_tau_decays++;
               // Account for the tau lepton energy lost in the step dL
               
             
@@ -838,12 +864,12 @@ int main(int argc, char **argv)
               //if(tag==3) MuonData.ThrowFinal(finalstate);
               //Energy_GeV=finalstate[0]*Energy_GeV;
 
-              int reaction_index=(double)rand()/(double)RAND_MAX*10000;
+              int reaction_index=(double)rand()/(double)RAND_MAX*100000-1;
               //cout<<"reaction index is:"<<reaction_index<<"\n\n\n";
               //if tau
               if(part_type==5)
               { 
-                cout<<"tau decay"<<endl;
+                //cout<<"tau decay"<<endl;
   
                 if(config.conversion)
                 {
@@ -853,7 +879,7 @@ int main(int argc, char **argv)
                     { 
                       reaction_types[j]=reaction_data.tau_type[reaction_index][j];
                       reaction_energies[j]=part_energy*reaction_data.tau_energy[reaction_index][j];
-                      cout<<"tau decay with type is "<<reaction_types[j]<<" and reaction energy is "<<reaction_energies[j]<<endl;
+                      //cout<<"tau decay with type is "<<reaction_types[j]<<" and reaction energy is "<<reaction_energies[j]<<endl;
                     }
                   }
                 
@@ -865,7 +891,7 @@ int main(int argc, char **argv)
               }
               if(part_type==4)
               {
-                cout<<"muon decay"<<endl;
+                //cout<<"muon decay"<<endl;
                 if(config.conversion)
                 {
                 for(int j=1;j<6;j++)
@@ -874,7 +900,7 @@ int main(int argc, char **argv)
                     {
                       reaction_types[j]=reaction_data.mu_type[reaction_index][j];
                       reaction_energies[j]=part_energy*reaction_data.mu_energy[reaction_index][j];
-                      cout<<"muon decay with type is "<<reaction_types[j]<<" and reaction energy is "<<reaction_energies[j]<<endl;
+                      //cout<<"muon decay with type is "<<reaction_types[j]<<" and reaction energy is "<<reaction_energies[j]<<endl;
                     }
                   }
                 
@@ -883,7 +909,7 @@ int main(int argc, char **argv)
                 //event.id[npart]=2;
                 part_type=1; 
               }
-
+              energy_loss_by_taus-=part_energy;
               // count the tau decay and the total number of interactions
               //event.ndk++;
               //event.npart++;
@@ -922,7 +948,7 @@ int main(int argc, char **argv)
                 
               if((reaction_energies[j]>Elim)&&(part_pos<Lmax2)&&(reaction_types[j]!=-1)) //particles inside earth and above threshold are stacked
               {
-                cout<<"pushing new particle to stack \n";
+                //cout<<"pushing new particle to stack \n";
                 particle_data.part_type.push(reaction_types[j]);
                 particle_data.part_energy.push(reaction_energies[j]);
                 particle_data.part_pos.push(part_pos);
@@ -987,7 +1013,14 @@ int main(int argc, char **argv)
   
   }// end of loop ever all angles
   cout << "END" << endl;  // write END in the command line  
-  
+  double time_elapsed=time(NULL)-time_start;
+  printf("it took %f minutes to simulate %d neutrinos over %d different angles",time_elapsed/60,(int)atof(argv[3]),n1+n2);
+  cout<<"total CC "<<total_CC<<". total NC "<<total_NC<<endl;
+  cout<<"num of neutrnio ints "<< num_neutrino_ints<<endl;
+  cout<<"num tau decays "<<num_tau_decays<<endl;
+  cout<<"num distance loop per part "<<distance_loop_num/100000<<endl;
+  cout<<"average energy loss per neutrino interactions = "<<energy_loss_by_neutrinos/num_neutrino_ints<<endl;
+  cout<<"average energy loss per tau decay = "<<energy_loss_by_taus/num_tau_decays<<endl;
   return 0;
   
 }
@@ -1023,7 +1056,7 @@ void load_config()
 
 double dsigCC(double E, int CCmode, int type,int AntiNu )
 {
-    if(type==1||type==4)
+    if(type==1)
     {
         double f=0.;
         double p[4];
@@ -1072,7 +1105,7 @@ double dsigCC(double E, int CCmode, int type,int AntiNu )
         f = pow(10,f);
         return f;
     }
-    if(type==2||type==5)
+    if(type==2)
     {
         double f=0.;
         
@@ -1154,7 +1187,7 @@ double dsigCC(double E, int CCmode, int type,int AntiNu )
 double dsigNC(double E, int CCmode, int type,int AntiNu)
 {
     double f=0.; 
-    if(type==1||type==4)
+    if(type==1)
     {
         
         double p[4];
@@ -1203,7 +1236,7 @@ double dsigNC(double E, int CCmode, int type,int AntiNu)
         return f;
 
     }
-    if(type==2||type==5)
+    if(type==2)
     {
        
         
@@ -1290,7 +1323,7 @@ double elost(double E, double dens, int ELOSSmode,int type)
   int lyr = 0; // initialize to iron
   if (dens < 7.75) lyr = 1; // density jump between outer core and mantle
   if (dens < 2.0) lyr = 2;  // density jump between rock and water 
-  if(type==1||type==4)
+  if(type==4)
   {
   double factor[3] = {0.9304, 1.0, 1.1092}; // ratio Z/A for iron, rock, and water divided by Z/A=0.5 for rock   
 
@@ -1311,7 +1344,7 @@ double elost(double E, double dens, int ELOSSmode,int type)
   // cout << " mfuncalph(&E,&lyr) " << E << " " << lyr << " " << mfuncalph(&E, &zlyr << endl << endl;
   //cout << " beta9fit(&E,&lyr) " << E << " " << beta9fit(&E,&lyr,0) << " " << beta9fit(&E,&lyr,1) << endl << endl;
   }
-  if(type==2||type==5)
+  if(type==5)
   {
     f = E * beta9fit(&E,&lyr,ELOSSmode,type) + funcalph(&E, &lyr,type);
     //f = E*(emlost->Eval(E)) + funca->Eval(E);
@@ -1332,7 +1365,7 @@ double funcalph(double *x, int *par, int type)
 // double tfuncalph(double *x)
 { 
   double f;
-  if(type==2||type==5)
+  if(type==5)
   {
     
     double p=sqrt(x[0]*x[0]-mtau2);
@@ -1348,7 +1381,7 @@ double funcalph(double *x, int *par, int type)
     //cout << "\tlyr " << par[0] << " factor " << factor[par[0]] << " val " << f << endl; 
   
   }
-  if(type==1||type==4)
+  if(type==4)
   {
     double f;
     double p=sqrt(x[0]*x[0]-mmuon2);
@@ -1606,7 +1639,7 @@ void initialize_reaction(int tau_type[][6], int mu_type[][6],double tau_ene[][6]
 {
   
     string line;
-    string list_of[10000];
+    string list_of[100000];
     string reaction;
     string particle[6];
     string energy[6];
@@ -1619,7 +1652,7 @@ void initialize_reaction(int tau_type[][6], int mu_type[][6],double tau_ene[][6]
     //taus
     ifstream tau_decays("pythia_tau.txt");
     
-    for(int count=0;count<10000;count++)
+    for(int count=0;count<100000;count++)
     {
         getline(tau_decays,line);
         list_of[count]=line;
@@ -1627,7 +1660,7 @@ void initialize_reaction(int tau_type[][6], int mu_type[][6],double tau_ene[][6]
     }
     
     //parse string for products and fractional energies.
-    for(int i=0;i<10000;i++)
+    for(int i=0;i<100000;i++)
     {
         for(int z=0;z<6;z++) {products[z]="-1,0.0";};
         counter=0;
@@ -1667,7 +1700,7 @@ void initialize_reaction(int tau_type[][6], int mu_type[][6],double tau_ene[][6]
     }
 
     //parse string for products and fractional energies.
-    for(int i=0;i<10000;i++)
+    for(int i=0;i<100000;i++)
     {
         for(int z=0;z<6;z++) {products[z]="-1,0.0";}
         counter=0;

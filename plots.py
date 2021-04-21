@@ -1,11 +1,13 @@
 from pylab import *
 from matplotlib.colors import LogNorm
 from matplotlib import gridspec
+import os
 rcParams['figure.facecolor'] = 'white'
 rcParams['font.size']=18
-def load_LUT(LUT_fnm):
-    f = np.load(LUT_fnm)
 
+def load_LUT(LUT_fnm):
+    f = np.load(LUT_fnm,allow_pickle=True)
+    type_array=f['type_array']
     th_array = f['th_exit_array']
     th_em_array = -th_array
     data_array = f['data_array']
@@ -13,12 +15,12 @@ def load_LUT(LUT_fnm):
     mean_num_CC     = f['mean_num_CC']
     mean_num_NC     = f['mean_num_NC']
     mean_num_decays = f['mean_num_decays']
-    rms_num_CC      = f['rms_num_CC']
-    rms_num_NC      = f['rms_num_NC']
-    rms_num_decays  = f['rms_num_decays']
+    #rms_num_CC      = f['rms_num_CC']
+    #rms_num_NC      = f['rms_num_NC']
+    #rms_num_decays  = f['rms_num_decays']
     for k in range(0,len(th_array)):
-        P_exit[k] = float(len(data_array[k]))/1.e6
-    return th_em_array, P_exit, data_array, mean_num_CC, mean_num_NC, mean_num_decays
+        P_exit[k] = float(len(data_array[k]))/1e5
+    return type_array,th_em_array, P_exit, data_array, mean_num_CC, mean_num_NC, mean_num_decays
 
 def get_mean_sigma(sorted_array, conf=0.68):
     N = len(sorted_array)
@@ -31,65 +33,121 @@ def get_mean_sigma(sorted_array, conf=0.68):
     return sorted_array[k_init[k1_conf]], sorted_array[k_stop[k1_conf]]
     #return 0.5*(sorted_array[k1_68]+sorted_array[k1_68+k_stop[0]]), 0.5*(sorted_array[k1_68+k_stop[0]]- sorted_array[k1_68])
 
+def process_lut_for_parts(LUT_fnm, particle_type): #same as load LUT but looks for specific particles. IE want just taus
 
-#plot_type = 'energy'
+    f = np.load(LUT_fnm,allow_pickle=True)
+    type_array=f['type_array']
+    th_array = f['th_exit_array']
+    th_em_array = -th_array
+    data_array = f['data_array']
+    P_exit = np.zeros(len(th_array))
+    mean_num_CC     = f['mean_num_CC']
+    mean_num_NC     = f['mean_num_NC']
+    mean_num_decays = f['mean_num_decays']
+    proc_type=[]
+    proc_energy=[]
+    print(np.size(th_array),np.size(data_array),np.size(type_array))
+   
+
+    for k in range(0,len(th_array)):
+        #print(np.size(type_array[k]),np.size(data_array[k]))
+        temp_energy=[]
+        temp_type=[]
+        if(len(data_array[k])!=0 ):
+            part_count=0
+            #print(np.size(type_array[k]))
+            #print(np.size(data_array[k]))
+            for i in range(0,len(data_array[k])):
+                #print(type_array[k][i],data_array[k][i])
+                #type_array[k][i]
+                if(type_array[k][i]==particle_type):
+                    temp_type.append(type_array[k][i])
+                    temp_energy.append(data_array[k][i])
+                    part_count+=1
+            proc_type.append(temp_type)
+            proc_energy.append(temp_energy)
+               
+            
+
+            P_exit[k] = part_count/1e5
+
+    return type_array,th_em_array, P_exit, data_array, mean_num_CC, mean_num_NC, mean_num_decays
+#returned elements shouldn't have any other particle than type 2 - nutau
+    
+
+
+
+
+
+
+plot_type = 'energy'
 #plot_type = 'thickness'
-plot_type = 'models'
+#plot_type = 'models'
 #plot_type = 'regen'
 
 energy_list = ['1e+16', '3e+16', '1e+17', '3e+17', '1e+18', '3e+18', '1e+19', '3e+19','1e+20', '3e+20', '1e+21']
-#energy_list = ['1e+15', '3e+15', '1e+16', '3e+16', '1e+17', '3e+17', '1e+18', '3e+18', '1e+19', '3e+19','1e+20', '3e+20', '1e+21']
+energy_list = ['1e+15', '3e+15', '1e+16', '3e+16', '1e+17', '3e+17', '1e+18', '3e+18', '1e+19', '3e+19','1e+20', '3e+20', '1e+21']
+energy_list=[1e16,1e17,1e18,1e19,1e20]
 ice_thickness_list = ['0.0', '1.0', '2.0', '3.0', '4.0']
 
 if(plot_type =='energy'):
-    colors = cm.hot(np.linspace(0, 1, int(2.*float(len(energy_list)))))
+    #colors = cm.hot(np.linspace(0, 1, int(2.*float(len(energy_list)))))
     #figure(1, figsize=(8,10))
-    figure(1, figsize=(8,6))
-    figure(2, figsize=(8,10))
-    figure(3, figsize=(8,10))
-    figure(4, figsize=(10,10))
+    figure(1, figsize=(8,16))
+    #figure(2, figsize=(8,10))
+    #figure(3, figsize=(8,10))
+    #figure(4, figsize=(10,10))
     gs = gridspec.GridSpec(5, 2, width_ratios=[1, 3]) 
     cc = 0
     ice_thickness = '4.0'
     ax2_array = [] 
     count2=0
     count3=0
+    figure(1)
+    ax=subplot(111)
     for energy in energy_list[::-1]:
-        th_em_array, P_exit, data_array, mean_num_CC, mean_num_NC, mean_num_decays = load_LUT('/home/romerowo/nutau_sim/LUTs/%skm_ice_midCS_stdEL/LUT_%s_eV.npz'%(ice_thickness,energy))
-        #print P_exit
-        figure(1)
-        ax=subplot(111)
-        ax.set_xscale('log')
-        semilogy(th_em_array[P_exit>0.], P_exit[P_exit>0.], '-', lw=2, color=colors[cc], label='%s eV'%energy)
-        new_ticks = np.array([0.1, 0.3, 1., 3., 10.,  30.])
-        xticks(new_ticks, new_ticks, fontsize=16)
-        yticks(fontsize=15)
-        xlim(0.,50.)
-        ylim(1.e-6,1.)
-        legend(loc=1, fontsize=14, borderpad=0.1, borderaxespad=0, labelspacing=0.1)
-        grid(True, which='both')
-        xlabel('Emergence Angle, degrees')
-        ylabel('Probability of Tau Exit')
+        if(os.path.exists('LUTs/LUT_%s_eV.npz'%(energy))):
+            type_array,th_em_array, P_exit, data_array, mean_num_CC, mean_num_NC, mean_num_decays = process_lut_for_parts('LUTs/LUT_%s_eV.npz'%(energy),5)
+            #print P_exit
+        
+           
+            ax.set_xscale('log')
+            semilogy(th_em_array[P_exit>0.], P_exit[P_exit>0.], '-', lw=2, label='%s eV'%energy)
+            new_ticks = np.array([0.1, 0.3, 1., 3., 10.,  30.,90.])
+            xticks(new_ticks, new_ticks, fontsize=16)
+            yticks(fontsize=15)
+            xlim(0.,90.)
+            ylim(1.e-6,1.)
+            legend(loc=1, fontsize=14, borderpad=0.1, borderaxespad=0, labelspacing=0.1)
+            grid(True, which='both')
+            xlabel('Emergence Angle, degrees')
+            ylabel('Probability of Tau Exit')
+          
 
-        '''
-        ax=subplot(211)
-        semilogy(th_em_array[P_exit>0.], P_exit[P_exit>0.], '-', lw=2, color=colors[cc], label='%s eV'%energy)
-        yticks(fontsize=15)
-        xlim(0.,50.)
-        ylim(1.e-6,1.)
-        legend(loc=1, fontsize=14, borderpad=0.1, borderaxespad=0, labelspacing=0.1)
-        grid(True, which='both')
-        xlabel('Emergence Angle, degrees')
-        ylabel('Probability of Tau Exit')
+            """
+            ax=subplot(211)
+            semilogy(th_em_array[P_exit>0.], P_exit[P_exit>0.], '-', lw=2, color=colors[cc], label='%s eV'%energy)
+            yticks(fontsize=15)
+            xlim(0.,50.)
+            ylim(1.e-6,1.)
+            legend(loc=1, fontsize=14, borderpad=0.1, borderaxespad=0, labelspacing=0.1)
+            grid(True, which='both')
+            xlabel('Emergence Angle, degrees')
+            ylabel('Probability of Tau Exit')
 
-        subplot(212)
-        semilogy(th_em_array[P_exit>0.], P_exit[P_exit>0.], '-', lw=2, color=colors[cc])
-        xlim(0.,5.)
-        ylim(1.e-5,1.)
-        xlabel('Emergence Angle, degrees')
-        ylabel('Probability of Tau Exit')
-        grid(True, which='both')
-        '''
+            subplot(212)
+            semilogy(th_em_array[P_exit>0.], P_exit[P_exit>0.], '-', lw=2, color=colors[cc])
+            xlim(0.,5.)
+            ylim(1.e-5,1.)
+            xlabel('Emergence Angle, degrees')
+            ylabel('Probability of Tau Exit')
+            grid(True, which='both')
+            """
+            
+    matplotlib.pyplot.show()
+        
+
+"""
         # 2dhistogram version
         if '3' not in energy and float(energy)>3.e16:
 
@@ -171,11 +229,11 @@ if(plot_type =='energy'):
             eL99 = np.zeros(len(th_em_array))
             eH99 = np.zeros(len(th_em_array))
             for k in range(0,len(index_array)):
-                print th_em_array[k], th_em_array[k]%1.0
+                print (th_em_array[k], th_em_array[k]%1.0)
                 #errorbar([th_em_array[k]], [np.mean(data_array[k])], yerr=[np.std(data_array[k])], fmt='.', color='k')
                 #if len(data_array[k])>3 and (abs(th_em_array[k]%1.0)<0.09 or abs(th_em_array[k]%1.0)>0.99 or abs(th_em_array[k]-0.1)<0.01):
                 if len(data_array[k])>3:
-                    print '%1.2e %1.2e'%(np.mean(10.**data_array[k]), np.std(10.**data_array[k])), len(data_array[k])
+                    print ('%1.2e %1.2e'%(np.mean(10.**data_array[k]), np.std(10.**data_array[k])), len(data_array[k]))
                     std_err = np.std(10.**data_array[k])
                     ss = np.sort(10.**data_array[k])
                     cs = np.cumsum(np.ones(len(ss)))/float(len(ss))
@@ -807,3 +865,4 @@ if(plot_type =='regen'):
     savefig('Tau_Exit_Regen.pdf')
 
     show()	
+"""
