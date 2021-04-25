@@ -66,7 +66,7 @@ tag_list = [tag]
 missing_count = 0
 #print (tag_list)
 for tag in tag_list:
-    data_dir = 'fixed/'
+    data_dir = 'update/'
     count = 0
     count_true=0
     ang_array = np.concatenate([ np.arange(90.0,95.0,0.1) , np.arange(95.0,180.0,1.0) ])
@@ -74,7 +74,7 @@ for tag in tag_list:
     e_array = np.array([1e15, 3e15, 1e16, 3e16, 1e17, 3e17, 1e18, 3e18, 1e19, 3e19, 1e20, 3e20, 1e21])
     e_array=np.array([1e15,1e16,1e17,1e18,1e19,1e20])
    
-    outdir = 'fixed'
+    outdir = 'update'
     if not os.path.exists(outdir):
         os.makedirs(outdir)
     

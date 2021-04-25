@@ -5,7 +5,7 @@ import matplotlib.pyplot as plt
 import os
 rcParams['figure.facecolor'] = 'white'
 rcParams['font.size']=18
-LUTdir='fixed'
+LUTdir='update'
 def load_LUT(LUT_fnm):
     f = np.load(LUT_fnm,allow_pickle=True)
     type_array=f['type_array']
@@ -47,7 +47,7 @@ def process_lut_for_parts(LUT_fnm, particle_type): #same as load LUT but looks f
     mean_num_decays = f['mean_num_decays']
     proc_type=[]
     proc_energy=[]
-    print(np.size(th_array),np.size(data_array),np.size(type_array))
+    #print(np.size(th_array),np.size(data_array),np.size(type_array))
    
 
     for k in range(0,len(th_array)):
@@ -102,13 +102,14 @@ if(plot_type =='energy'):
     #figure(3, figsize=(8,10))
     #figure(4, figsize=(10,10))
     for i in part_index:
+        print(num)
         gs = gridspec.GridSpec(5, 2, width_ratios=[1, 3]) 
         cc = 0
         ice_thickness = '4.0'
         ax2_array = [] 
         count2=0
         count3=0
-        fig,(ax1,ax2,ax3)=plt.subplots(3,1)
+        fig,(ax1)=plt.subplots(1,1)
         fig.set_figheight(18)
         fig.set_figwidth(16)
         fig.subplots_adjust(hspace=0.5)
@@ -126,7 +127,7 @@ if(plot_type =='energy'):
                 #new_ticks = np.array([0.1, 0.3, 1., 3., 10.,  30.,90.])
                 #ax1.set_xticks(new_ticks)
                 #ax1.set_yticks(fontsize=15)
-                ax1.set_xlim(0.,90.)
+                ax1.set_xlim(.1,90.)
                 ax1.set_ylim(1.e-6,1.)
                 ax1.legend(loc=1, fontsize=14, borderpad=0.1, borderaxespad=0, labelspacing=0.1)
                 ax1.grid(True, which='both')
@@ -134,14 +135,14 @@ if(plot_type =='energy'):
                 ax1.set_ylabel('Probability of %s Exit'%names[num])
             
                 
-                
+                """
                 ax2.set_xscale('log')
                 ax2.semilogy(th_em_array[P_exit>0.], mean_num_CC[P_exit>0.], '-', lw=2,  label='%s eV'%energy)
                 #yticks(fontsize=15)
                 #new_ticks = np.array([0.1, 0.3, 1., 3., 10.,  30.,90.])
                 #ax2.set_xticks(new_ticks)
-                ax2.set_xlim(0.,90)
-                ax2.set_ylim(0.,100)
+                ax2.set_xlim(.1,90)
+                ax2.set_ylim(0.1,100)
                 ax2.legend(loc=1, fontsize=14, borderpad=0.1, borderaxespad=0, labelspacing=0.1)
                 ax2.grid(True, which='both')
                 ax2.set_xlabel('Emergence Angle, degrees')
@@ -149,16 +150,18 @@ if(plot_type =='energy'):
 
                 ax3.set_xscale('log')
                 ax3.semilogy(th_em_array[P_exit>0.], mean_num_decays[P_exit>0.], '-', lw=2,label='%s eV'%energy) 
-                ax3.set_xlim(0.,90)
+                ax3.set_xlim(0.1,90)
                 #new_ticks = np.array([0.1, 0.3, 1., 3., 10.,  30.,90.])
                 #ax3.set_xticks(new_ticks)
-                ax3.set_ylim(0,100)
+                ax3.set_ylim(0.1,100)
                 ax3.set_xlabel('Emergence Angle, degrees')
                 ax3.set_ylabel('mean num decays')
                 ax3.grid(True, which='both')
-        num+=1               
-        matplotlib.pyplot.savefig(LUTdir+"/%s_full_chord.png"%(names[num]))        
-    matplotlib.pyplot.show()
+                """
+                      
+        matplotlib.pyplot.savefig(LUTdir+"/%s_full_chord.png"%(names[num])) 
+        num+=1       
+    #matplotlib.pyplot.show()
         
 
 """
