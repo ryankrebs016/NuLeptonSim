@@ -91,6 +91,9 @@ energy_list = ['1e+15', '3e+15', '1e+16', '3e+16', '1e+17', '3e+17', '1e+18', '3
 energy_list=['1e+15','1e+16','1e+17','1e+18','1e+19','1e+20']
 ice_thickness_list = ['0.0', '1.0', '2.0', '3.0', '4.0']
 
+names=["nuMu","nuTau","Muon","Tau"]
+part_index=[1,2,4,5]
+num=0
 if(plot_type =='energy'):
     #colors = cm.hot(np.linspace(0, 1, int(2.*float(len(energy_list)))))
     #figure(1, figsize=(8,10))
@@ -98,62 +101,63 @@ if(plot_type =='energy'):
     #figure(2, figsize=(8,10))
     #figure(3, figsize=(8,10))
     #figure(4, figsize=(10,10))
-    gs = gridspec.GridSpec(5, 2, width_ratios=[1, 3]) 
-    cc = 0
-    ice_thickness = '4.0'
-    ax2_array = [] 
-    count2=0
-    count3=0
-    fig,(ax1,ax2,ax3)=plt.subplots(3,1)
-    fig.set_figheight(18)
-    fig.set_figwidth(16)
-    fig.subplots_adjust(hspace=0.5)
+    for i in part_index:
+        gs = gridspec.GridSpec(5, 2, width_ratios=[1, 3]) 
+        cc = 0
+        ice_thickness = '4.0'
+        ax2_array = [] 
+        count2=0
+        count3=0
+        fig,(ax1,ax2,ax3)=plt.subplots(3,1)
+        fig.set_figheight(18)
+        fig.set_figwidth(16)
+        fig.subplots_adjust(hspace=0.5)
 
-    for energy in energy_list[::-1]:
-        print(LUTdir+'/LUT_%s_eV.npz'%(energy))
-        if(os.path.exists(LUTdir+'/LUT_%s_eV.npz'%(energy))):
+        for energy in energy_list[::-1]:
+            print(LUTdir+'/LUT_%s_eV.npz'%(energy))
+            if(os.path.exists(LUTdir+'/LUT_%s_eV.npz'%(energy))):
+                
+                type_array,th_em_array, P_exit, data_array, mean_num_CC, mean_num_NC, mean_num_decays = process_lut_for_parts(LUTdir+'/LUT_%s_eV.npz'%(energy),i)
+                #print P_exit
             
-            type_array,th_em_array, P_exit, data_array, mean_num_CC, mean_num_NC, mean_num_decays = process_lut_for_parts(LUTdir+'/LUT_%s_eV.npz'%(energy),5)
-            #print P_exit
-        
+                
+                ax1.set_xscale('log')
+                ax1.semilogy(th_em_array[P_exit>0.], P_exit[P_exit>0.], '-', lw=2, label='%s eV'%energy)
+                #new_ticks = np.array([0.1, 0.3, 1., 3., 10.,  30.,90.])
+                #ax1.set_xticks(new_ticks)
+                #ax1.set_yticks(fontsize=15)
+                ax1.set_xlim(0.,90.)
+                ax1.set_ylim(1.e-6,1.)
+                ax1.legend(loc=1, fontsize=14, borderpad=0.1, borderaxespad=0, labelspacing=0.1)
+                ax1.grid(True, which='both')
+                ax1.set_xlabel('Emergence Angle, degrees')
+                ax1.set_ylabel('Probability of %s Exit'%names[num])
             
-            ax1.set_xscale('log')
-            ax1.semilogy(th_em_array[P_exit>0.], P_exit[P_exit>0.], '-', lw=2, label='%s eV'%energy)
-            #new_ticks = np.array([0.1, 0.3, 1., 3., 10.,  30.,90.])
-            #ax1.set_xticks(new_ticks)
-            #ax1.set_yticks(fontsize=15)
-            ax1.set_xlim(0.,90.)
-            ax1.set_ylim(1.e-6,1.)
-            ax1.legend(loc=1, fontsize=14, borderpad=0.1, borderaxespad=0, labelspacing=0.1)
-            ax1.grid(True, which='both')
-            ax1.set_xlabel('Emergence Angle, degrees')
-            ax1.set_ylabel('Probability of Tau Exit')
-          
-            
-            
-            ax2.set_xscale('log')
-            ax2.semilogy(th_em_array[P_exit>0.], mean_num_CC[P_exit>0.], '-', lw=2,  label='%s eV'%energy)
-            #yticks(fontsize=15)
-            #new_ticks = np.array([0.1, 0.3, 1., 3., 10.,  30.,90.])
-            #ax2.set_xticks(new_ticks)
-            ax2.set_xlim(0.,90)
-            ax2.set_ylim(0.,10)
-            ax2.legend(loc=1, fontsize=14, borderpad=0.1, borderaxespad=0, labelspacing=0.1)
-            ax2.grid(True, which='both')
-            ax2.set_xlabel('Emergence Angle, degrees')
-            ax2.set_ylabel('mean num CC')
+                
+                
+                ax2.set_xscale('log')
+                ax2.semilogy(th_em_array[P_exit>0.], mean_num_CC[P_exit>0.], '-', lw=2,  label='%s eV'%energy)
+                #yticks(fontsize=15)
+                #new_ticks = np.array([0.1, 0.3, 1., 3., 10.,  30.,90.])
+                #ax2.set_xticks(new_ticks)
+                ax2.set_xlim(0.,90)
+                ax2.set_ylim(0.,100)
+                ax2.legend(loc=1, fontsize=14, borderpad=0.1, borderaxespad=0, labelspacing=0.1)
+                ax2.grid(True, which='both')
+                ax2.set_xlabel('Emergence Angle, degrees')
+                ax2.set_ylabel('mean num CC')
 
-            ax3.set_xscale('log')
-            ax3.semilogy(th_em_array[P_exit>0.], mean_num_decays[P_exit>0.], '-', lw=2,label='%s eV'%energy) 
-            ax3.set_xlim(0.,90)
-            #new_ticks = np.array([0.1, 0.3, 1., 3., 10.,  30.,90.])
-            #ax3.set_xticks(new_ticks)
-            ax3.set_ylim(0,10)
-            ax3.set_xlabel('Emergence Angle, degrees')
-            ax3.set_ylabel('mean num decays')
-            ax3.grid(True, which='both')
-                       
-    matplotlib.pyplot.savefig(LUTdir+"/tau_full_chord.png")        
+                ax3.set_xscale('log')
+                ax3.semilogy(th_em_array[P_exit>0.], mean_num_decays[P_exit>0.], '-', lw=2,label='%s eV'%energy) 
+                ax3.set_xlim(0.,90)
+                #new_ticks = np.array([0.1, 0.3, 1., 3., 10.,  30.,90.])
+                #ax3.set_xticks(new_ticks)
+                ax3.set_ylim(0,100)
+                ax3.set_xlabel('Emergence Angle, degrees')
+                ax3.set_ylabel('mean num decays')
+                ax3.grid(True, which='both')
+        num+=1               
+        matplotlib.pyplot.savefig(LUTdir+"/%s_full_chord.png"%(names[num]))        
     matplotlib.pyplot.show()
         
 

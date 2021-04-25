@@ -224,26 +224,13 @@ int main(int argc, char **argv)
   }
   return 0;
   */
-  /*
-  double energies[100];
-  double dsiggCC[100];
-  double dsiggNC[100];
-  int CCmode=0;
-  int AntiNu=1;
-  string output_file="lepton-anti_muon_cross_sectional_data.dat";
+  
+  
+  string output_file=config.data_dir+"/"+argv[1]+"_run_times.dat";
   ofstream output(output_file.c_str());
-  output<<"energy (eV), disiggCC, dsiggNC"<<endl;
-  for(int i=0; i<10;i++)
-  {
-    energies[i]=pow(10,(i+12));
-    dsiggCC[i]=dsigCC(energies[i],CCmode,1,1);
-    dsiggNC[i]=dsigNC(energies[i],CCmode,1,1);
-    output<<energies[i]<<" "<<dsiggCC[i]<<" "<<dsiggNC[i]<<endl;
-  }
+  cout<<output_file<<endl;
 
-  output.flush();
-  return 0;
-  */
+  
   // loads reaction data from pythia table
   for(int i=0;i<100000;i++){for(int j=0;j<6;j++){reaction_data.tau_type[i][j]=reaction_data.mu_type[i][j]=-1;reaction_data.tau_energy[i][j]=reaction_data.mu_energy[i][j]=0.0;};}  
   initialize_reaction(reaction_data.tau_type,reaction_data.mu_type,reaction_data.tau_energy,reaction_data.mu_energy);
@@ -381,9 +368,10 @@ int main(int argc, char **argv)
   //{
   //    cout << "Random Test " << ((double) rand() / (double)(RAND_MAX)) << endl;
   //}
-  
+  output<<"angle(deg) number_of_initial_parts time(s)"<<endl;
   while(!angles.empty())  //loops over all angles in the stack, should be a single angle or a stack of angles over a range
   {
+    double angle_time_start=time(NULL);
     double angle=angles.top();
     angles.pop();
   
@@ -848,7 +836,7 @@ int main(int argc, char **argv)
           //=========================
           // Particle is a tau lepton or muon lepton
           //=========================
-          if((part_type==3||part_type==4||part_type==5))//&&change==false
+          if((part_type==3||part_type==4||part_type==5)&&change==false)//&&change==false
           {
             // Estimate step length based on Energy, dE/dx, local density, and fraction.
             
@@ -1052,8 +1040,13 @@ int main(int argc, char **argv)
       
     outEnergies << "END" << endl; // write END in the last line of the text output file.
     outEnergies.flush();
-  
+    double angle_time_end=time(NULL);
+ 
+    output<<angle<<" "<<tot_evt<<" " <<angle_time_end-angle_time_start<<" "<<endl;
+    
   }// end of loop ever all angles
+  output<<"END"<<endl;
+  output.flush();
   cout << "END" << endl;  // write END in the command line  
   double time_elapsed=time(NULL)-time_start;
   printf("it took %f minutes to simulate %d neutrinos over %d different angles",time_elapsed/60,(int)atof(argv[3]),n1+n2);
