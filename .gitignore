@@ -3,3 +3,8 @@
 *.npz
 *.png
 Simu_elost
+Mkefile_all.backup
+run_all
+run_all.cxx
+Makefile.backup
+config_all.txt

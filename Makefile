@@ -1,5 +1,5 @@
 SRC= ./include
-CXXFLAGS = -fPIC -Wall -std=c++0x -I$(SRC)
+CXXFLAGS = -fPIC -fopenmp -Wall -std=c++0x -I$(SRC)
 
 OBJECTS= Earth.o Table.o
 
