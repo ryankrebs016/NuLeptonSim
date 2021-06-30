@@ -8,3 +8,7 @@ run_all
 run_all.cxx
 Makefile.backup
 config_all.txt
+*.dat
+*.dat
+*.dat
+*.dat

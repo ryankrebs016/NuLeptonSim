@@ -17,7 +17,7 @@
 // Energies (GeV), unless otherwise specified.
 //----------------------------------------------------------------------------- 
 // Assume all particles are not anti-matter
-// No electron generation particles are simulated 
+// No electron generation particles are simulated yet
 // Config file can be changed to consider regeneration and decays
 // Config files stores settings used in the code such as the starting neutrino type,
 // bool to use energy distribution, what angles to simulate over
@@ -208,27 +208,17 @@ int main(int argc, char **argv)
   string output_file=config.data_dir+"/"+argv[1]+"_run_times.dat";
   ofstream output(output_file.c_str());
   cout<<output_file<<endl;
-  string muon_file=config.data_dir+"/"+argv[1]+"_muons_produced.dat";
-  ofstream muon_output(muon_file.c_str());
-  cout<<muon_file<<endl;
+
   
   // loads reaction data from pythia table
   for(int i=0;i<100000;i++){for(int j=0;j<6;j++){reaction_data.tau_type[i][j]=reaction_data.mu_type[i][j]=-1;reaction_data.tau_energy[i][j]=reaction_data.mu_energy[i][j]=0.0;};}  
   initialize_reaction(reaction_data.tau_type,reaction_data.mu_type,reaction_data.tau_energy,reaction_data.mu_energy);
-  int n=136;
-  double angl[135];
-  for(int i =1;i<n;i++)
-  {
-    if(i<50) angl[i-1]=90+i*.1;
-    if(i>=50 && i<=136) angl[i-1]=90+5+(i-50);
+  
 
-  }
-  for(int i=0;i<135;i++) cout<<angl[i]<<endl;
- 
   int n1=(95-config.low_angle)/0.1;
   int n2=(config.high_angle-95)/1;
   
-  //stack <float> angles;
+  stack <float> angles;
   //int starting_type=2; // 0 = Ve , 1= Vm , 2= vT, 3=e, 4=m, 5=T
   int type_to_save[4]={config.starting_type,config.starting_type+3,-1,-1};
  
@@ -239,15 +229,14 @@ int main(int argc, char **argv)
     if(config.starting_type==1) {type_to_save[2]=2; type_to_save[3]=5;}
     if(config.starting_type==2){type_to_save[2]=1; type_to_save[3]=4;}
   }
-  /*
+
   if(config.sim_angles)
   {
-    for (int i=n1;i>0;i--) angles.push(95.-i*0.1);
-    for (int i=0;i<=n2;i++) angles.push(95.+i); 
+    for (int i=n1;i>0;i--) angles.push(95.-i*0.1); 
+    for (int i=0;i<=n2;i++) angles.push(95.+i);  
   }
   else angles.push(atof(argv[2]));
-
-  */
+ 
   for(int i=0;i<4;i++) cout<<type_to_save[i]<<" ";
   cout<<endl;
 
@@ -309,7 +298,6 @@ int main(int argc, char **argv)
   //  (void)strcat(finalccfile, "/Tables/final_cteq5_cc_nu.data");
   //  (void)strcat(finalncfile, "/Tables/final_cteq5_nc_nu.data");
   //}
-  /*
   cout << "\nTable File Names:" << endl;
   cout << "taudata     " << taudata << endl;
   cout << "tfinalccfile " << tfinalccfile << endl;
@@ -321,7 +309,7 @@ int main(int argc, char **argv)
   cout << "finalncfile " << mfinalncfile << endl;
   cout << "finalccbarfile " << mfinalccbarfile << endl;
   cout << "finalncbarfile " << mfinalncbarfile << endl << endl;
-  */
+  
   int InitTau = TauData.InitTable(taudata);
   FinalTable *tCCFinalData = new FinalTable;
   FinalTable *tNCFinalData = new FinalTable;
@@ -338,10 +326,10 @@ int main(int argc, char **argv)
   mNCFinalData->InitTable(mfinalncfile);
   mCCBarFinalData->InitTable(mfinalccbarfile);
   mNCBarFinalData->InitTable(mfinalncbarfile);  
-  /*
+  
   cout << "Tau Data Table Initialized: " << InitTau << endl << endl;
   cout << "Moun Data Table Initialized: " << InitMuon << endl << endl;
-  */
+
   //bool useEnergyDistribution = false;
   if (atof(argv[1]) == 0) {
     config.energy_distribution = true;
@@ -360,19 +348,12 @@ int main(int argc, char **argv)
   //    cout << "Random Test " << ((double) rand() / (double)(RAND_MAX)) << endl;
   //}
   output<<"angle(deg) number_of_initial_parts time(s)"<<endl;
-  int angle_count=n-2;
-  while(angle_count>=0)  //loops over all angles in the stack, should be a single angle or a stack of angles over a range
+  while(!angles.empty())  //loops over all angles in the stack, should be a single angle or a stack of angles over a range
   {
-    /*
-    cout<<angles.size()<<endl;
     double angle_time_start=time(NULL);
     double angle=angles.top();
     angles.pop();
-    */
-    double angle;
-    angle=angl[angle_count];
-    angle_count--;
-    int produced_muons=0;
+  
     // Cut in energy below which particles are no longer propagated
     double Elim_eV=1.e14;       // eV
     double Elim=Elim_eV*1.e-9;  // GeV
@@ -414,7 +395,7 @@ int main(int argc, char **argv)
     if(argc>3){
       tot_evt=(int)atof(argv[3]);
     }
-    /*
+    
     //cccccccccccccccccccccccccccccccccccccccccccccccccccccc
     cout << "======================================" << endl;
     cout << "Number of neutrinos simulated = " << tot_evt << endl;
@@ -422,7 +403,7 @@ int main(int argc, char **argv)
     cout << "Energy = " << atof(argv[1]) << " eV" << endl;
     cout << "Threshold energy = " << Elim*1.e9 << " eV" << endl;
     //cccccccccccccccccccccccccccccccccccccccccccccccccccccc
-    */
+    
     //for rounding energies and angle
     string e_temp=to_string(log10((double)atof(argv[1])));
     string es_temp="";
@@ -438,7 +419,7 @@ int main(int argc, char **argv)
 
     
   
-    cout<<angs_temp<<endl;
+
     //-------------------------------------------------
     // Output file names using input arguments
     string nameEnergies="";
@@ -469,7 +450,7 @@ int main(int argc, char **argv)
     nameEnergies+=".dat";
     ofstream outEnergies(nameEnergies.c_str());
     outEnergies << ""<< log10(tot_evt)<<" pow of 10 initial neutrinos of type "<<config.starting_type<<" at energy "<<argv[1]<<". \ntype, NC, CC, DC, InitNuNum, Gen, OutEnergy, InitEnergy.\n";
-    cout<<nameEnergies<<endl;
+    
     // Get cross-section mode to use
     int CCmode = 0;
     if(argc>4) CCmode = atoi(argv[4]);
@@ -486,27 +467,26 @@ int main(int argc, char **argv)
         cerr << "ERROR: user specified layer most have densitiy >0 and depth >= 0" << endl;
         return -1;
       }
-      //cout << "Outer Layer Thickness " << terra->depth_new_layer   << " km" << endl;
-      //cout << "Outer Layer Density   " << terra->dens_new_layer    << " g/cm^3" << endl;
+      cout << "Outer Layer Thickness " << terra->depth_new_layer   << " km" << endl;
+      cout << "Outer Layer Density   " << terra->dens_new_layer    << " g/cm^3" << endl;
     }
     
     // Get zenith angle from input argument
     double refTheta=angle;
-    //cout << "Theta " << refTheta << " deg" << endl;
+    cout << "Theta " << refTheta << " deg" << endl;
     
     double min_depth = R0-R0*sin(PI*(1.-refTheta/180.));
-    //uncomment for icecube
+    /* uncomment for icecube
     if(Depth2>min_depth) 
     {
       cout << "Angle too steep to be measured by IceCube" << endl;
       break;
     }
-    
+    */
     Lmax=2.*R0*cos(PI*(1.-refTheta/180.));
     Lmax1=R0*cos(PI*(1.-refTheta/180.))+sqrt(pow(R0*cos(PI*(1.-refTheta/180.)), 2.0)-(2*R0*Depth1-pow(Depth1,2.0))); // chord length inside Earth in cm
     Lmax2=R0*cos(PI*(1.-refTheta/180.))+sqrt(pow(R0*cos(PI*(1.-refTheta/180.)), 2.0)-(2*R0*Depth2-pow(Depth2,2.0))); // chord length inside Earth in cm
     // Earth's chord (km) at thetaRef (deg) (R0 is radius of Earth in cm)
-    
     cout << "Chord length Bottom " << Lmax1/pow(10,5) << "km" << endl;
     cout << "Chord length Top " << Lmax2/pow(10,5) << " km" << endl;
     cout<<"Whole chord "<<Lmax/pow(10,5)<<" km"<<endl;
@@ -529,18 +509,18 @@ int main(int argc, char **argv)
     
     if(Lmax2<=0.) Lmax2=0.;                 // set to zero  if the value is negative.
     if(Lmax<=0.) Lmax=0.;  
-    //printf ("Lmax %1.3e cm, %1.2f deg \n", Lmax2, refTheta);//change to lmax2 for icecube
+    printf ("Lmax %1.3e cm, %1.2f deg \n", Lmax, refTheta);//change to lmax2 for icecube
     
     // create look-up datable of distance as a function of grammage
     double sum_grammage = 0.;
     for (int ii=1; ii<=1000000; ii++)
     {
-    double dx = Lmax2/1000000; //change to Lmax2 for icecube
-    double x_val = Lmax2 * double(ii) / 1000000.;//change to lamx2 for icecube
-    sum_grammage +=  dx*earthdens(&x_val, &Lmax2);//change to lamx2 for icecube
+    double dx = Lmax/1000000; //change to Lmax2 for icecube
+    double x_val = Lmax * double(ii) / 1000000.;//change to lamx2 for icecube
+    sum_grammage +=  dx*earthdens(&x_val, &Lmax);//change to lamx2 for icecube
     }
-    //printf("sum_grammage %1.5e g/cm^2\n",sum_grammage);
-    //printf("mean_dens %1.2e\n\n",sum_grammage/Lmax2);//chnage to lmax2 for icecube
+    printf("sum_grammage %1.5e g/cm^2\n",sum_grammage);
+    printf("mean_dens %1.2e\n\n",sum_grammage/Lmax);//chnage to lmax2 for icecube
     
     double* cumulative_grammage = new double[1000000];
     double* grammage_distance = new double[1000000]; // in cm
@@ -552,8 +532,8 @@ int main(int argc, char **argv)
     for (int ii=1; ii<=1000000; ii++)
     {
     double x_val = grammage_distance[ii-1];
-    double dx    = d_grammage/earthdens(&x_val, &Lmax2);//chnage to lmax2 for icecube
-    cumulative_grammage[ii] = cumulative_grammage[ii-1] + dx*earthdens(&x_val, &Lmax2);//change to lamx2 for icecube
+    double dx    = d_grammage/earthdens(&x_val, &Lmax);//chnage to lmax2 for icecube
+    cumulative_grammage[ii] = cumulative_grammage[ii-1] + dx*earthdens(&x_val, &Lmax);//change to lamx2 for icecube
     grammage_distance[ii] = x_val + dx;
     //printf("*** ii %d %1.5f %1.5f\n",ii, grammage_distance[ii], cumulative_grammage[ii]);
     //if(ii%100000 ==0) printf("ii %d %1.2e %1.5f\n",ii, grammage_distance[ii], cumulative_grammage[ii]);
@@ -678,7 +658,7 @@ int main(int argc, char **argv)
         //printf("Ldist, Lmax %1.2e %1.2e\n", Ldist, Lmax);
         //Ldist=0.;
        
-        while(!(((Lmax1<=part_pos) && (part_pos<=Lmax2))||part_pos>=Lmax2))// for icecube  //part_pos<Lmax
+        while(part_pos<Lmax)//part_pos=part_pos;!(((Lmax1<=part_pos) && (part_pos<=Lmax2))||part_pos>=Lmax2) for icecube
         {
           //create holding arrays for reactions
           distance_loop_num++;
@@ -686,7 +666,7 @@ int main(int argc, char **argv)
           double reaction_energies[6]={-1,-1,-1,-1,-1,-1};
           //cout <<"distance is "<< part_pos << "and energy is "<<part_energy<<endl;
           // Get the local density for this pa rt of the chord.
-          dens = earthdens(&part_pos,&Lmax2);//change to lmax2 for icecube
+          dens = earthdens(&part_pos,&Lmax);//change to lmax2 for icecube
           //cout<<"In dist loop - type: "<<part_type<<". energy: "<<part_energy<<". pos: "<<part_pos<<". gen: "<< generation<<endl;
           bool change=false; //is needed so in case a NuTau becomes a Tau it won't be seen by the "is tau" section
 
@@ -714,7 +694,7 @@ int main(int argc, char **argv)
             // If too large, make sure it exits the volume.
             // NOTE: use floats for this condition. Using ints is bad if float > 2^32, then you get negative int.
             if( traversed_grammage/d_grammage + 1. > 1000000.){
-              part_pos = Lmax2; // chnage to lamx2 for icecube NOTE: 1000000. is the size of the look-up table.
+              part_pos = Lmax; // chnage to lamx2 for icecube NOTE: 1000000. is the size of the look-up table.
               traversed_grammage = sum_grammage;
             }
             // If contained within the trajectory, linearly interpolate its interaction distance.
@@ -737,7 +717,7 @@ int main(int argc, char **argv)
             //event.L0[npart]=Lint;
             
             // if the neutrino interaction is still inside Earth, simulate an NC or CC interaction and check that particle is still above the tracking energy threshold (Elim)
-            if(!((Lmax1<=part_pos) && (part_pos<=Lmax2))&&part_pos<=Lmax2)// for icecube  part_pos<Lmax
+            if(part_pos<Lmax)//!((Lmax1<=part_pos) && (part_pos<=Lmax2))&&part_pos<=Lmax2 for icecube
             {
               // Check if it is CC or NC interaction
               bool CCTauhappens=((double) rand() / (double)(RAND_MAX))>=dsigNC(part_energy, CCmode,part_type,anti)/(dsigNC(part_energy, CCmode,part_type,anti)+dsigCC(part_energy, CCmode,part_type,anti));
@@ -785,7 +765,7 @@ int main(int argc, char **argv)
                 if(part_type==1) part_type=4;
                 if(part_type==2) part_type=5;
                 // get the density at the current location before jumping to the tau lepton part of the loop
-                dens = earthdens(&part_pos,&Lmax2);//change to Lmax2 dfor icecube
+                dens = earthdens(&part_pos,&Lmax);//change to Lmax2 dfor icecube
                 change=true;
                 if(!config.regen) break;
               }
@@ -856,7 +836,7 @@ int main(int argc, char **argv)
             //cout << "Ldist " << 1.e-5*Ldist << "  R " << 1.e-5*sqrt(R02 - (Ldist*Lmax)+Ldist*Ldist) << " dens " << dens << endl;
             //cout<<"simulating tau"<<endl;
             // Check if tau leaves the Earth after dL. If it does then adjust last step
-            if(part_pos+dL > Lmax1) dL=Lmax1-part_pos;//change tolmax1 for icecube
+            if(part_pos+dL > Lmax) dL=Lmax-part_pos;//change tolmax1 for icecube
             
             // Calculate the traversed grammage
             traversed_grammage+=dL*dens;
@@ -985,10 +965,10 @@ int main(int argc, char **argv)
             for( int j=1;j<6;j++)
             {
                 
-              if((reaction_energies[j]>Elim)&&(part_pos<Lmax2)&&(reaction_types[j]!=-1)) //particles inside earth and above threshold are stacked, change to lam2 for icecube
+              if((reaction_energies[j]>Elim)&&(part_pos<Lmax)&&(reaction_types[j]!=-1)) //particles inside earth and above threshold are stacked, change to lam2 for icecube
               {
                 //cout<<"pushing new particle to stack \n";
-                produced_muons+=1;
+                new_muons+=2;
                 particle_data.part_type.push(reaction_types[j]);
                 particle_data.part_energy.push(reaction_energies[j]);
                 particle_data.part_pos.push(part_pos);
@@ -1057,12 +1037,12 @@ int main(int argc, char **argv)
     
    
     outEnergies << "END" << endl; // write END in the last line of the text output file. 
-  
+    outEnergies<<"new_muons "<<new_muons<<endl; 
+    outEnergies<<"END_PARTICLES"<<endl;
     outEnergies.flush();
     double angle_time_end=time(NULL);
-    muon_output<<angle<<" "<<produced_muons<<endl;
+ 
     output<<angle<<" "<<tot_evt<<" " <<angle_time_end-angle_time_start<<" "<<endl;
-    /*
     cout<<"total CC "<<total_CC<<". total NC "<<total_NC<<endl;
     cout<<"num of CC "<<total_CC<<endl;
     cout<<"num of NC "<<total_NC<<endl;
@@ -1073,15 +1053,12 @@ int main(int argc, char **argv)
     cout<<"tau neutrinos below "<<tau_neutrinos_below<<endl;  
     cout<<"muons below "<<muons_below<<endl;
     cout<<"muon neutrinos below "<<muon_neutrinos_below<<endl;
-    */
   }// end of loop ever all angles
-  muon_output<<"END"<<endl;
-  muon_output.flush();
   output<<"END"<<endl;
   output.flush();
-  //cout << "END" << endl;  // write END in the command line  
+  cout << "END" << endl;  // write END in the command line  
   double time_elapsed=time(NULL)-time_start;
-  //printf("it took %f minutes to simulate %d neutrinos over %d different angles",time_elapsed/60,(int)atof(argv[3]),n1+n2);
+  printf("it took %f minutes to simulate %d neutrinos over %d different angles",time_elapsed/60,(int)atof(argv[3]),n1+n2);
   
   return 0;
   

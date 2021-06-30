@@ -43,7 +43,9 @@ def read_emerging(filename):
     num_gen=[]
     energy = []
     start_energy=[]
+
     for line in open(filename,mode='r',encoding='utf-8'):
+        
         if(lc!=0 and lc!=1 and 'END' not in line):
             num_type.append(int(line.split()[0]))
             num_NC.append(int(line.split()[1]))
@@ -66,21 +68,32 @@ tag_list = [tag]
 missing_count = 0
 #print (tag_list)
 for tag in tag_list:
-    data_dir = 'update/'
+    data_dir = 'icecube_muons/'
+    paths=os.listdir(data_dir)
+    eees=[]
+    all_energies=['11.0','12.0','13.0','14.0','15.0','16.0','17.0','18.0','19.0','20.0']
+    for e in all_energies:
+        for i in paths:
+            print(data_dir+'particles_'+e+'_91.4.dat')
+            if('particles_'+e+'_91.4.dat'==i):
+                eees.append(e)
+                break
+    
+    
     count = 0
     count_true=0
     ang_array = np.concatenate([ np.arange(90.0,95.0,0.1) , np.arange(95.0,180.0,1.0) ])
     th_exit_array = 90.0-ang_array
     e_array = np.array([1e15, 3e15, 1e16, 3e16, 1e17, 3e17, 1e18, 3e18, 1e19, 3e19, 1e20, 3e20, 1e21])
-    e_array=np.array([1e15,1e16,1e17,1e18,1e19,1e20])
+    e_array=np.array([1e15,1e16,1e17,1e18,1e19,1e20,1e21])
    
-    outdir = 'update'
+    outdir = data_dir+'LUT'
     if not os.path.exists(outdir):
         os.makedirs(outdir)
     
     
-    for e in e_array:
-        e_s = '%1.0e'%e
+    for e in eees:
+        #e_s = '%1.0e'%e
         #e_s = e_s.replace('+','')
         #print e_s
         mean_num_CC=[]
@@ -89,11 +102,11 @@ for tag in tag_list:
         mean_num_gen=[]
         data_array  = []
         type_array=[]
-        e_pow=log10(e)
+        #e_pow=log10(e)
         
         for ang in ang_array:
            
-            fnm = data_dir+"particles_%.1f_%.1f.dat"%(e_pow, ang)
+            fnm = data_dir+"particles_%s_%.1f.dat"%(e, ang)
             print (fnm)
       
             #num_CC, num_NC, num_decays, num_particles, energy = read_emerging(fnm)
@@ -115,7 +128,7 @@ for tag in tag_list:
                 mean_num_CC.append(np.mean(num_CC))
                 mean_num_NC.append(np.mean(num_NC))
                 mean_num_decays.append(np.mean(num_decays))
-            np.savez('%s/LUT_%s_eV.npz'%(outdir,e_s),type_array=type_array, data_array = data_array, th_exit_array = th_exit_array,mean_num_CC=mean_num_CC,mean_num_NC=mean_num_NC,mean_num_decays=mean_num_decays)
+            np.savez('%s/LUT_%s_eV.npz'%(outdir,e),type_array=type_array, data_array = data_array, th_exit_array = th_exit_array,mean_num_CC=mean_num_CC,mean_num_NC=mean_num_NC,mean_num_decays=mean_num_decays)
             
     
         

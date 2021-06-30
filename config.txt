@@ -1,6 +1,6 @@
 config file for NuLeptonSim
 
-data_dir = testing
+data_dir = fix_angle_bug
 starting_type = 2   
 sim_angles = 1
 low_angle = 90        
