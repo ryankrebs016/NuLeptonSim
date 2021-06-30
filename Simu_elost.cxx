@@ -365,10 +365,11 @@ int main(int argc, char **argv)
   {
     /*
     cout<<angles.size()<<endl;
-    double angle_time_start=time(NULL);
+    
     double angle=angles.top();
     angles.pop();
     */
+    double angle_time_start=time(NULL);
     double angle;
     angle=angl[angle_count];
     angle_count--;
