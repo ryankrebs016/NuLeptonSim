@@ -9,9 +9,10 @@ import os
 import sys
 from scipy.optimize import curve_fit
 import pandas as pd
+
 process=True
 
-dir='test_angle_bug/'
+dir='icecube_aeff/'
 bin_dir=dir+'binned/'
 LUTdir=dir+'LUT/'
 prob_dir=dir+'p_exit/'
@@ -22,7 +23,6 @@ prob_dir=dir+'p_exit/'
 def general_interp_value(x,y,i):
     slope=(y[1]-y[0])/(x[1]-x[0])
     return slope*(i-x[0])+y[0]
-
 
 #general use function that finds first index for interpolation and then interpolates to return index and the number. takes 1d vectors
 def general_find_and_interpolate(x,y,i,interp=False):
@@ -98,8 +98,6 @@ def dN_by_angle(v_energy,t_energy,angle,type):
     which_dN,dN=general_find_and_interpolate(mid_bins,norm,t_energy,True)
     
     return float(dN)
-
-    
 
 def process_lut_for_parts(LUT_fnm, particle_type): #same as load LUT but looks for specific particles. IE want just taus
 
@@ -210,6 +208,10 @@ def bin_energies(energy,part,bin_num,LUTdir):
         save_string='tau'
     if(part==2):
         save_string='nutau'
+    if(part==4):
+        save_string='muon'
+    if(part==2):
+        save_string='numu'
 
     np.savez(bin_dir+str(energy)+"_binned_%s.npz"%save_string,bin_low=min_bin,bin_high=max_bin,th_em_array=th_em_array,bins_by_ang=bins_by_ang,derivs_by_ang=bins_by_ang, middle_bins=middle_bins)
 
@@ -340,12 +342,12 @@ def interp_aeff(filename,muon_energy):
 def get_normalized(derivs, middle_bins,angle,type):
     #print(middle_bins,derivs)
 
-    if(type=='tau' or type=='nutau'):
+    if(type=='tau' or type=='nutau' or type=='muon' or type=='numu'):
         #index by angle
         dervs=derivs[int(angle)]
         middles=middle_bins
    
-    if(type=='muon'):
+    if(type=='mu'):
         #dont index by angle
         dervs=derivs
         middles=middle_bins
@@ -374,16 +376,20 @@ def get_normalized(derivs, middle_bins,angle,type):
     return normalized_dervs,middle_bins
 
 #processes the LUT to make a smaller file for just probabilites
-def process_P(v_energy):
+def process_P(v_energy,type='tau'):
     #print(v_energy)
-    print(prob_dir+v_energy+'_p_exit_tau.npz')
+    other='nutau'
+    if(type=='muon'):
+        other='numu'
+    
+    print(prob_dir+v_energy+'_p_exit_%s.npz'%type)
     #print(LUTdir+'LUT_%s_eV.npz'%(v_energy))
 
     type_array,th_em_array, P_exit, data_array, mean_num_CC, mean_num_NC, mean_num_decays = process_lut_for_parts(LUTdir+'LUT_%s_eV.npz'%(v_energy),5)
-    np.savez(prob_dir+v_energy+'_p_exit_tau.npz',th_em_array=th_em_array,P_exit=P_exit)
+    np.savez(prob_dir+v_energy+'_p_exit_%s.npz'%type,th_em_array=th_em_array,P_exit=P_exit)
 
     type_array,th_em_array, P_exit, data_array, mean_num_CC, mean_num_NC, mean_num_decays = process_lut_for_parts(LUTdir+'LUT_%s_eV.npz'%(v_energy),2)
-    np.savez(prob_dir+v_energy+'_p_exit_nutau.npz',th_em_array=th_em_array,P_exit=P_exit)
+    np.savez(prob_dir+v_energy+'_p_exit_%s.npz'%other,th_em_array=th_em_array,P_exit=P_exit)
 
 
 #returns the individual number for the probability 
@@ -395,7 +401,7 @@ def find_p(filename,angle):
     return prob
     
 #input variables in terms of log(E/eV)... will return the effective area (integrand in the big integral for the decay path)
-def calc_effective_area(v_energy,t_energy,m_energy,angle):
+def calc_effective_area(v_energy,t_energy,m_energy,angle): #used for just tau decay processes
     print('calculating eff area for %s v energy, %s angle, %s t energy, and %s mu energy'%(v_energy,angle,t_energy,m_energy))
 
     #find Psurv
@@ -504,7 +510,7 @@ def test_interpolation():
     print('high test')
     print(general_find_and_interpolate(a,b,z,True))    
       
-"""
+'''
 def aeff_objective(a,b,c,d,x):
     return a*(b*x+c)**(1/2)+d
 
@@ -531,8 +537,8 @@ def extrapolate_aeff_muon(energies):
     for i in range(np.size(energies)):
         y.append(i)
     return y
-"""
-def prep_files():
+'''
+def prep_files(type):
     if(not os.path.exists(bin_dir)):
         os.mkdir(bin_dir)
     if(not os.path.exists(prob_dir)):
@@ -544,21 +550,22 @@ def prep_files():
     energy_list=['11.0','12.0','13.0','14.0','15.0','16.0','17.0','18.0','19.0','20.0','21.0','22.0']
 
 
-    part_tau=5 #taus
-    part_nu=2
+    part_tau=type #taus
+    part_nu=type-3
     bin_num=1000
-   
+    if(type==5):
+        type_str='tau'
+    if(type==4):
+        type_str='muon'
     for energy in energy_list:
         #print(LUTdir+'LUT_%s_eV.npz'%(energy))
         if(os.path.exists(LUTdir+'LUT_%s_eV.npz'%(energy))):
             print('processing probs')
-            process_P(energy)
+            process_P(energy,type_str)
             print('processing taus')
             _=bin_energies(energy,part_tau,bin_num,LUTdir)
             print('processing nutaus')
             _=bin_energies(energy,part_nu,bin_num,LUTdir)
-    
- 
         
 def integrate_stuff(e_ind,th_ind,ind_vars,d_aeff):
     aeff=[]
@@ -610,14 +617,127 @@ def integrate_stuff(e_ind,th_ind,ind_vars,d_aeff):
     plt.semilogy(ind_vars['v_energies'][0:np.size(ind_vars['v_energies'])-adjust_x:1],d_aeff[0:np.size(d_aeff)-adjust_y:1])
     plt.show()
 
-     
+def calc_deff_area_of_muon(v_energy,theta_index,m_energy): #used for only muons 
+    log_energies=['11','12','13','14','15','16','17','18','19','20','21']
+    which_energy, _ = general_find_and_interpolate(log_energies,[0],v_energy)
+    #find p exit
+    print('finding p')
+
+    p1=find_p(prob_dir+'%s_p_exit_muon.npz'%log_energies[which_energy],theta_index)
+    prob=p1
+
+    if(which_energy+1<np.size(log_energies)):
+
+        p2=find_p(prob_dir+'%s_p_exit_tau.npz'%log_energies[which_energy+1],theta_index)
+        prob=general_interp_value([log_energies[which_energy],log_energies[which_energy+1]],[p1,p2],v_energy)
+  
+    if(prob==0):return 0
+
+    #find dN_mu
+    print('finding dN')
+    dN11=dN_by_angle(log_energies[which_energy],m_energy,theta_index,'muon') #th_em_array[which_angle] already interpolates on t_energy so just need to do it for v energy
+    dN_muon=dN11
+
+    if(which_energy+1<np.size(log_energies)):
+        dN12=dN_by_angle(log_energies[which_energy+1],m_energy,theta_index,'muon')
+        dN_muon=general_interp_value([log_energies[which_energy],log_energies[which_energy+1]],[dN11,dN12],v_energy)
+
+    if dN_muon==0:return 0
+
+    #find Aeff mu
+    print('find aeff icecube')
+    aeff=interp_aeff('Default Dataset.csv',m_energy)
+
+    effective_area=prob*dN_muon*aeff
+    return effective_area
+
+def calc_eff_area():
+    v_energies=np.arange(11,22,1)
+    m_energies=np.linspace(11,21.5,.1)
+    angles_indicies=np.arange(0,80,1,dtype='int')
+    e_ind=np.arange(0,np.size(v_energies),1,dtype='int')
+    ind_vars={'v_energies':v_energies,'ang_ind':angles_indicies,'m_energies':m_energies}
+    daeff=[]
+    for v in v_energies:
+        aeff_v=[]
+        for ang in angles_indicies:
+            aeff_theta=[]
+            for m in m_energies:
+                if(m>v): break
+                aeff_m=calc_deff_area_of_muon(v,ang,m)
+                aeff_theta.append(aeff_m)
+            aeff_v.append(aeff_theta)
+        daeff.append(aeff_v)
+    integrate_muon_stuff(e_ind,angles_indicies,ind_vars,daeff)
+
+def integrate_muon_stuff(e_ind,angles_indicies,ind_vars,daeff):
+    th_em_array,_,_,_=read_Ntau_files(bin_dir+'14.0_binned_muon.npz')
+    aeff=[]
+
+    for v in range(np.size(e_ind)):
+        for theta in range(np.size(angles_indicies)):
+            area1=area1=sc.integrate.trapz(daeff[v][theta],x=ind_vars['m_energies'][0:np.size(daeff[v][theta]):1])
+            daeff[v][theta]=area1
+        area2=2*np.pi*sc.integrate.trapz(daeff[v],x=th_em_array[0:np.size(daeff[v]):1])
+        daeff[v]=area2/(4*np.pi)
+    aeff=daeff
+    diff=np.size(ind_vars['v_energies'])-np.size(aeff)
+    adjust_x=0
+    adjust_y=0
+    if diff>0:
+        adjust_x=diff
+        adjust_y=0
+    if diff<0:
+        adjust_x=0
+        adjust_y=-diff
+    np.savez(dir+'effective_areas.npz',energies=ind_vars['v_energies'][0:np.size(ind_vars['v_energies'])-adjust_x:1],effective_areas=aeff[0:np.size(aeff)-adjust_y:1])
+
+def calc_eff_taus():
+    v_energies=np.arange(11,21.,1)
+    thetas=np.arange(0,80,1,dtype='int')
+    m_energies=np.arange(11,21.5,1)
+    t_energies=np.arange(11,21.5,1)
+    ind_vars={'v_energies':v_energies,'thetas':thetas,'m_energies':m_energies,'t_energies':t_energies}
+    #calc_effective_area(20,19,15,12)
+    e_ind=np.arange(0,np.size(v_energies),1,dtype='int')
+    th_ind=np.arange(0,np.size(thetas),1,dtype='int')
+   
+    #plot_dN_muon(19)
+    
+    
+    aeffs=[]
+    count=0
+    aeff_v=[]
+    for v in v_energies:
+        aeff_theta=[]
+        for theta in thetas:
+            aeff_t=[]
+            for t in t_energies:
+                if t>v: 
+                    #print('t>v')
+                    break
+                aeff_m=[]
+                for m in m_energies:
+                    if(m>t): 
+                        #print('m>t')
+                        break
+                    eff=calc_effective_area(v,t,m,theta)
+                    if(eff>0):
+                        print(eff)
+                        
+                    aeff_m.append(eff)
+                aeff_t.append(aeff_m)
+            aeff_theta.append(aeff_t)
+        aeff_v.append(aeff_theta)
+    #indexed like aeff_v[v_index][theta_index][t_index][m_index]=effective area for v,theta,t,m
+    integrate_stuff(e_ind,th_ind,ind_vars,aeff_v)
 
 def main():
     if(len(sys.argv)>1):
         energy_list=[sys.argv[1]]
     else: energy_list=['11.0','12.0','13.0','14.0','15.0','16.0','17.0','18.0','19.0','20.0','21.0']
     '''
-    #prep_files()
+    #prep_files(5) #5 for taus, 4 for muons
     plot_p_exit('14.0','tau')
     plot_p_exit('16.0','tau')
     plot_p_exit('18.0','tau')
@@ -661,51 +781,14 @@ def main():
         plt.semilogy(ice_energies,ice_exposures)
         plt.semilogy(auger_energies,auger_exposures)
         plt.xlim(14,20)
-        plt.ylim(10,10**6)
+        plt.ylim(1,10**6)
         plt.legend(['NuLeptonSim result','Icecube Tau (2018)','Auger (2015)'])
         plt.grid(True,which='both')
         plt.show()
         exit()
     
     #prep_files()
-    v_energies=np.arange(11,21.,1)
-    thetas=np.arange(0,75,1,dtype='int')
-    m_energies=np.arange(11,21.5,1)
-    t_energies=np.arange(11,21.5,1)
-    ind_vars={'v_energies':v_energies,'thetas':thetas,'m_energies':m_energies,'t_energies':t_energies}
-    #calc_effective_area(20,19,15,12)
-    e_ind=np.arange(0,np.size(v_energies),1,dtype='int')
-    th_ind=np.arange(0,np.size(thetas),1,dtype='int')
-   
-    #plot_dN_muon(19)
     
-    
-    aeffs=[]
-    count=0
-    aeff_v=[]
-    for v in v_energies:
-        aeff_theta=[]
-        for theta in thetas:
-            aeff_t=[]
-            for t in t_energies:
-                if t>v: 
-                    #print('t>v')
-                    break
-                aeff_m=[]
-                for m in m_energies:
-                    if(m>t): 
-                        #print('m>t')
-                        break
-                    eff=calc_effective_area(v,t,m,theta)
-                    if(eff>0):
-                        print(eff)
-                        
-                    aeff_m.append(eff)
-                aeff_t.append(aeff_m)
-            aeff_theta.append(aeff_t)
-        aeff_v.append(aeff_theta)
-    #indexed like aeff_v[v_index][theta_index][t_index][m_index]=effective area for v,theta,t,m
-    integrate_stuff(e_ind,th_ind,ind_vars,aeff_v)
     '''
     for i in range(50):
         aeff=[]
