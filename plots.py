@@ -5,7 +5,7 @@ import matplotlib.pyplot as plt
 import os
 rcParams['figure.facecolor'] = 'white'
 rcParams['font.size']=18
-LUTdir='icecube_muons'
+LUTdir='final_muon'
 def load_LUT(LUT_fnm):
     f = np.load(LUT_fnm,allow_pickle=True)
     type_array=f['type_array']

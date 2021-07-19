@@ -215,18 +215,7 @@ int main(int argc, char **argv)
   // loads reaction data from pythia table
   for(int i=0;i<100000;i++){for(int j=0;j<6;j++){reaction_data.tau_type[i][j]=reaction_data.mu_type[i][j]=-1;reaction_data.tau_energy[i][j]=reaction_data.mu_energy[i][j]=0.0;};}  
   initialize_reaction(reaction_data.tau_type,reaction_data.mu_type,reaction_data.tau_energy,reaction_data.mu_energy);
-  int n=136;
-  double angl[135];
-  for(int i =1;i<n;i++)
-  {
-    if(i<50) angl[i-1]=90+i*.1;
-    if(i>=50 && i<=136) angl[i-1]=90+5+(i-50);
 
-  }
-  for(int i=0;i<135;i++) cout<<angl[i]<<endl;
- 
-  int n1=(95-config.low_angle)/0.1;
-  int n2=(config.high_angle-95)/1;
   
   //stack <float> angles;
   //int starting_type=2; // 0 = Ve , 1= Vm , 2= vT, 3=e, 4=m, 5=T
@@ -239,15 +228,7 @@ int main(int argc, char **argv)
     if(config.starting_type==1) {type_to_save[2]=2; type_to_save[3]=5;}
     if(config.starting_type==2){type_to_save[2]=1; type_to_save[3]=4;}
   }
-  /*
-  if(config.sim_angles)
-  {
-    for (int i=n1;i>0;i--) angles.push(95.-i*0.1);
-    for (int i=0;i<=n2;i++) angles.push(95.+i); 
-  }
-  else angles.push(atof(argv[2]));
 
-  */
   for(int i=0;i<4;i++) cout<<type_to_save[i]<<" ";
   cout<<endl;
 
@@ -360,722 +341,722 @@ int main(int argc, char **argv)
   //    cout << "Random Test " << ((double) rand() / (double)(RAND_MAX)) << endl;
   //}
   output<<"angle(deg) number_of_initial_parts time(s)"<<endl;
-  int angle_count=n-2;
-  while(angle_count>=0)  //loops over all angles in the stack, should be a single angle or a stack of angles over a range
-  {
-    /*
-    cout<<angles.size()<<endl;
-    
-    double angle=angles.top();
-    angles.pop();
-    */
-    double angle_time_start=time(NULL);
-    double angle;
-    angle=angl[angle_count];
-    angle_count--;
-    int produced_muons=0;
-    // Cut in energy below which particles are no longer propagated
-    double Elim_eV=1.e14;       // eV
-    double Elim=Elim_eV*1.e-9;  // GeV
-    
-    //-------------------------------------------------
-    // Declare several variables
-    double rndm;           // random number throughout the code
-    
-    //double Ldist;         // Distance along chord length in Earth
-    double Depth1=2.45e5;          // Depth of IceCube bottom layer
-    double Depth2=1.45e5;          // Depth of IceCube top layer
-    double Lmax;
-    double Lmax1;          // Chord length in Earth to bottom layer
-    double Lmax2;          // Chord length in Earth to top layer
-    //double Lmax;
-    double dL=0.;	 	  // Propagation step along chord length. Initialized to zero but it varies for each step.
-    double frac=1e-3;	  // Fraction of energy lost by tau in each step. This value stays constant
-    double dPdes;         // Probability of tau decay in dL
-    double traversed_grammage; // Track the grammage traversed upon entering the Earth.
-    double Energy_GeV;	  // Particle energy
-    double Bjorken_y;     // Bjorken y value for interactions CC & NC
-    
-    //int brkcnt=0, brkcnt2=0; // These are used to flag particles that have fallen below the energy threshold (Elim)
-    //int prop_mode=0;	  // Used in tau propagation
-    
-    //int AntiNu=0;
-
-    double finalstatecc[2],finalstatenc[2]; // will contain Bjorken (1-y) and y
-    
-    float dens; // local density along trajectory
-    
+ 
+  /*
+  cout<<angles.size()<<endl;
   
-    //cccccccccccccccccccccccccccccccccccccccccccccccccccccc
-    // Change following parameters depending on application
-    //cccccccccccccccccccccccccccccccccccccccccccccccccccccc
-    
-    // Number of neutrinos simulated at each zenith angle
-    int tot_evt=1e7;
-    if(argc>3){
-      tot_evt=(int)atof(argv[3]);
-    }
-    /*
-    //cccccccccccccccccccccccccccccccccccccccccccccccccccccc
-    cout << "======================================" << endl;
-    cout << "Number of neutrinos simulated = " << tot_evt << endl;
-    cout << "Type of initial neutrinos = "<<config.starting_type<<endl;
-    cout << "Energy = " << atof(argv[1]) << " eV" << endl;
-    cout << "Threshold energy = " << Elim*1.e9 << " eV" << endl;
-    //cccccccccccccccccccccccccccccccccccccccccccccccccccccc
-    */
-    //for rounding energies and angle
-    string e_temp=to_string(log10((double)atof(argv[1])));
-    string es_temp="";
-    string ang_temp=to_string(angle);
-    string angs_temp="";
-    int count=0;
-    for(int i =0;i<4;i++)es_temp+=e_temp[i];
-    
-    if(angle>=100) count=5;
-    else count =4;
-    for(int i=0;i<count;i++) angs_temp+=ang_temp[i];
-      
+  double angle=angles.top();
+  angles.pop();
+  */
+  double angle_time_start=time(NULL);
+  double angle=atof(argv[2]);
 
-    
+  int produced_muons=0;
+  // Cut in energy below which particles are no longer propagated
+  double Elim_eV=1.e14;       // eV
+  double Elim=Elim_eV*1.e-9;  // GeV
   
-    cout<<angs_temp<<endl;
-    //-------------------------------------------------
-    // Output file names using input arguments
-    string nameEnergies="";
-    /*
-    if(argc>=9){
-      nameEnergies+=argv[9];
-    }
-    */
-    nameEnergies+=config.data_dir;
-    nameEnergies+="/particles_";
-    nameEnergies+=es_temp;
+  //-------------------------------------------------
+  // Declare several variables
+  double rndm;           // random number throughout the code
+  
+  //double Ldist;         // Distance along chord length in Earth
+  double Depth1=2.45e5;          // Depth of IceCube bottom layer
+  double Depth2=1.45e5;          // Depth of IceCube top layer
+  double Lmax;
+  double Lmax1;          // Chord length in Earth to bottom layer
+  double Lmax2;          // Chord length in Earth to top layer
+  //double Lmax;
+  double dL=0.;	 	  // Propagation step along chord length. Initialized to zero but it varies for each step.
+  double frac=1e-3;	  // Fraction of energy lost by tau in each step. This value stays constant
+  double dPdes;         // Probability of tau decay in dL
+  double traversed_grammage; // Track the grammage traversed upon entering the Earth.
+  double Energy_GeV;	  // Particle energy
+  double Bjorken_y;     // Bjorken y value for interactions CC & NC
+  
+  //int brkcnt=0, brkcnt2=0; // These are used to flag particles that have fallen below the energy threshold (Elim)
+  //int prop_mode=0;	  // Used in tau propagation
+  
+  //int AntiNu=0;
+
+  double finalstatecc[2],finalstatenc[2]; // will contain Bjorken (1-y) and y
+  
+  float dens; // local density along trajectory
+  
+
+  //cccccccccccccccccccccccccccccccccccccccccccccccccccccc
+  // Change following parameters depending on application
+  //cccccccccccccccccccccccccccccccccccccccccccccccccccccc
+  
+  // Number of neutrinos simulated at each zenith angle
+  int tot_evt=1e7;
+  if(argc>3){
+    tot_evt=(int)atof(argv[3]);
+  }
+  /*
+  //cccccccccccccccccccccccccccccccccccccccccccccccccccccc
+  cout << "======================================" << endl;
+  cout << "Number of neutrinos simulated = " << tot_evt << endl;
+  cout << "Type of initial neutrinos = "<<config.starting_type<<endl;
+  cout << "Energy = " << atof(argv[1]) << " eV" << endl;
+  cout << "Threshold energy = " << Elim*1.e9 << " eV" << endl;
+  //cccccccccccccccccccccccccccccccccccccccccccccccccccccc
+  */
+  //for rounding energies and angle
+  string e_temp=to_string(log10((double)atof(argv[1])));
+  string es_temp="";
+  string ang_temp=to_string(angle);
+  string angs_temp="";
+  int count=0;
+  for(int i =0;i<4;i++)es_temp+=e_temp[i];
+  
+  if(angle>=100) count=5;
+  else count =4;
+  for(int i=0;i<count;i++) angs_temp+=ang_temp[i];
+    
+
+  
+
+  cout<<angs_temp<<endl;
+  //-------------------------------------------------
+  // Output file names using input arguments
+  string nameEnergies="";
+  /*
+  if(argc>=9){
+    nameEnergies+=argv[9];
+  }
+  */
+  nameEnergies+=config.data_dir;
+  nameEnergies+="/particles_";
+  nameEnergies+=es_temp;
+  nameEnergies+="_";
+  nameEnergies+=angs_temp;
+  
+  if(argc==8){
     nameEnergies+="_";
-    nameEnergies+=angs_temp;
-    
-    if(argc==8){
-      nameEnergies+="_";
 
-      nameEnergies+=argv[6];
-      nameEnergies+="km_ice_";
-      if(atof(argv[4])==0) nameEnergies+="mid";
-      if(atof(argv[4])==1) nameEnergies+="low";
-      if(atof(argv[4])==2) nameEnergies+="upp";
-      nameEnergies+="CS_";
-      if(atof(argv[5])==0) nameEnergies+="std";
-      if(atof(argv[5])==1) nameEnergies+="low";
-      nameEnergies+="EL";
-    };
-    nameEnergies+=".dat";
-    ofstream outEnergies(nameEnergies.c_str());
-    outEnergies << ""<< log10(tot_evt)<<" pow of 10 initial neutrinos of type "<<config.starting_type<<" at energy "<<argv[1]<<". \ntype, NC, CC, DC, InitNuNum, Gen, OutEnergy, InitEnergy.\n";
-    cout<<nameEnergies<<endl;
-    // Get cross-section mode to use
-    int CCmode = 0;
-    if(argc>4) CCmode = atoi(argv[4]);
-    
-    // Get cross-section mode to use
-    int ELOSSmode = 0;
-    if(argc>5) ELOSSmode = atoi(argv[5]);
-    
-    // Set water layer properties (bare rock is default)
-    if(argc>6){
-      terra->depth_new_layer = atof(argv[6]);
-      terra->dens_new_layer = atof(argv[7]);
-      if (terra->dens_new_layer <= 0 || terra->depth_new_layer < 0) {
-        cerr << "ERROR: user specified layer most have densitiy >0 and depth >= 0" << endl;
-        return -1;
-      }
-      //cout << "Outer Layer Thickness " << terra->depth_new_layer   << " km" << endl;
-      //cout << "Outer Layer Density   " << terra->dens_new_layer    << " g/cm^3" << endl;
+    nameEnergies+=argv[6];
+    nameEnergies+="km_ice_";
+    if(atof(argv[4])==0) nameEnergies+="mid";
+    if(atof(argv[4])==1) nameEnergies+="low";
+    if(atof(argv[4])==2) nameEnergies+="upp";
+    nameEnergies+="CS_";
+    if(atof(argv[5])==0) nameEnergies+="std";
+    if(atof(argv[5])==1) nameEnergies+="low";
+    nameEnergies+="EL";
+  };
+  nameEnergies+=".dat";
+  ofstream outEnergies(nameEnergies.c_str());
+  outEnergies << ""<< log10(tot_evt)<<" pow of 10 initial neutrinos of type "<<config.starting_type<<" at energy "<<argv[1]<<". \ntype, NC, CC, DC, InitNuNum, Gen, OutEnergy, InitEnergy.\n";
+  cout<<nameEnergies<<endl;
+  // Get cross-section mode to use
+  int CCmode = 0;
+  if(argc>4) CCmode = atoi(argv[4]);
+  
+  // Get cross-section mode to use
+  int ELOSSmode = 0;
+  if(argc>5) ELOSSmode = atoi(argv[5]);
+  
+  // Set water layer properties (bare rock is default)
+  if(argc>6){
+    terra->depth_new_layer = atof(argv[6]);
+    terra->dens_new_layer = atof(argv[7]);
+    if (terra->dens_new_layer <= 0 || terra->depth_new_layer < 0) {
+      cerr << "ERROR: user specified layer most have densitiy >0 and depth >= 0" << endl;
+      return -1;
     }
+    //cout << "Outer Layer Thickness " << terra->depth_new_layer   << " km" << endl;
+    //cout << "Outer Layer Density   " << terra->dens_new_layer    << " g/cm^3" << endl;
+  }
+  
+  // Get zenith angle from input argument
+  double refTheta=angle;
+  //cout << "Theta " << refTheta << " deg" << endl;
+  
+  double min_depth = R0-R0*sin(PI*(1.-refTheta/180.));
+  //uncomment for icecube
+  /*
+  if(Depth2>min_depth) 
+  {
+    cout << "Angle too steep to be measured by IceCube" << endl;
+    break;
+  }
+  */
+  
+  Lmax=2.*R0*cos(PI*(1.-refTheta/180.));
+  /*
+  Lmax1=R0*cos(PI*(1.-refTheta/180.))+sqrt(pow(R0*cos(PI*(1.-refTheta/180.)), 2.0)-(2*R0*Depth1-pow(Depth1,2.0))); // chord length inside Earth in cm
+  Lmax2=R0*cos(PI*(1.-refTheta/180.))+sqrt(pow(R0*cos(PI*(1.-refTheta/180.)), 2.0)-(2*R0*Depth2-pow(Depth2,2.0))); // chord length inside Earth in cm
+  // Earth's chord (km) at thetaRef (deg) (R0 is radius of Earth in cm)
+  
+  cout << "Chord length Bottom " << Lmax1/pow(10,5) << "km" << endl;
+  cout << "Chord length Top " << Lmax2/pow(10,5) << " km" << endl;
+  cout<<"Whole chord "<<Lmax/pow(10,5)<<" km"<<endl;
+  */
+  // Average Earth density
+  cout << "Average Earth density " << mean_dens_chord(refTheta) << " g/cm^3" << endl;
+  cout << endl;
+  
+  cout << "======================================" << endl;
+  cout << "Emerging Lepton Energy file: " << endl;
+  cout << nameEnergies << endl;
+  cout << endl;
+  
+  cout << "======================================" << endl;
+  
+  
+  //@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
+  //                                    Initiate run
+  //@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
+  
+  //if(Lmax2<=0.) Lmax2=0.;                 // set to zero  if the value is negative.
+  if(Lmax<=0.) Lmax=0.;  
+  //printf ("Lmax %1.3e cm, %1.2f deg \n", Lmax2, refTheta);//change to lmax2 for icecube
+  
+  // create look-up datable of distance as a function of grammage
+  double sum_grammage = 0.;
+  for (int ii=1; ii<=1000000; ii++)
+  {
+  double dx = Lmax/1000000; //change to Lmax2 for icecube
+  double x_val = Lmax * double(ii) / 1000000.;//change to lamx2 for icecube
+  sum_grammage +=  dx*earthdens(&x_val, &Lmax);//change to lamx2 for icecube
+  }
+  //printf("sum_grammage %1.5e g/cm^2\n",sum_grammage);
+  //printf("mean_dens %1.2e\n\n",sum_grammage/Lmax2);//chnage to lmax2 for icecube
+  
+  double* cumulative_grammage = new double[1000000];
+  double* grammage_distance = new double[1000000]; // in cm
+  
+  double d_grammage = sum_grammage/1000000.; // g/cm^2
+  
+  cumulative_grammage[0] = 0.;
+  grammage_distance[0]   = 0.;
+  for (int ii=1; ii<=1000000; ii++)
+  {
+  double x_val = grammage_distance[ii-1];
+  double dx    = d_grammage/earthdens(&x_val, &Lmax);//chnage to lmax2 for icecube
+  cumulative_grammage[ii] = cumulative_grammage[ii-1] + dx*earthdens(&x_val, &Lmax);//change to lamx2 for icecube
+  grammage_distance[ii] = x_val + dx;
+  //printf("*** ii %d %1.5f %1.5f\n",ii, grammage_distance[ii], cumulative_grammage[ii]);
+  //if(ii%100000 ==0) printf("ii %d %1.2e %1.5f\n",ii, grammage_distance[ii], cumulative_grammage[ii]);
+  }
+  // start with one particle then it will loop over stack and iterate to the next original particle
+  int new_muons=0; //count of pair of particles made. +1 for muon +1 for neutirno
+  int total_CC=0;
+  int total_NC=0;
+  double num_tau_decays=0;
+  double num_muon_decays=0;
+  double distance_loop_num=0;
+  int tau_neutrinos_below=0;
+  int muon_neutrinos_below=0;
+  int muons_below=0;
+  int taus_below=0;
+  for( int i=0;i<tot_evt;i++)
+  {
+    //cout<<endl<<"original particle: "<<i<<endl;
+    Energy_GeV = atof(argv[1])*pow(10,-9); // Get nu_tau energy from input argument
+    if (config.energy_distribution) Energy_GeV =  pow(10,6 + (6 * (double)rand()/RAND_MAX));
+    //cout<<"initial energy GeV is "<<Energy_GeV<<endl;
+    //cout<<"threshold energy in GeV is "<<Elim<<endl;
+    int part_type=config.starting_type;
+    double part_energy=Energy_GeV;
+    double part_pos=0;
+    bool anti=0;
+    int generation=0;
+    int NC_num=0;
+    int CC_num=0;
+    int dc_num=0;
     
-    // Get zenith angle from input argument
-    double refTheta=angle;
-    //cout << "Theta " << refTheta << " deg" << endl;
-    
-    double min_depth = R0-R0*sin(PI*(1.-refTheta/180.));
-    //uncomment for icecube
-    if(Depth2>min_depth) 
-    {
-      cout << "Angle too steep to be measured by IceCube" << endl;
-      break;
-    }
-    
-    Lmax=2.*R0*cos(PI*(1.-refTheta/180.));
-    Lmax1=R0*cos(PI*(1.-refTheta/180.))+sqrt(pow(R0*cos(PI*(1.-refTheta/180.)), 2.0)-(2*R0*Depth1-pow(Depth1,2.0))); // chord length inside Earth in cm
-    Lmax2=R0*cos(PI*(1.-refTheta/180.))+sqrt(pow(R0*cos(PI*(1.-refTheta/180.)), 2.0)-(2*R0*Depth2-pow(Depth2,2.0))); // chord length inside Earth in cm
-    // Earth's chord (km) at thetaRef (deg) (R0 is radius of Earth in cm)
-    
-    cout << "Chord length Bottom " << Lmax1/pow(10,5) << "km" << endl;
-    cout << "Chord length Top " << Lmax2/pow(10,5) << " km" << endl;
-    cout<<"Whole chord "<<Lmax/pow(10,5)<<" km"<<endl;
-    
-    // Average Earth density
-    cout << "Average Earth density " << mean_dens_chord(refTheta) << " g/cm^3" << endl;
-    cout << endl;
-    
-    cout << "======================================" << endl;
-    cout << "Emerging Lepton Energy file: " << endl;
-    cout << nameEnergies << endl;
-    cout << endl;
-    
-    cout << "======================================" << endl;
     
     
-    //@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
-    //                                    Initiate run
-    //@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
     
-    if(Lmax2<=0.) Lmax2=0.;                 // set to zero  if the value is negative.
-    if(Lmax<=0.) Lmax=0.;  
-    //printf ("Lmax %1.3e cm, %1.2f deg \n", Lmax2, refTheta);//change to lmax2 for icecube
-    
-    // create look-up datable of distance as a function of grammage
-    double sum_grammage = 0.;
-    for (int ii=1; ii<=1000000; ii++)
-    {
-    double dx = Lmax2/1000000; //change to Lmax2 for icecube
-    double x_val = Lmax2 * double(ii) / 1000000.;//change to lamx2 for icecube
-    sum_grammage +=  dx*earthdens(&x_val, &Lmax2);//change to lamx2 for icecube
-    }
-    //printf("sum_grammage %1.5e g/cm^2\n",sum_grammage);
-    //printf("mean_dens %1.2e\n\n",sum_grammage/Lmax2);//chnage to lmax2 for icecube
-    
-    double* cumulative_grammage = new double[1000000];
-    double* grammage_distance = new double[1000000]; // in cm
-    
-    double d_grammage = sum_grammage/1000000.; // g/cm^2
-    
-    cumulative_grammage[0] = 0.;
-    grammage_distance[0]   = 0.;
-    for (int ii=1; ii<=1000000; ii++)
-    {
-    double x_val = grammage_distance[ii-1];
-    double dx    = d_grammage/earthdens(&x_val, &Lmax2);//chnage to lmax2 for icecube
-    cumulative_grammage[ii] = cumulative_grammage[ii-1] + dx*earthdens(&x_val, &Lmax2);//change to lamx2 for icecube
-    grammage_distance[ii] = x_val + dx;
-    //printf("*** ii %d %1.5f %1.5f\n",ii, grammage_distance[ii], cumulative_grammage[ii]);
-    //if(ii%100000 ==0) printf("ii %d %1.2e %1.5f\n",ii, grammage_distance[ii], cumulative_grammage[ii]);
-    }
-    // start with one particle then it will loop over stack and iterate to the next original particle
-    int new_muons=0; //count of pair of particles made. +1 for muon +1 for neutirno
-    int total_CC=0;
-    int total_NC=0;
-    double num_tau_decays=0;
-    double num_muon_decays=0;
-    double distance_loop_num=0;
-    int tau_neutrinos_below=0;
-    int muon_neutrinos_below=0;
-    int muons_below=0;
-    int taus_below=0;
-    for( int i=0;i<tot_evt;i++)
-    {
-      //cout<<endl<<"original particle: "<<i<<endl;
-      Energy_GeV = atof(argv[1])*pow(10,-9); // Get nu_tau energy from input argument
-      if (config.energy_distribution) Energy_GeV =  pow(10,6 + (6 * (double)rand()/RAND_MAX));
-      //cout<<"initial energy GeV is "<<Energy_GeV<<endl;
-      //cout<<"threshold energy in GeV is "<<Elim<<endl;
-      int part_type=config.starting_type;
-      double part_energy=Energy_GeV;
-      double part_pos=0;
-      bool anti=0;
-      int generation=0;
-      int NC_num=0;
-      int CC_num=0;
-      int dc_num=0;
+    /*
+    particle_data.part_type.push(part_type);
+    particle_data.part_energy.push(part_energy);
+    particle_data.part_pos.push(part_pos);
+    particle_data.anti.push(anti);
+    particle_data.generation.push(generation);
+    particle_data.NC_num.push(NC_num);
+    particle_data.CC_num.push(CC_num);
+    particle_data.dc_num.push(dc_num);
+    */
+    //cout<<"Initial- type: "<<part_type<<" .energy: "<<part_energy<<"GeV. pos: "<<part_pos<<"cm . gen: "<< generation<<endl;
+  
+    int loop_num=0;
+    //======================= Loop over stacks until empty
+    do 
+    { 
+      //if(loop_num!=0)cout<<"stack loop number:"<<loop_num<<endl;
+      loop_num++;
       
-      
-      
-      
-      /*
-      particle_data.part_type.push(part_type);
-      particle_data.part_energy.push(part_energy);
-      particle_data.part_pos.push(part_pos);
-      particle_data.anti.push(anti);
-      particle_data.generation.push(generation);
-      particle_data.NC_num.push(NC_num);
-      particle_data.CC_num.push(CC_num);
-      particle_data.dc_num.push(dc_num);
-      */
-      //cout<<"Initial- type: "<<part_type<<" .energy: "<<part_energy<<"GeV. pos: "<<part_pos<<"cm . gen: "<< generation<<endl;
-    
-      int loop_num=0;
-      //======================= Loop over stacks until empty
-      do 
-      { 
-        //if(loop_num!=0)cout<<"stack loop number:"<<loop_num<<endl;
-        loop_num++;
-        
 
-        //pop all particle data from the stacks to working variables
+      //pop all particle data from the stacks to working variables
+      //======================================================
+      if(!particle_data.part_type.empty())
+      {
+        part_type=particle_data.part_type.top();
+        part_energy=particle_data.part_energy.top();
+        part_pos=particle_data.part_pos.top();
+        anti=particle_data.anti.top();
+        generation=particle_data.generation.top();
+        NC_num=particle_data.NC_num.top();
+        CC_num=particle_data.CC_num.top();
+        dc_num=particle_data.dc_num.top();
+        //cout<<part_type<<endl;
         //======================================================
-        if(!particle_data.part_type.empty())
-        {
-          part_type=particle_data.part_type.top();
-          part_energy=particle_data.part_energy.top();
-          part_pos=particle_data.part_pos.top();
-          anti=particle_data.anti.top();
-          generation=particle_data.generation.top();
-          NC_num=particle_data.NC_num.top();
-          CC_num=particle_data.CC_num.top();
-          dc_num=particle_data.dc_num.top();
-          //cout<<part_type<<endl;
-          //======================================================
-          particle_data.part_type.pop();
-          particle_data.part_energy.pop();
-          particle_data.part_pos.pop();
-          particle_data.anti.pop();
-          particle_data.generation.pop();
-          particle_data.NC_num.pop(); 
-          particle_data.CC_num.pop();
-          particle_data.dc_num.pop();
-        }
-        
-     
-        if(part_type==0||part_type==3) continue; //ignores particles below threshold or of electron generation
-        if(part_energy<Elim) continue;
-        
-        
-
-        // Flag to see how fast code is running
-        //if(!((float)i/100000-(int)(i/100000))) cout<< i << endl;
-        
-        // Get nu_tau energy from input argument
+        particle_data.part_type.pop();
+        particle_data.part_energy.pop();
+        particle_data.part_pos.pop();
+        particle_data.anti.pop();
+        particle_data.generation.pop();
+        particle_data.NC_num.pop(); 
+        particle_data.CC_num.pop();
+        particle_data.dc_num.pop();
+      }
       
-        //    cout << Energy_GeV << endl;
-        //if(starting_type=="muon"){
-        //  AntiNu=rand()%2;
-        //};
-        
-        /* ------------------event struct is commented out as it is no longer needed
-        // Initialize event info
-        //event.nevt = i;            // event number
-        event.theta = refTheta;      // zenith angle
-        event.Lmax1 = Lmax1;         // max. distance in Earth
-        event.Lmax2 = Lmax2;         // max. distance in Earth
-        event.Estart = Energy_GeV; // initial nu_tau energy
-        event.trig = 0;            // no trigger (tau emerging) so far
-        event.ncc = 0;             // zero CC interactions so far
-        event.nnc = 0;             // zero NC interactions so far
-        event.ndk = 0;             // zero tau decays so far
-        event.npart = 1;           // only 1 particle so far
-        int tag=0;	               // dealing with a nu_tau
-        int npart = 0;
-        event.Shheight = 0;
-        event.Shlong = 0;
-        event.E1[npart] = Energy_GeV;
-        event.v1[npart] = 0;
-        event.E2[npart] = -1;
-        event.v2[npart] = -1;
-        event.id[npart]=0;
-        */
-        //brkcnt=0;
-        //prop_mode =0;
-        traversed_grammage = 0.; //initialize traversed grammage for each event
-        
-        //======================= Start propagation along chord of length Lmax
-        //printf("Ldist, Lmax %1.2e %1.2e\n", Ldist, Lmax);
-        //Ldist=0.;
-       
-        while(!(((Lmax1<=part_pos) && (part_pos<=Lmax2))||part_pos>=Lmax2))// for icecube  //part_pos<Lmax
-        {
-          //create holding arrays for reactions
-          distance_loop_num++;
-          int reaction_types[6]={-1,-1,-1,-1,-1,-1};
-          double reaction_energies[6]={-1,-1,-1,-1,-1,-1};
-          //cout <<"distance is "<< part_pos << "and energy is "<<part_energy<<endl;
-          // Get the local density for this pa rt of the chord.
-          dens = earthdens(&part_pos,&Lmax2);//change to lmax2 for icecube
-          //cout<<"In dist loop - type: "<<part_type<<". energy: "<<part_energy<<". pos: "<<part_pos<<". gen: "<< generation<<endl;
-          bool change=false; //is needed so in case a NuTau becomes a Tau it won't be seen by the "is tau" section
-
-          //===========================
-          // Particle is a neutrino
-          //===========================
-          if(part_type==0||part_type==1||part_type==2)
-            {
-
-            // Number of interaction lengths propagated in this step is given by an exponentially distributed random number.
-            double num_int_lens=-log((double) rand() / (double)(RAND_MAX)); // Randomly sampled number of interaction lengths.
-            
-            // Convert the number of interaction lengths to grammage.
-            double X_int;
-            X_int = num_int_lens /(Navo*(dsigCC(part_energy, CCmode,part_type,anti)+dsigNC(part_energy, CCmode,part_type, anti)));
-        
-            // The following lines use the grammage_distance lookup table to estimate what position along the trajectory this Xint corresponds to.
-            
-            // Add X_int to the total grammage traversed by the particle
-            traversed_grammage += X_int;
-            
-            // Initialize the interaction length distance for this step to zero.
-            //double Lint = 0.;
-          
-            // If too large, make sure it exits the volume.
-            // NOTE: use floats for this condition. Using ints is bad if float > 2^32, then you get negative int.
-            if( traversed_grammage/d_grammage + 1. > 1000000.){
-              part_pos = Lmax2; // chnage to lamx2 for icecube NOTE: 1000000. is the size of the look-up table.
-              traversed_grammage = sum_grammage;
-            }
-            // If contained within the trajectory, linearly interpolate its interaction distance.
-        
-            if ( floor(traversed_grammage/d_grammage) + 1. < 1000000.) // NOTE: 1000000. is the size of the look-up table.
-            {
-              // Get the entry in the look-up table corresponding to the traversed grammage
-              int ii_grammage = int(traversed_grammage/d_grammage) + 1;
-        
-              // Linearly interpolate to estimate the distance propagated
-              double slope = (grammage_distance[ii_grammage] - grammage_distance[ii_grammage-1])/d_grammage;
-            
-              double intercept = grammage_distance[ii_grammage] - slope*cumulative_grammage[ii_grammage];
-              //Lint = slope*traversed_grammage + intercept - part_pos; // keep track of this step's interaction length.
-              part_pos = slope*traversed_grammage + intercept ;
-            }
-          
-            
-            // Save the interaction distance propagated in event structure
-            //event.L0[npart]=Lint;
-            
-            // if the neutrino interaction is still inside Earth, simulate an NC or CC interaction and check that particle is still above the tracking energy threshold (Elim)
-            if(!((Lmax1<=part_pos) && (part_pos<=Lmax2))&&part_pos<=Lmax2)// for icecube  part_pos<Lmax
-            {
-              // Check if it is CC or NC interaction
-              bool CCTauhappens=((double) rand() / (double)(RAND_MAX))>=dsigNC(part_energy, CCmode,part_type,anti)/(dsigNC(part_energy, CCmode,part_type,anti)+dsigCC(part_energy, CCmode,part_type,anti));
-              bool CCMuhappens=((double) rand() / (double)(RAND_MAX))>=dsigNC(part_energy, CCmode,part_type,anti)/(dsigNC(part_energy, CCmode,part_type,anti)+dsigCC(part_energy, CCmode,part_type,anti));
-              if((CCTauhappens&&part_type==2)||(CCMuhappens&&part_type==1))
-              {
-                //=======================
-                // CC interaction occurs (the tracked particle changes from tau neutrino to tau lepton.)
-                //=======================
-                total_CC++;
-                // Save the energy and position in the event structure
-                //event.E2[npart]=Energy_GeV;
-                //event.v2[npart]=Ldist;
-
-                
-                //cout<<"charged current of neutrinos happened \n";
-                // Obtain Bjorken y
-                if(part_type==2)tCCFinalData->ThrowFinal(log10(part_energy),finalstatecc);
+    
+      if(part_type==0||part_type==3) continue; //ignores particles below threshold or of electron generation
+      if(part_energy<Elim) continue;
       
-                if(part_type==1)
-                {
-                  if(anti==0)mCCFinalData->ThrowFinal(log10(part_energy),finalstatecc);
-                  if(anti==1)mCCBarFinalData->ThrowFinal(log10(part_energy),finalstatecc);
-                }
+      
 
-                Bjorken_y=finalstatecc[1];
-              
-                // Set the tau lepton energy from the sampled Bjorken y.
-                part_energy=(1.-Bjorken_y)*part_energy;
-                
-                // Increment the cc interaction counter in the event structure.
-                //event.ncc++;
-                CC_num++;
-                // Increment the particle counter in the event structure
-                //event.npart++;
-                //npart++;
-                generation++;
-                // Save the new particle energy and distance in the event structure/
-                //event.E1[npart]=Energy_GeV;
-                //event.v1[npart]=Ldist;
-                
-                // Change the particle tag from tau neutrino to lepton.
-                //event.id[npart]=1;
-                //tag=1;
-                if(part_type==1) part_type=4;
-                if(part_type==2) part_type=5;
-                // get the density at the current location before jumping to the tau lepton part of the loop
-                dens = earthdens(&part_pos,&Lmax2);//change to Lmax2 dfor icecube
-                change=true;
-                if(!config.regen) break;
-              }
-              else
-              {
-                //=======================
-                // NC interaction occurs (the tracked particle remains a tau neutrino with reduced energy.)
-                //=======================
-                total_NC++;
-                // Save the energy and position in the event structure
-                //event.E2[npart]=Energy_GeV;
-                //event.v2[npart]=Ldist;
-                //cout<<"neutral current of neutrinos happened \n";
-                // Obtain Bjorken y
-                if(part_type==2)tNCFinalData->ThrowFinal(log10(part_energy),finalstatenc);  
-        
-                if(part_type==1)
-                {
-                  if(anti==0) mNCFinalData->ThrowFinal(log10(part_energy),finalstatenc);
-                  if(anti==1) mNCBarFinalData->ThrowFinal(log10(part_energy),finalstatenc);
-                }
-                
-                Bjorken_y=finalstatenc[1];
-                
-                // Set the neutrino energy from the sampled Bjorken y.
-                part_energy=(1.-Bjorken_y)*part_energy;
-                
-                // Increment the cc interaction counter in the event structure.
-                //event.nnc++;           // count NC interaction
-                NC_num++;
-                                      // Increment the particle counter in the event structure
-                //event.npart++;
-                //npart++;
-                generation++;
-              
-                // Save the new particle energy and distance in the event structure/
-                //event.E1[npart]=Energy_GeV;
-                //event.v1[npart]=Ldist;
-                
-                // Keep the particle tag as neutrino. so no change in part_tupe should happen
-                //if(tag==0){event.id[npart]=0;}
-                //if(tag==2){event.id[npart]=2;}
-                
-              }
-            }// end of 'if(Ldist<Lmax)'  (particle still inside Earth)
-          
-            // Energy of new tau or nu_tau produced below threshold => stop
-            //if(part_energy < Elim){
-              
-              // Flag particle below threshold
-            //  brkcnt=1;
-              
-              // Count the number of times the particle fell below threshold
-            //  brkcnt2++;
-              
-            //  break;
-            //}
-          }// end of 'if (tag == 0,1,2)' (particle is a nu_e,nu_m,nu_t)
-          
-          //=========================
-          // Particle is a tau lepton or muon lepton
-          //=========================
-          if((part_type==3||part_type==4||part_type==5)&&change==false)//&&change==false
+      // Flag to see how fast code is running
+      //if(!((float)i/100000-(int)(i/100000))) cout<< i << endl;
+      
+      // Get nu_tau energy from input argument
+    
+      //    cout << Energy_GeV << endl;
+      //if(starting_type=="muon"){
+      //  AntiNu=rand()%2;
+      //};
+      
+      /* ------------------event struct is commented out as it is no longer needed
+      // Initialize event info
+      //event.nevt = i;            // event number
+      event.theta = refTheta;      // zenith angle
+      event.Lmax1 = Lmax1;         // max. distance in Earth
+      event.Lmax2 = Lmax2;         // max. distance in Earth
+      event.Estart = Energy_GeV; // initial nu_tau energy
+      event.trig = 0;            // no trigger (tau emerging) so far
+      event.ncc = 0;             // zero CC interactions so far
+      event.nnc = 0;             // zero NC interactions so far
+      event.ndk = 0;             // zero tau decays so far
+      event.npart = 1;           // only 1 particle so far
+      int tag=0;	               // dealing with a nu_tau
+      int npart = 0;
+      event.Shheight = 0;
+      event.Shlong = 0;
+      event.E1[npart] = Energy_GeV;
+      event.v1[npart] = 0;
+      event.E2[npart] = -1;
+      event.v2[npart] = -1;
+      event.id[npart]=0;
+      */
+      //brkcnt=0;
+      //prop_mode =0;
+      traversed_grammage = 0.; //initialize traversed grammage for each event
+      
+      //======================= Start propagation along chord of length Lmax
+      //printf("Ldist, Lmax %1.2e %1.2e\n", Ldist, Lmax);
+      //Ldist=0.;
+      
+      while(part_pos<Lmax)// for icecube  //part_pos<Lmax //!(((Lmax1<=part_pos) && (part_pos<=Lmax2))||part_pos>=Lmax2)
+      {
+        //create holding arrays for reactions
+        distance_loop_num++;
+        int reaction_types[6]={-1,-1,-1,-1,-1,-1};
+        double reaction_energies[6]={-1,-1,-1,-1,-1,-1};
+        //cout <<"distance is "<< part_pos << "and energy is "<<part_energy<<endl;
+        // Get the local density for this pa rt of the chord.
+        dens = earthdens(&part_pos,&Lmax);//change to lmax2 for icecube
+        //cout<<"In dist loop - type: "<<part_type<<". energy: "<<part_energy<<". pos: "<<part_pos<<". gen: "<< generation<<endl;
+        bool change=false; //is needed so in case a NuTau becomes a Tau it won't be seen by the "is tau" section
+
+        //===========================
+        // Particle is a neutrino
+        //===========================
+        if(part_type==0||part_type==1||part_type==2)
           {
-            // Estimate step length based on Energy, dE/dx, local density, and fraction.
-            
-            dL=(part_energy/(dens*elost(part_energy, dens, ELOSSmode,part_type)))*frac;
-            //cout << "Ldist " << 1.e-5*Ldist << "  R " << 1.e-5*sqrt(R02 - (Ldist*Lmax)+Ldist*Ldist) << " dens " << dens << endl;
-            //cout<<"simulating tau"<<endl;
-            // Check if tau leaves the Earth after dL. If it does then adjust last step
-            if(part_pos+dL > Lmax1) dL=Lmax1-part_pos;//change tolmax1 for icecube
-            
-            // Calculate the traversed grammage
-            traversed_grammage+=dL*dens;
-            
-            // Calculate the probability that the tau lepton will decay along the step dL.
-            dPdes=1.-exp(-dL*dPdesdx(part_energy,part_type));
-            part_pos=part_pos+dL;
-            // Calculate a random number used for determining whether the tau decays or not in this step.
-            rndm=((double) rand() / (double)(RAND_MAX));
-            part_energy = part_energy-dL*dens*elost(part_energy, dens, ELOSSmode,part_type);
-            // Determine whether the tau decays or not.
-            if(rndm > dPdes)
+
+          // Number of interaction lengths propagated in this step is given by an exponentially distributed random number.
+          double num_int_lens=-log((double) rand() / (double)(RAND_MAX)); // Randomly sampled number of interaction lengths.
+          
+          // Convert the number of interaction lengths to grammage.
+          double X_int;
+          X_int = num_int_lens /(Navo*(dsigCC(part_energy, CCmode,part_type,anti)+dsigNC(part_energy, CCmode,part_type, anti)));
+      
+          // The following lines use the grammage_distance lookup table to estimate what position along the trajectory this Xint corresponds to.
+          
+          // Add X_int to the total grammage traversed by the particle
+          traversed_grammage += X_int;
+          
+          // Initialize the interaction length distance for this step to zero.
+          //double Lint = 0.;
+        
+          // If too large, make sure it exits the volume.
+          // NOTE: use floats for this condition. Using ints is bad if float > 2^32, then you get negative int.
+          if( traversed_grammage/d_grammage + 1. > 1000000.){
+            part_pos = Lmax; // chnage to lamx2 for icecube NOTE: 1000000. is the size of the look-up table.
+            traversed_grammage = sum_grammage;
+          }
+          // If contained within the trajectory, linearly interpolate its interaction distance.
+      
+          if ( floor(traversed_grammage/d_grammage) + 1. < 1000000.) // NOTE: 1000000. is the size of the look-up table.
+          {
+            // Get the entry in the look-up table corresponding to the traversed grammage
+            int ii_grammage = int(traversed_grammage/d_grammage) + 1;
+      
+            // Linearly interpolate to estimate the distance propagated
+            double slope = (grammage_distance[ii_grammage] - grammage_distance[ii_grammage-1])/d_grammage;
+          
+            double intercept = grammage_distance[ii_grammage] - slope*cumulative_grammage[ii_grammage];
+            //Lint = slope*traversed_grammage + intercept - part_pos; // keep track of this step's interaction length.
+            part_pos = slope*traversed_grammage + intercept ;
+          }
+        
+          
+          // Save the interaction distance propagated in event structure
+          //event.L0[npart]=Lint;
+          
+          // if the neutrino interaction is still inside Earth, simulate an NC or CC interaction and check that particle is still above the tracking energy threshold (Elim)
+          if(part_pos<Lmax)// for icecube  part_pos<Lmax //!((Lmax1<=part_pos) && (part_pos<=Lmax2))&&part_pos<=Lmax2
+          {
+            // Check if it is CC or NC interaction
+            bool CCTauhappens=((double) rand() / (double)(RAND_MAX))>=dsigNC(part_energy, CCmode,part_type,anti)/(dsigNC(part_energy, CCmode,part_type,anti)+dsigCC(part_energy, CCmode,part_type,anti));
+            bool CCMuhappens=((double) rand() / (double)(RAND_MAX))>=dsigNC(part_energy, CCmode,part_type,anti)/(dsigNC(part_energy, CCmode,part_type,anti)+dsigCC(part_energy, CCmode,part_type,anti));
+            if((CCTauhappens&&part_type==2)||(CCMuhappens&&part_type==1))
             {
-              //==============================
-              // The tau lepton does NOT decay
-              //=============================
-              //cout<<"no decay"<<endl;
-              // Advance the propagation distance by the step dL
+              //=======================
+              // CC interaction occurs (the tracked particle changes from tau neutrino to tau lepton.)
+              //=======================
+              total_CC++;
+              // Save the energy and position in the event structure
+              //event.E2[npart]=Energy_GeV;
+              //event.v2[npart]=Ldist;
+
               
-              // Account for the tau lepton energy lost in the step dL
+              //cout<<"charged current of neutrinos happened \n";
+              // Obtain Bjorken y
+              if(part_type==2)tCCFinalData->ThrowFinal(log10(part_energy),finalstatecc);
+    
+              if(part_type==1)
+              {
+                if(anti==0)mCCFinalData->ThrowFinal(log10(part_energy),finalstatecc);
+                if(anti==1)mCCBarFinalData->ThrowFinal(log10(part_energy),finalstatecc);
+              }
+
+              Bjorken_y=finalstatecc[1];
+            
+              // Set the tau lepton energy from the sampled Bjorken y.
+              part_energy=(1.-Bjorken_y)*part_energy;
               
+              // Increment the cc interaction counter in the event structure.
+              //event.ncc++;
+              CC_num++;
+              // Increment the particle counter in the event structure
+              //event.npart++;
+              //npart++;
+              generation++;
+              // Save the new particle energy and distance in the event structure/
+              //event.E1[npart]=Energy_GeV;
+              //event.v1[npart]=Ldist;
+              
+              // Change the particle tag from tau neutrino to lepton.
+              //event.id[npart]=1;
+              //tag=1;
+              if(part_type==1) part_type=4;
+              if(part_type==2) part_type=5;
+              // get the density at the current location before jumping to the tau lepton part of the loop
+              dens = earthdens(&part_pos,&Lmax);//change to Lmax2 dfor icecube
+              change=true;
+              if(!config.regen) break;
             }
             else
             {
               //=======================
-              // The lepton decays
+              // NC interaction occurs (the tracked particle remains a tau neutrino with reduced energy.)
               //=======================
-              dc_num++;
-              // Advance the propagation distance by the step dL
-              
-            
-              if(part_type==5) num_tau_decays++;
-              if(part_type==4) num_muon_decays++;
-              // Account for the tau lepton energy lost in the step dL
-              
-            
-              // Save the updated particle energy and location of interaction
+              total_NC++;
+              // Save the energy and position in the event structure
               //event.E2[npart]=Energy_GeV;
               //event.v2[npart]=Ldist;
-            
-              // Get the energy of the neutrino produced in the decay
-              generation++;
-              //if(tag==1) TauData.ThrowFinal(finalstate);
-              //if(tag==3) MuonData.ThrowFinal(finalstate);
-              //Energy_GeV=finalstate[0]*Energy_GeV;
-
-              int reaction_index=(double)rand()/(double)RAND_MAX*100000;
-              //cout<<"reaction index is:"<<reaction_index<<"\n\n\n";
-              //if tau
-              if(part_type==5)
-              { 
-                //cout<<"tau decay"<<endl;
-  
-                if(config.conversion)
-                {
-                  for(int j=1;j<6;j++)
-                  {
-                    if(reaction_data.tau_type[reaction_index][j]!=-1) 
-                    { 
-                      reaction_types[j]=reaction_data.tau_type[reaction_index][j];
-                      reaction_energies[j]=part_energy*reaction_data.tau_energy[reaction_index][j];
-                      //cout<<"tau decay with type is "<<reaction_types[j]<<" and reaction energy is "<<reaction_energies[j]<<endl;
-                    }
-                  }
-                
-                }
-                part_energy*=reaction_data.tau_energy[reaction_index][0];
-                //cout<<part_energy<<endl;
-                //event.id[npart]=0;
-                part_type=2;
-              }
-              if(part_type==4)
+              //cout<<"neutral current of neutrinos happened \n";
+              // Obtain Bjorken y
+              if(part_type==2)tNCFinalData->ThrowFinal(log10(part_energy),finalstatenc);  
+      
+              if(part_type==1)
               {
-                //cout<<"muon decay"<<endl;
-                if(config.conversion)
-                {
-                for(int j=1;j<6;j++)
-                  {
-                    if(reaction_data.mu_type[reaction_index][j]!=-1) 
-                    {
-                      reaction_types[j]=reaction_data.mu_type[reaction_index][j];
-                      reaction_energies[j]=part_energy*reaction_data.mu_energy[reaction_index][j];
-                      //cout<<"muon decay with type is "<<reaction_types[j]<<" and reaction energy is "<<reaction_energies[j]<<endl;
-                    }
-                  }
-                
-                }
-                part_energy*=reaction_data.mu_energy[reaction_index][0];
-                //event.id[npart]=2;
-                part_type=1; 
+                if(anti==0) mNCFinalData->ThrowFinal(log10(part_energy),finalstatenc);
+                if(anti==1) mNCBarFinalData->ThrowFinal(log10(part_energy),finalstatenc);
               }
-          
-              // count the tau decay and the total number of interactions
-              //event.ndk++;
+              
+              Bjorken_y=finalstatenc[1];
+              
+              // Set the neutrino energy from the sampled Bjorken y.
+              part_energy=(1.-Bjorken_y)*part_energy;
+              
+              // Increment the cc interaction counter in the event structure.
+              //event.nnc++;           // count NC interaction
+              NC_num++;
+                                    // Increment the particle counter in the event structure
               //event.npart++;
               //npart++;
+              generation++;
             
               // Save the new particle energy and distance in the event structure/
               //event.E1[npart]=Energy_GeV;
               //event.v1[npart]=Ldist;
               
-              // New particle is tagged as a tau neutrino.
-              //event.id[npart]=0;
-              //tag=0;
-              // Comment next line to INCLUDE regeneration due to nu_tau(CC)->tau(decay)->nu_tau
-              // break; // do not regenerate i.e. if nu_tau produced
-            }
-          }
-            
-          // Energy of tau below threshold => stop
-          //if(Energy_GeV < Elim) break;
+              // Keep the particle tag as neutrino. so no change in part_tupe should happen
+              //if(tag==0){event.id[npart]=0;}
+              //if(tag==2){event.id[npart]=2;}
               
-          // Flag particle below threshold
+            }
+          }// end of 'if(Ldist<Lmax)'  (particle still inside Earth)
+        
+          // Energy of new tau or nu_tau produced below threshold => stop
+          //if(part_energy < Elim){
+            
+            // Flag particle below threshold
           //  brkcnt=1;
-              
-          // Count the number of times the particle fell below threshold
+            
+            // Count the number of times the particle fell below threshold
           //  brkcnt2++;
-              
-          //  break;}
             
-          //} // end of 'if (tag == 1||3)' (particle is tau)
-
-          //time to pop all the extra particles back in the stack to be looped over after
-          if(config.conversion)
-          {
-            for( int j=1;j<6;j++)
-            {
-                
-              if((reaction_energies[j]>Elim)&&(part_pos<Lmax2)&&(reaction_types[j]!=-1)) //particles inside earth and above threshold are stacked, change to lam2 for icecube
-              {
-                //cout<<"pushing new particle to stack \n";
-                produced_muons+=1;
-                particle_data.part_type.push(reaction_types[j]);
-                particle_data.part_energy.push(reaction_energies[j]);
-                particle_data.part_pos.push(part_pos);
-                particle_data.anti.push(anti);
-                particle_data.generation.push(generation);
-                particle_data.NC_num.push(NC_num);
-                particle_data.CC_num.push(CC_num);
-                particle_data.dc_num.push(dc_num);
-                }
-            }
-          }
-          if(part_energy<Elim){
-            if(part_type==2) tau_neutrinos_below++;
-            else if (part_type==1) muon_neutrinos_below++;
-            else if (part_type==5) taus_below++;
-            else if (part_type==4) muons_below++;
-            break;
-            } //uncomment to try to save partoic;e that fa;; below threshold
-        } // ends loop 'for(Ldist=0.;Ldist<Lmax;)'
-
-        // If the propagation was not terminated, then save the final energy of the particle in the event structure.
-        //if(brkcnt!=1) event.Eend = Energy_GeV;
+          //  break;
+          //}
+        }// end of 'if (tag == 0,1,2)' (particle is a nu_e,nu_m,nu_t)
         
-        //========================================
-        // Tau above threshold emerging from Earth
-        //========================================
-        /*
-        if((tag==1)&&(Energy_GeV>=Elim))
-          {
-          // Record this in the event structure.
-          event.trig=1;
-          
-          // Generate a random number to sample shower position
-          rndm = ((double) rand() / (double)(RAND_MAX));
-          
-          // Estimate the shower position (not used in this code)
-          event.Shheight=(-1./dPdesdx(Energy_GeV,tag)*log(1.-rndm)+1000000.)*sin(PI*(refTheta/180.-1./2));
-          event.Shlong=(-1./dPdesdx(Energy_GeV,tag)*log(1.-rndm)+1000000.)*cos(PI*(refTheta/180.-1./2));
-          }
-        */
-        
-        //=================================================
-        // Write energy of emerging tau to output text file
-        //=================================================
-        //cout<<"save- type: "<<part_type<<" .energy: "<<part_energy<<".pos: "<<part_pos<<". gen: "<< generation<<endl;
-      
-        for(int j=0; j<4;j++)
+        //=========================
+        // Particle is a tau lepton or muon lepton
+        //=========================
+        if((part_type==3||part_type==4||part_type==5)&&change==false)//&&change==false
         {
-          //cout<<type_to_save[i]<<","<<part_type<<endl;
-          //cout<<"part energy is "<<part_energy<<"with threshold "<<Elim<<endl;
-          if((part_type==type_to_save[j])&&(part_energy>Elim))//changge to just poarticle tyoe if saving all particls even below thrwhpold
-            {
-              //cout<< "saving one particle of type "<<part_type<<endl;
-              
-              //cout<<"particlesaved!!!"<<endl;
-              
-              outEnergies <<part_type<<" "<<NC_num << " " << CC_num << " " <<
-              dc_num << " " <<i<<" "<< generation << " " <<
-              setprecision(7)  << log10(part_energy)+9 << " " << log10(Energy_GeV)+9<<" "<<endl;
-            
-            }
+          // Estimate step length based on Energy, dE/dx, local density, and fraction.
           
-        }//if the main particle isn't saved then it is forgetten falling below thrshold
-      } while(!particle_data.part_type.empty()); // end of loop of stack
-    } // end of loop for initial particles
+          dL=(part_energy/(dens*elost(part_energy, dens, ELOSSmode,part_type)))*frac;
+          //cout << "Ldist " << 1.e-5*Ldist << "  R " << 1.e-5*sqrt(R02 - (Ldist*Lmax)+Ldist*Ldist) << " dens " << dens << endl;
+          //cout<<"simulating tau"<<endl;
+          // Check if tau leaves the Earth after dL. If it does then adjust last step
+          if(part_pos+dL > Lmax1) dL=Lmax1-part_pos;//change tolmax1 for icecube
+          
+          // Calculate the traversed grammage
+          traversed_grammage+=dL*dens;
+          
+          // Calculate the probability that the tau lepton will decay along the step dL.
+          dPdes=1.-exp(-dL*dPdesdx(part_energy,part_type));
+          part_pos=part_pos+dL;
+          // Calculate a random number used for determining whether the tau decays or not in this step.
+          rndm=((double) rand() / (double)(RAND_MAX));
+          part_energy = part_energy-dL*dens*elost(part_energy, dens, ELOSSmode,part_type);
+          // Determine whether the tau decays or not.
+          if(rndm > dPdes)
+          {
+            //==============================
+            // The tau lepton does NOT decay
+            //=============================
+            //cout<<"no decay"<<endl;
+            // Advance the propagation distance by the step dL
+            
+            // Account for the tau lepton energy lost in the step dL
+            
+          }
+          else
+          {
+            //=======================
+            // The lepton decays
+            //=======================
+            dc_num++;
+            // Advance the propagation distance by the step dL
+            
+          
+            if(part_type==5) num_tau_decays++;
+            if(part_type==4) num_muon_decays++;
+            // Account for the tau lepton energy lost in the step dL
+            
+          
+            // Save the updated particle energy and location of interaction
+            //event.E2[npart]=Energy_GeV;
+            //event.v2[npart]=Ldist;
+          
+            // Get the energy of the neutrino produced in the decay
+            generation++;
+            //if(tag==1) TauData.ThrowFinal(finalstate);
+            //if(tag==3) MuonData.ThrowFinal(finalstate);
+            //Energy_GeV=finalstate[0]*Energy_GeV;
+
+            int reaction_index=(double)rand()/(double)RAND_MAX*100000;
+            //cout<<"reaction index is:"<<reaction_index<<"\n\n\n";
+            //if tau
+            if(part_type==5)
+            { 
+              //cout<<"tau decay"<<endl;
+
+              if(config.conversion)
+              {
+                for(int j=1;j<6;j++)
+                {
+                  if(reaction_data.tau_type[reaction_index][j]!=-1) 
+                  { 
+                    reaction_types[j]=reaction_data.tau_type[reaction_index][j];
+                    reaction_energies[j]=part_energy*reaction_data.tau_energy[reaction_index][j];
+                    //cout<<"tau decay with type is "<<reaction_types[j]<<" and reaction energy is "<<reaction_energies[j]<<endl;
+                  }
+                }
+              
+              }
+              part_energy*=reaction_data.tau_energy[reaction_index][0];
+              //cout<<part_energy<<endl;
+              //event.id[npart]=0;
+              part_type=2;
+            }
+            if(part_type==4)
+            {
+              //cout<<"muon decay"<<endl;
+              if(config.conversion)
+              {
+              for(int j=1;j<6;j++)
+                {
+                  if(reaction_data.mu_type[reaction_index][j]!=-1) 
+                  {
+                    reaction_types[j]=reaction_data.mu_type[reaction_index][j];
+                    reaction_energies[j]=part_energy*reaction_data.mu_energy[reaction_index][j];
+                    //cout<<"muon decay with type is "<<reaction_types[j]<<" and reaction energy is "<<reaction_energies[j]<<endl;
+                  }
+                }
+              
+              }
+              part_energy*=reaction_data.mu_energy[reaction_index][0];
+              //event.id[npart]=2;
+              part_type=1; 
+            }
+        
+            // count the tau decay and the total number of interactions
+            //event.ndk++;
+            //event.npart++;
+            //npart++;
+          
+            // Save the new particle energy and distance in the event structure/
+            //event.E1[npart]=Energy_GeV;
+            //event.v1[npart]=Ldist;
+            
+            // New particle is tagged as a tau neutrino.
+            //event.id[npart]=0;
+            //tag=0;
+            // Comment next line to INCLUDE regeneration due to nu_tau(CC)->tau(decay)->nu_tau
+            // break; // do not regenerate i.e. if nu_tau produced
+          }
+        }
+          
+        // Energy of tau below threshold => stop
+        //if(Energy_GeV < Elim) break;
+            
+        // Flag particle below threshold
+        //  brkcnt=1;
+            
+        // Count the number of times the particle fell below threshold
+        //  brkcnt2++;
+            
+        //  break;}
+          
+        //} // end of 'if (tag == 1||3)' (particle is tau)
+
+        //time to pop all the extra particles back in the stack to be looped over after
+        if(config.conversion)
+        {
+          for( int j=1;j<6;j++)
+          {
+              
+            if((reaction_energies[j]>Elim)&&(part_pos<Lmax)&&(reaction_types[j]!=-1)) //particles inside earth and above threshold are stacked, change to lam2 for icecube
+            {
+              //cout<<"pushing new particle to stack \n";
+              produced_muons+=1;
+              particle_data.part_type.push(reaction_types[j]);
+              particle_data.part_energy.push(reaction_energies[j]);
+              particle_data.part_pos.push(part_pos);
+              particle_data.anti.push(anti);
+              particle_data.generation.push(generation);
+              particle_data.NC_num.push(NC_num);
+              particle_data.CC_num.push(CC_num);
+              particle_data.dc_num.push(dc_num);
+              }
+          }
+        }
+        if(part_energy<Elim){
+          if(part_type==2) tau_neutrinos_below++;
+          else if (part_type==1) muon_neutrinos_below++;
+          else if (part_type==5) taus_below++;
+          else if (part_type==4) muons_below++;
+          break;
+          } //uncomment to try to save partoic;e that fa;; below threshold
+      } // ends loop 'for(Ldist=0.;Ldist<Lmax;)'
+
+      // If the propagation was not terminated, then save the final energy of the particle in the event structure.
+      //if(brkcnt!=1) event.Eend = Energy_GeV;
+      
+      //========================================
+      // Tau above threshold emerging from Earth
+      //========================================
+      /*
+      if((tag==1)&&(Energy_GeV>=Elim))
+        {
+        // Record this in the event structure.
+        event.trig=1;
+        
+        // Generate a random number to sample shower position
+        rndm = ((double) rand() / (double)(RAND_MAX));
+        
+        // Estimate the shower position (not used in this code)
+        event.Shheight=(-1./dPdesdx(Energy_GeV,tag)*log(1.-rndm)+1000000.)*sin(PI*(refTheta/180.-1./2));
+        event.Shlong=(-1./dPdesdx(Energy_GeV,tag)*log(1.-rndm)+1000000.)*cos(PI*(refTheta/180.-1./2));
+        }
+      */
+      
+      //=================================================
+      // Write energy of emerging tau to output text file
+      //=================================================
+      //cout<<"save- type: "<<part_type<<" .energy: "<<part_energy<<".pos: "<<part_pos<<". gen: "<< generation<<endl;
     
-   
-    outEnergies << "END" << endl; // write END in the last line of the text output file. 
+      for(int j=0; j<4;j++)
+      {
+        //cout<<type_to_save[i]<<","<<part_type<<endl;
+        //cout<<"part energy is "<<part_energy<<"with threshold "<<Elim<<endl;
+        if((part_type==type_to_save[j])&&(part_energy>Elim))//changge to just poarticle tyoe if saving all particls even below thrwhpold
+          {
+            //cout<< "saving one particle of type "<<part_type<<endl;
+            
+            //cout<<"particlesaved!!!"<<endl;
+            
+            outEnergies <<part_type<<" "<<NC_num << " " << CC_num << " " <<
+            dc_num << " " <<i<<" "<< generation << " " <<
+            setprecision(7)  << log10(part_energy)+9 << " " << log10(Energy_GeV)+9<<" "<<endl;
+          
+          }
+        
+      }//if the main particle isn't saved then it is forgetten falling below thrshold
+    } while(!particle_data.part_type.empty()); // end of loop of stack
+  } // end of loop for initial particles
   
-    outEnergies.flush();
-    double angle_time_end=time(NULL);
-    muon_output<<angle<<" "<<produced_muons<<endl;
-    output<<angle<<" "<<tot_evt<<" " <<angle_time_end-angle_time_start<<" "<<endl;
-    /*
-    cout<<"total CC "<<total_CC<<". total NC "<<total_NC<<endl;
-    cout<<"num of CC "<<total_CC<<endl;
-    cout<<"num of NC "<<total_NC<<endl;
-    cout<<"num tau decays "<<num_tau_decays<<endl;
-    cout<<"num muon decays "<<num_muon_decays<<endl;
-    cout<<"num distance loop per part "<<distance_loop_num/100000<<endl;
-    cout<<"taus below "<<taus_below<<endl;
-    cout<<"tau neutrinos below "<<tau_neutrinos_below<<endl;  
-    cout<<"muons below "<<muons_below<<endl;
-    cout<<"muon neutrinos below "<<muon_neutrinos_below<<endl;
-    */
-  }// end of loop ever all angles
+  
+  outEnergies << "END" << endl; // write END in the last line of the text output file. 
+
+  outEnergies.flush();
+  double angle_time_end=time(NULL);
+  muon_output<<angle<<" "<<produced_muons<<endl;
+  output<<angle<<" "<<tot_evt<<" " <<angle_time_end-angle_time_start<<" "<<endl;
+  /*
+  cout<<"total CC "<<total_CC<<". total NC "<<total_NC<<endl;
+  cout<<"num of CC "<<total_CC<<endl;
+  cout<<"num of NC "<<total_NC<<endl;
+  cout<<"num tau decays "<<num_tau_decays<<endl;
+  cout<<"num muon decays "<<num_muon_decays<<endl;
+  cout<<"num distance loop per part "<<distance_loop_num/100000<<endl;
+  cout<<"taus below "<<taus_below<<endl;
+  cout<<"tau neutrinos below "<<tau_neutrinos_below<<endl;  
+  cout<<"muons below "<<muons_below<<endl;
+  cout<<"muon neutrinos below "<<muon_neutrinos_below<<endl;
+  */
+  // end of loop ever all angles
   muon_output<<"END"<<endl;
   muon_output.flush();
   output<<"END"<<endl;

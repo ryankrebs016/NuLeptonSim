@@ -9,10 +9,11 @@ import os
 import sys
 from scipy.optimize import curve_fit
 import pandas as pd
+import time
 
 process=True
 
-dir='icecube_aeff/'
+dir='final_tau/'
 bin_dir=dir+'binned/'
 LUTdir=dir+'LUT/'
 prob_dir=dir+'p_exit/'
@@ -135,7 +136,7 @@ def process_lut_for_parts(LUT_fnm, particle_type): #same as load LUT but looks f
                
             
 
-            P_exit[k] = part_count/1e5
+            P_exit[k] = part_count/1e6
         #print(P_exit)    
 
     return type_array,th_em_array, P_exit, data_array, mean_num_CC, mean_num_NC, mean_num_decays
@@ -143,25 +144,25 @@ def process_lut_for_parts(LUT_fnm, particle_type): #same as load LUT but looks f
     
 def plot_an_angle(energy,what_plot='counts'):
     
-    th_em_array,bins_by_ang,derivs_by_ang,middle_bins=read_Ntau_files(bin_dir+str(energy)+'_binned.npz')
+    th_em_array,bins_by_ang,derivs_by_ang,middle_bins=read_Ntau_files(bin_dir+str(energy)+'_binned_muon.npz')
     # get rid from here
     
     x=np.linspace(11,21,np.size(bins_by_ang[0]))
     plt.figure(1,figsize=[10,8])
     plt.title(energy+' '+what_plot)
-    plt.xlabel("log(E_tau)")
+    plt.xlabel("log(E)")
 
     if(what_plot=='counts'):
         plt.ylabel("count")
-        for i in range(8):
-            plt.plot(x,bins_by_ang[45+10*i])
+        for i in range(10):
+            plt.plot(x,bins_by_ang[10+10*i])
 
     if(what_plot=='derivs'):
         plt.ylabel("derivs")
-        for i in range(8):
-            plt.plot(x,derivs_by_ang[45+10*i])
+        for i in range(10):
+            plt.plot(x,derivs_by_ang[10+10*i])
 
-    plt.legend(th_em_array[45::8])
+    plt.legend(th_em_array[10::10])
     plt.show()
 
 def bin_energies(energy,part,bin_num,LUTdir):
@@ -378,17 +379,19 @@ def get_normalized(derivs, middle_bins,angle,type):
 #processes the LUT to make a smaller file for just probabilites
 def process_P(v_energy,type='tau'):
     #print(v_energy)
+    part_num=5
     other='nutau'
     if(type=='muon'):
+        part_num=4
         other='numu'
-    
+    nu_num=part_num-3
     print(prob_dir+v_energy+'_p_exit_%s.npz'%type)
     #print(LUTdir+'LUT_%s_eV.npz'%(v_energy))
 
-    type_array,th_em_array, P_exit, data_array, mean_num_CC, mean_num_NC, mean_num_decays = process_lut_for_parts(LUTdir+'LUT_%s_eV.npz'%(v_energy),5)
+    type_array,th_em_array, P_exit, data_array, mean_num_CC, mean_num_NC, mean_num_decays = process_lut_for_parts(LUTdir+'LUT_%s_eV.npz'%(v_energy),part_num)
     np.savez(prob_dir+v_energy+'_p_exit_%s.npz'%type,th_em_array=th_em_array,P_exit=P_exit)
 
-    type_array,th_em_array, P_exit, data_array, mean_num_CC, mean_num_NC, mean_num_decays = process_lut_for_parts(LUTdir+'LUT_%s_eV.npz'%(v_energy),2)
+    type_array,th_em_array, P_exit, data_array, mean_num_CC, mean_num_NC, mean_num_decays = process_lut_for_parts(LUTdir+'LUT_%s_eV.npz'%(v_energy),nu_num)
     np.savez(prob_dir+v_energy+'_p_exit_%s.npz'%other,th_em_array=th_em_array,P_exit=P_exit)
 
 
@@ -464,24 +467,28 @@ def calc_eff_area_n(v_energy,v_prime_energy,t_energy,m_energy,angle):
     Np=53 #rough estimation using area of proton and a 1km^3 icecube volume
 
 def plot_p_exit(energy,type):
-    f=np.load(prob_dir+'%s_p_exit_%s.npz'%(energy,type))
-    P_exit=f['P_exit']
-    th_em_array=f['th_em_array']
     plt.figure(1)
-    plt.loglog(th_em_array,P_exit)
-    #plt.show()
+    for e in energy:
+        f=np.load(prob_dir+'%s_p_exit_%s.npz'%(e,type))
+        P_exit=f['P_exit']
+        th_em_array=f['th_em_array']
+        plt.loglog(th_em_array,P_exit)
+    plt.ylim(10**-7,1)
+    plt.legend(energy)
+    plt.grid(True)
+    plt.show()
 
-def plot_dN_tau(v_energy,angle):
+def plot_dN_tau(v_energy,angle,type):
     t_energy=np.linspace(11,21,100)
     dN=np.zeros(100)
     sums=[]
     for i in range(100):
-        dN[i]=(dN_by_angle(v_energy,t_energy[i],angle,'tau'))
+        dN[i]=(dN_by_angle(v_energy,t_energy[i],angle,type))
     plt.figure(1)
     plt.plot(t_energy,dN)
     plt.xlabel('log(E_tau/eV)')
     plt.ylabel('normalized dN/dE')
-    plt.title('normalized dN/dE for taus')
+    plt.title('normalized dN/dE for %s'%type)
     plt.show()
 
 def plot_dN_muon(t_energy):
@@ -621,20 +628,20 @@ def calc_deff_area_of_muon(v_energy,theta_index,m_energy): #used for only muons
     log_energies=['11','12','13','14','15','16','17','18','19','20','21']
     which_energy, _ = general_find_and_interpolate(log_energies,[0],v_energy)
     #find p exit
-    print('finding p')
+    #print('finding p')
 
     p1=find_p(prob_dir+'%s_p_exit_muon.npz'%log_energies[which_energy],theta_index)
     prob=p1
-
+    
     if(which_energy+1<np.size(log_energies)):
 
-        p2=find_p(prob_dir+'%s_p_exit_tau.npz'%log_energies[which_energy+1],theta_index)
+        p2=find_p(prob_dir+'%s_p_exit_muon.npz'%log_energies[which_energy+1],theta_index)
         prob=general_interp_value([log_energies[which_energy],log_energies[which_energy+1]],[p1,p2],v_energy)
   
     if(prob==0):return 0
 
     #find dN_mu
-    print('finding dN')
+    #print('finding dN')
     dN11=dN_by_angle(log_energies[which_energy],m_energy,theta_index,'muon') #th_em_array[which_angle] already interpolates on t_energy so just need to do it for v energy
     dN_muon=dN11
 
@@ -645,24 +652,29 @@ def calc_deff_area_of_muon(v_energy,theta_index,m_energy): #used for only muons
     if dN_muon==0:return 0
 
     #find Aeff mu
-    print('find aeff icecube')
+    #print('find aeff icecube')
     aeff=interp_aeff('Default Dataset.csv',m_energy)
 
     effective_area=prob*dN_muon*aeff
+    print(prob,dN_muon,aeff,effective_area)
+ 
     return effective_area
 
 def calc_eff_area():
-    v_energies=np.arange(11,22,1)
-    m_energies=np.linspace(11,21.5,.1)
+    v_energies=np.arange(11,21,.5)
+    m_energies=np.arange(11,21.5,.1)
     angles_indicies=np.arange(0,80,1,dtype='int')
     e_ind=np.arange(0,np.size(v_energies),1,dtype='int')
     ind_vars={'v_energies':v_energies,'ang_ind':angles_indicies,'m_energies':m_energies}
     daeff=[]
     for v in v_energies:
         aeff_v=[]
+        #print(v)
         for ang in angles_indicies:
+            #print(ang)
             aeff_theta=[]
             for m in m_energies:
+                #print(m)
                 if(m>v): break
                 aeff_m=calc_deff_area_of_muon(v,ang,m)
                 aeff_theta.append(aeff_m)
@@ -673,11 +685,25 @@ def calc_eff_area():
 def integrate_muon_stuff(e_ind,angles_indicies,ind_vars,daeff):
     th_em_array,_,_,_=read_Ntau_files(bin_dir+'14.0_binned_muon.npz')
     aeff=[]
-
+    print(th_em_array)
+   
+    
     for v in range(np.size(e_ind)):
+        i=0
+        
         for theta in range(np.size(angles_indicies)):
-            area1=area1=sc.integrate.trapz(daeff[v][theta],x=ind_vars['m_energies'][0:np.size(daeff[v][theta]):1])
+            
+            area1=sc.integrate.trapz(daeff[v][theta],x=ind_vars['m_energies'][0:np.size(daeff[v][theta]):1])
+            
+            
+            if(area1>0):
+                #plt.figure(1)
+                print('area 1 is ',area1)
+                #plt.plot(ind_vars['m_energies'][0:np.size(daeff[v][theta]):1],daeff[v][theta][::]) 
+                #plt.show()
             daeff[v][theta]=area1
+            
+        
         area2=2*np.pi*sc.integrate.trapz(daeff[v],x=th_em_array[0:np.size(daeff[v]):1])
         daeff[v]=area2/(4*np.pi)
     aeff=daeff
@@ -736,6 +762,21 @@ def main():
     if(len(sys.argv)>1):
         energy_list=[sys.argv[1]]
     else: energy_list=['11.0','12.0','13.0','14.0','15.0','16.0','17.0','18.0','19.0','20.0','21.0']
+    prep_files(5)
+    calc_eff_taus()
+    exit()
+    """
+    for i in range(10):
+        plot_dN_tau(20.0,i*10+1,'muon')
+
+    
+    plot_an_angle('21.0')
+    """
+    plot_p_exit([11.0,12.0,13.0,14.0,15.0,16.0,17.0,18.0,19.0,20.0,21.0],'muon')
+    
+    
+    
+    calc_eff_area()
     '''
     #prep_files(5) #5 for taus, 4 for muons
     plot_p_exit('14.0','tau')
@@ -780,7 +821,7 @@ def main():
         plt.semilogy(x,y)
         plt.semilogy(ice_energies,ice_exposures)
         plt.semilogy(auger_energies,auger_exposures)
-        plt.xlim(14,20)
+        plt.xlim(11,20)
         plt.ylim(1,10**6)
         plt.legend(['NuLeptonSim result','Icecube Tau (2018)','Auger (2015)'])
         plt.grid(True,which='both')

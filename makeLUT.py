@@ -71,7 +71,7 @@ for tag in tag_list:
     data_dir = 'icecube_muons/'
     paths=os.listdir(data_dir)
     eees=[]
-    all_energies=['11.0','12.0','13.0','14.0','15.0','16.0','17.0','18.0','19.0','20.0']
+    all_energies=['11.0','12.0','13.0','14.0','15.0','16.0','17.0','18.0','19.0','20.0','21.0']
     for e in all_energies:
         for i in paths:
             print(data_dir+'particles_'+e+'_91.4.dat')
@@ -82,7 +82,7 @@ for tag in tag_list:
     
     count = 0
     count_true=0
-    ang_array = np.concatenate([ np.arange(90.0,95.0,0.1) , np.arange(95.0,180.0,1.0) ])
+    ang_array = np.concatenate([ np.arange(90.0,95.0,0.1) , np.arange(95.0,181.0,1.0) ])
     th_exit_array = 90.0-ang_array
     e_array = np.array([1e15, 3e15, 1e16, 3e16, 1e17, 3e17, 1e18, 3e18, 1e19, 3e19, 1e20, 3e20, 1e21])
     e_array=np.array([1e15,1e16,1e17,1e18,1e19,1e20,1e21])
