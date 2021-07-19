@@ -45,7 +45,7 @@ This injects tau neutrinos with energy 10^20 eV at a zenith angle of 91 degrees 
 
 One can give the energy a value of 0, in this case tau-energies are generated (randomly) uniformly in log-space in the range E=1e15 eV and E=1e21. Only in this case the tau-neutrino energies are stored in the last column in the output file. 
 
-RJK: To use multiple cpu cores, I use gnu parallel. In the command line it will run like "parallel --eta -j<cpu core number you want to use> ./Simu_elost {1} {2} 1E+6 0 0 4.0 0.92 test :::: energies.txt angles.txt" this will run the simulation over the enrgies and angles located inside the text files.
+RJK: To use multiple cpu cores, I use gnu parallel. In the command line it will run like "parallel --eta -j#cores you want to use# ./Simu_elost {1} {2} 1E+6 0 0 4.0 0.92 test :::: energies.txt angles.txt" this will run the simulation over the enrgies and angles located inside the text files.
  
 Step 2
 ----------
