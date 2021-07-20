@@ -13,12 +13,151 @@ import time
 
 process=True
 
-dir='final_tau/'
+dir='no_regen_tau/'
 bin_dir=dir+'binned/'
 LUTdir=dir+'LUT/'
 prob_dir=dir+'p_exit/'
 #set bin energies to something that works for all energy ranges. Easier to interpolate the missing energies
 
+def main():
+    if(len(sys.argv)>1):
+        energy_list=[sys.argv[1]]
+    else: energy_list=['11.0','12.0','13.0','14.0','15.0','16.0','17.0','18.0','19.0','20.0','21.0']
+    prep_files(4)
+    #calc_eff_taus()
+    #get_E_from_CC(18)
+    
+    """
+    for i in range(10):
+        plot_dN_tau(20.0,i*10+1,'muon')
+
+    
+    plot_an_angle('21.0')
+    """
+    plot_p_exit([11.0,12.0,13.0,14.0,15.0,16.0,17.0,18.0,19.0,20.0,21.0],'tau')
+    exit()
+    
+    
+    #calc_eff_area()
+    '''
+    #prep_files(5) #5 for taus, 4 for muons
+    plot_p_exit(['14.0'],'nutau')
+    plot_p_exit(['16.0'],'nutau')
+    plot_p_exit(['18.0'],'nutau')
+    plot_p_exit(['20.0'],'nutau')
+    plt.legend(['14','16','18','20'])
+    plt.xlabel('emergence angle')
+    plt.ylabel('tau exit prob')
+    plt.show()
+    '''
+    
+    
+    angles=5,10,15,20,25,30,36,40
+    
+    for i in angles:
+        plot_dN_tau('18.0',i,'tau')
+    
+    
+    to_plot=1
+    
+    if(os.path.exists(dir+'effective_areas.npz') and to_plot==True):
+        f=np.load(dir+'effective_areas.npz',allow_pickle=True)
+        x=f['energies']
+        y=f['effective_areas']
+        ice_energies=np.array(pd.read_csv('icecube_tau_exposure.csv',usecols=[0]))
+        ice_exposures=np.array(pd.read_csv('icecube_tau_exposure.csv',usecols=[1]))
+       
+        auger_energies=np.array(pd.read_csv('icecube_auger_sensitivity.csv',usecols=[0]))
+        auger_exposures=np.array(pd.read_csv('icecube_auger_sensitivity.csv',usecols=[1]))
+       
+        for i in range(np.size(ice_energies)):
+            ice_energies[i]=ice_energies[i]+9
+            ice_exposures[i]=10**ice_exposures[i]/((100*100)*2426*24*60*60*4*np.pi)
+        for i in range(np.size(auger_energies)):
+            auger_energies[i]=auger_energies[i]+9
+            auger_exposures[i]=10**auger_exposures[i]/((100*100)*2426*24*60*60*4*np.pi)
+        plt.figure(1)
+        plt.title('Icecube A_eff to nu_taus through the tau decay process')
+        plt.xlabel('log(E_v/eV)')
+        plt.ylabel('effective area m^2')
+        plt.semilogy(x,y)
+        plt.semilogy(ice_energies,ice_exposures)
+        plt.semilogy(auger_energies,auger_exposures)
+        plt.xlim(11,20)
+        plt.ylim(1,10**6)
+        plt.legend(['NuLeptonSim result','Icecube Tau (2018)','Auger (2015)'])
+        plt.grid(True,which='both')
+        plt.show()
+        exit()
+    
+    #prep_files()
+    
+    '''
+    for i in range(50):
+        aeff=[]
+        for j in range(50):
+            print(i)
+            aeff.append(calc_effective_area(19,t_energies[i],m_energies[j],1))
+        aeffs.append(aeff)
+    
+    plt.figure(1)
+    for i in range(50):
+        plt.plot(t_energies,aeffs[i])
+    
+    plt.show()
+    '''
+    #plot_an_angle('19.0')
+    
+
+def get_E_from_CC(E):
+    E_G=E-9
+    r = []
+    fy = open('tables/final_cteq5_cc_nu.data')
+    jline=0
+    jmin=10000*(E_G-1)*1
+    jmax=jmin+1001
+    e_min=E-6
+    e_max=E
+    bin_num=50
+    e_slope=(e_max-e_min)/bin_num
+    bin_energies=np.linspace(e_min,e_max,bin_num)
+    bins=np.zeros(bin_num)
+
+
+	
+    for line in fy:
+	
+        if line.strip():      # Read only non-empty lines, skip empty lines 
+            yy = line.split() # Split lines using empty space as separator
+	
+            if yy[0]!='#':    #  only read lines not starting with '#'
+                jline = jline + 1
+	
+                if jmin < jline < jmax:  # read only lines between jmin and jmax
+                    yvalue = float(yy[1])  # 2nd column (index 1) is the Bjorken y
+                    r.append(yvalue)
+
+    fy.close()
+   
+    dy = 0.02
+    bins_y = np.arange(0., 1.0+dy, dy)
+    print(E*r[10])
+    for i in range(np.size(r)):
+        r[i]=np.log10(r[i]*10**E)
+        index=int((r[i]-e_min)/e_slope)
+        if(index<0):
+            index=0
+        if(index>bin_num):
+            index=bin_num-1
+        bins[index]=bins[index]+1
+    plt.figure(1)
+    plt.plot(bin_energies,bins)
+    plt.show()
+    norm_bins,_=get_normalized(bins,bin_energies,0,'nu')
+    plt.figure(2)
+    plt.plot(bin_energies,norm_bins)
+    plt.show()
+    return norm_bins
 
 #general use interpolation function. takes just scalars
 def general_interp_value(x,y,i):
@@ -306,7 +445,7 @@ def get_muon_dN(t_energy,m_energy):
     for i in range(np.size(xax)):
         xax[i]=t_energy+np.log10(middle_bins[i])
     derivs=discrete_der(xax,bins)
-    norm_dervs,_=get_normalized(bins,xax,12,'muon')
+    norm_dervs,_=get_normalized(bins,xax,12,'mu')
    
     index,dN=general_find_and_interpolate(xax,norm_dervs,m_energy,True)
     return dN
@@ -348,7 +487,7 @@ def get_normalized(derivs, middle_bins,angle,type):
         dervs=derivs[int(angle)]
         middles=middle_bins
    
-    if(type=='mu'):
+    if(type=='mu' or type=='nu'):
         #dont index by angle
         dervs=derivs
         middles=middle_bins
@@ -473,7 +612,7 @@ def plot_p_exit(energy,type):
         P_exit=f['P_exit']
         th_em_array=f['th_em_array']
         plt.loglog(th_em_array,P_exit)
-    plt.ylim(10**-7,1)
+    plt.ylim(10**-7,10)
     plt.legend(energy)
     plt.grid(True)
     plt.show()
@@ -758,94 +897,6 @@ def calc_eff_taus():
     #indexed like aeff_v[v_index][theta_index][t_index][m_index]=effective area for v,theta,t,m
     integrate_stuff(e_ind,th_ind,ind_vars,aeff_v)
 
-def main():
-    if(len(sys.argv)>1):
-        energy_list=[sys.argv[1]]
-    else: energy_list=['11.0','12.0','13.0','14.0','15.0','16.0','17.0','18.0','19.0','20.0','21.0']
-    prep_files(5)
-    calc_eff_taus()
-    exit()
-    """
-    for i in range(10):
-        plot_dN_tau(20.0,i*10+1,'muon')
-
-    
-    plot_an_angle('21.0')
-    """
-    plot_p_exit([11.0,12.0,13.0,14.0,15.0,16.0,17.0,18.0,19.0,20.0,21.0],'muon')
-    
-    
-    
-    calc_eff_area()
-    '''
-    #prep_files(5) #5 for taus, 4 for muons
-    plot_p_exit('14.0','tau')
-    plot_p_exit('16.0','tau')
-    plot_p_exit('18.0','tau')
-    plot_p_exit('20.0','tau')
-    plt.legend(['14','16','18','20'])
-    plt.xlabel('emergence angle')
-    plt.ylabel('tau exit prob')
-    plt.show()
-    exit()
-    '''
-    '''
-    angles=5,10,15,20,25,30,36,40
-    
-    for i in angles:
-        plot_dN_tau('18.0',i)
-    '''
-    
-    to_plot=1
-    
-    if(os.path.exists(dir+'effective_areas.npz') and to_plot==True):
-        f=np.load(dir+'effective_areas.npz',allow_pickle=True)
-        x=f['energies']
-        y=f['effective_areas']
-        ice_energies=np.array(pd.read_csv('icecube_tau_exposure.csv',usecols=[0]))
-        ice_exposures=np.array(pd.read_csv('icecube_tau_exposure.csv',usecols=[1]))
-       
-        auger_energies=np.array(pd.read_csv('icecube_auger_sensitivity.csv',usecols=[0]))
-        auger_exposures=np.array(pd.read_csv('icecube_auger_sensitivity.csv',usecols=[1]))
-       
-        for i in range(np.size(ice_energies)):
-            ice_energies[i]=ice_energies[i]+9
-            ice_exposures[i]=10**ice_exposures[i]/((100*100)*2426*24*60*60*4*np.pi)
-        for i in range(np.size(auger_energies)):
-            auger_energies[i]=auger_energies[i]+9
-            auger_exposures[i]=10**auger_exposures[i]/((100*100)*2426*24*60*60*4*np.pi)
-        plt.figure(1)
-        plt.title('Icecube A_eff to nu_taus through the tau decay process')
-        plt.xlabel('log(E_v/eV)')
-        plt.ylabel('effective area m^2')
-        plt.semilogy(x,y)
-        plt.semilogy(ice_energies,ice_exposures)
-        plt.semilogy(auger_energies,auger_exposures)
-        plt.xlim(11,20)
-        plt.ylim(1,10**6)
-        plt.legend(['NuLeptonSim result','Icecube Tau (2018)','Auger (2015)'])
-        plt.grid(True,which='both')
-        plt.show()
-        exit()
-    
-    #prep_files()
-    
-    '''
-    for i in range(50):
-        aeff=[]
-        for j in range(50):
-            print(i)
-            aeff.append(calc_effective_area(19,t_energies[i],m_energies[j],1))
-        aeffs.append(aeff)
-    
-    plt.figure(1)
-    for i in range(50):
-        plt.plot(t_energies,aeffs[i])
-    
-    plt.show()
-    '''
-    #plot_an_angle('19.0')
-    
 
 if __name__ == "__main__":
     main()

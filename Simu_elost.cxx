@@ -659,9 +659,10 @@ int main(int argc, char **argv)
       //======================= Start propagation along chord of length Lmax
       //printf("Ldist, Lmax %1.2e %1.2e\n", Ldist, Lmax);
       //Ldist=0.;
-      
+      bool broken=false;
       while(part_pos<Lmax)// for icecube  //part_pos<Lmax //!(((Lmax1<=part_pos) && (part_pos<=Lmax2))||part_pos>=Lmax2)
       {
+        
         //create holding arrays for reactions
         distance_loop_num++;
         int reaction_types[6]={-1,-1,-1,-1,-1,-1};
@@ -769,7 +770,7 @@ int main(int argc, char **argv)
               // get the density at the current location before jumping to the tau lepton part of the loop
               dens = earthdens(&part_pos,&Lmax);//change to Lmax2 dfor icecube
               change=true;
-              if(!config.regen) break;
+              
             }
             else
             {
@@ -838,7 +839,7 @@ int main(int argc, char **argv)
           //cout << "Ldist " << 1.e-5*Ldist << "  R " << 1.e-5*sqrt(R02 - (Ldist*Lmax)+Ldist*Ldist) << " dens " << dens << endl;
           //cout<<"simulating tau"<<endl;
           // Check if tau leaves the Earth after dL. If it does then adjust last step
-          if(part_pos+dL > Lmax1) dL=Lmax1-part_pos;//change tolmax1 for icecube
+          if(part_pos+dL > Lmax) dL=Lmax-part_pos;//change tolmax1 for icecube
           
           // Calculate the traversed grammage
           traversed_grammage+=dL*dens;
@@ -873,7 +874,7 @@ int main(int argc, char **argv)
             if(part_type==5) num_tau_decays++;
             if(part_type==4) num_muon_decays++;
             // Account for the tau lepton energy lost in the step dL
-            
+            if(!config.regen) { broken=true; break;}
           
             // Save the updated particle energy and location of interaction
             //event.E2[npart]=Energy_GeV;
@@ -1021,7 +1022,7 @@ int main(int argc, char **argv)
       {
         //cout<<type_to_save[i]<<","<<part_type<<endl;
         //cout<<"part energy is "<<part_energy<<"with threshold "<<Elim<<endl;
-        if((part_type==type_to_save[j])&&(part_energy>Elim))//changge to just poarticle tyoe if saving all particls even below thrwhpold
+        if((part_type==type_to_save[j])&&(part_energy>Elim)&&broken==false)//changge to just poarticle tyoe if saving all particls even below thrwhpold
           {
             //cout<< "saving one particle of type "<<part_type<<endl;
             
