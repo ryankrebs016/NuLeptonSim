@@ -68,7 +68,7 @@ tag_list = [tag]
 missing_count = 0
 #print (tag_list)
 for tag in tag_list:
-    data_dir = 'icecube_muons/'
+    data_dir = 'testing/particles'
     paths=os.listdir(data_dir)
     eees=[]
     all_energies=['11.0','12.0','13.0','14.0','15.0','16.0','17.0','18.0','19.0','20.0','21.0']

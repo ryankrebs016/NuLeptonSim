@@ -5,7 +5,7 @@ import matplotlib.pyplot as plt
 import os
 rcParams['figure.facecolor'] = 'white'
 rcParams['font.size']=18
-LUTdir='final_muon'
+LUTdir='testing/LUT'
 def load_LUT(LUT_fnm):
     f = np.load(LUT_fnm,allow_pickle=True)
     type_array=f['type_array']
@@ -70,7 +70,7 @@ def process_lut_for_parts(LUT_fnm, particle_type): #same as load LUT but looks f
                
             
 
-            P_exit[k] = part_count/1e4
+            P_exit[k] = part_count/1e6
 
     return type_array,th_em_array, P_exit, data_array, mean_num_CC, mean_num_NC, mean_num_decays
 #returned elements shouldn't have any other particle than type 2 - nutau
@@ -88,7 +88,7 @@ def main():
 
     energy_list = ['1e+16', '3e+16', '1e+17', '3e+17', '1e+18', '3e+18', '1e+19', '3e+19','1e+20', '3e+20', '1e+21']
     energy_list = ['1e+15', '3e+15', '1e+16', '3e+16', '1e+17', '3e+17', '1e+18', '3e+18', '1e+19', '3e+19','1e+20', '3e+20', '1e+21']
-    energy_list=['1e+15','1e+16','1e+17','1e+18','1e+19','1e+20','1e21']
+    energy_list=['11.0','12.0','13.0','14.0','15.0','16.0','17.0','18.0','19.0','20.0','21.0']
     ice_thickness_list = ['0.0', '1.0', '2.0', '3.0', '4.0']
 
     names=["nuMu","nuTau","Muon","Tau"]
@@ -138,6 +138,7 @@ def main():
                     ax1.grid(True, which='both')
                     ax1.set_xlabel('Emergence Angle, degrees')
                     ax1.set_ylabel('Probability of %s Exit'%names[num])
+                    #ax1.set_title('%2')
                 
                     
                     """
@@ -165,8 +166,8 @@ def main():
                     """
                         
             #matplotlib.pyplot.savefig(LUTdir+"/5-11_90deg_%s_full_chord.png"%(names[num])) 
-            #num+=1       
-        #matplotlib.pyplot.show()
+            num+=1       
+        plt.show()
 
 if __name__ == "__main__":
     main()

@@ -1,14 +1,17 @@
 config file for NuLeptonSim
 
-data_dir = fix_angle_bug
-starting_type = 2   
+data_dir = test_fix
+starting_type = 2
 sim_angles = 1
-low_angle = 90        
+low_angle = 90
 high_angle = 180
 regen = 1
 conversion = 1
 energy_distribution = 0
-detector = 0
+detector = 1
+det_volume = 1
+save_neutrinos = 0
+save_charged = 1
 
 
 keys: particle type code 0=NuE, 1=NuM, 2=NuT, 3=E, 4=m, 5=T
@@ -17,3 +20,4 @@ keys: particle type code 0=NuE, 1=NuM, 2=NuT, 3=E, 4=m, 5=T
 // regnerations:nu -> lepton, lepton -> nu
 // tau decay to light mass generations
 // sim angles, regn, convrsions, and energy distribution are true/false
+//vol in km^3
