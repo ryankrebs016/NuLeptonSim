@@ -815,8 +815,8 @@ int main(int argc, char **argv)
       bool broken=false;
       while(part_pos<maxL)// for icecube  //part_pos<Lmax //!(((Lmax1<=part_pos) && (part_pos<=Lmax2))||part_pos>=Lmax2)
       {
-        cout<<part_pos<<endl;
-        cout<<pos[0]<<","<<pos[1]<<endl;
+        //cout<<part_pos<<endl;
+        //cout<<pos[0]<<","<<pos[1]<<endl;
         
         //create holding arrays for reactions
         distance_loop_num++;
