@@ -353,6 +353,11 @@ int main(int argc, char **argv)
   */
   double angle_time_start=time(NULL);
   double angle=atof(argv[2]);
+  if(config.detector==0 && angle<90)
+  {
+    cout<<"down going events not available for point exit"<<endl;
+    return 0;
+  }
 
   int produced_muons=0;
   // Cut in energy below which particles are no longer propagated
