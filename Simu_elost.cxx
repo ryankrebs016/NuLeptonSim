@@ -112,6 +112,8 @@ typedef struct {
   double det_volume;
   bool save_neutrinos;
   bool save_charged;
+  double energy_threshold;
+  bool save_on_entrance;
 
 }config_init;   // data struct to hold the value read from config file
 
@@ -361,7 +363,7 @@ int main(int argc, char **argv)
 
   int produced_muons=0;
   // Cut in energy below which particles are no longer propagated
-  double Elim_eV=1.e9;       // eV
+  double Elim_eV=config.energy_threshold;       // eV
   double Elim=Elim_eV*1.e-9;  // GeV
   
   //-------------------------------------------------
@@ -387,20 +389,55 @@ int main(int argc, char **argv)
   double det_entrance_d=0;
   double det_exit_d=0;
   double small_r=0;
-  if(config.detector==1) 
+  if(config.detector==1) //sphere
   {
-    small_r=sqrt(config.det_volume/3.14159);
+    small_r=cbrt(3*config.det_volume/4/3.14159);
     small_r=small_r*pow(10,5); //convert km to cm
     det_entrance_d=-small_r;
     det_exit_d=small_r;
   }
-
+  double radius=10*pow(10,5);
+  double height=0.25*pow(10,5);
+  double trans_angle=180/PI*atan(height/2/radius);
+  double dh=0;
+  double dr=0;
+  if(config.detector==2) //cylinder
+  {
+    if(angle<trans_angle ||angle>(180-trans_angle)) 
+    {
+      dr=abs(height/2*tan(PI/180*(180-angle)));
+      small_r=sqrt(radius*radius+dh*dh);
+    }
+    if(angle>=trans_angle &&angle<=(180-trans_angle))
+    {
+      dh=abs(radius*tan(PI/180*(angle-90)));
+      small_r=sqrt(height/2*height/2+dr*dr);
+    }
+  }
+  if(depth<small_r) //just a check for detector limites
+  {
+    cout<<"breaking code, detector would be above surface"<<endl;
+    return -1;
+  }
   //cout<<"small r is "<<small_r<<endl;
   double x_step=cos((angle-90)*PI/180);
   double y_step=sin((angle-90)*PI/180);
   //set start and end points *now capable of looking at down going events too!!
   double start_point[2];
-  double end_point[2]={-small_r*x_step,R0-depth+small_r*y_step};
+  double end_point[2];
+
+  if (!config.save_on_entrance)
+  {
+    end_point[0]=-small_r*x_step;//puts end point on left side
+    end_point[1]=R0-depth+small_r*y_step;
+  }
+  else
+  { 
+    end_point[0]=small_r*x_step;//puts end point on right side
+    end_point[1]=R0-depth+small_r*y_step;
+  }
+
+  //finding start point
   double point_slope=0;
   double y_pos=0;
   double y_neg=0;
@@ -411,7 +448,7 @@ int main(int argc, char **argv)
     double denom=2*(1+point_slope*point_slope);
     if(det<0)
     {
-      cout<<'invalid, breaking code'<<endl;
+      cout<<"invalid, breaking code"<<endl;
       return -1;
 
     }
@@ -691,7 +728,7 @@ int main(int argc, char **argv)
     bool has_been_saved=false;
     bool save_cond=false;
     bool exit_cond=false;
-    cout<<endl<<"original particle: "<<i<<endl;
+    //cout<<endl<<"original particle: "<<i<<endl;
     Energy_GeV = atof(argv[1])*pow(10,-9); // Get nu_tau energy from input argument
     if (config.energy_distribution) Energy_GeV =  pow(10,6 + (6 * (double)rand()/RAND_MAX));
     //cout<<"initial energy GeV is "<<Energy_GeV<<endl;
@@ -740,7 +777,7 @@ int main(int argc, char **argv)
     { 
       //if(loop_num!=0)cout<<"stack loop number:"<<loop_num<<endl;
       loop_num++;
-      bool has_been_saved=false;
+      has_been_saved=false;
       bool save_cond=false;
       bool exit_cond=false;
 
@@ -934,7 +971,7 @@ int main(int argc, char **argv)
               //event.id[npart]=1;
               //tag=1;
               
-              if(part_pos<maxL && part_pos >maxL+2*det_entrance_d && config.detector==1)
+              if(part_pos<maxL && part_pos >maxL+2*det_entrance_d && config.detector!=1 && !config.save_on_entrance)
               {
                 outEvents<<""<<part_type<<" "<<1<<" "<<setprecision(7)<<log10(shower_energy)+9<<endl;
 
@@ -979,7 +1016,7 @@ int main(int argc, char **argv)
               //npart++;
               generation++;
               
-              if(part_pos<maxL && part_pos>maxL+2*det_entrance_d && config.detector==1)
+              if(part_pos<maxL && part_pos>maxL+2*det_entrance_d && config.detector!=1 && !config.save_on_entrance)
               {
                 outEvents<<""<<part_type<<" "<<0<<" "<<setprecision(7)<<log10(shower_energy)+9<<endl;
               }//save event to event file if inside volume
@@ -1120,7 +1157,7 @@ int main(int argc, char **argv)
               lost_energy+=reaction_energies[i];
             }
             double shower_energy=initial_energy-part_energy-lost_energy;
-            if(part_pos<maxL &&part_pos>maxL+2*det_entrance_d && config.detector==1)
+            if(part_pos<maxL &&part_pos>maxL+2*det_entrance_d && config.detector!=1 && !config.save_on_entrance)
             {
               outEvents<<""<<initial_particle_type<<" "<<2<<" "<<setprecision(7)<<log10(shower_energy)+9<<endl;
             }
@@ -1140,7 +1177,7 @@ int main(int argc, char **argv)
             // break; // do not regenerate i.e. if nu_tau produced
           }
           //save particle if it enters the icecube volume. 
-          if(part_pos<maxL && part_pos>maxL+2*det_entrance_d && !has_been_saved && config.detector==1)
+          if(part_pos<maxL && part_pos>maxL+2*det_entrance_d && !has_been_saved && config.detector!=0 && !config.save_on_entrance)
           {
             outEnergies <<part_type<<" "<<NC_num << " " << CC_num << " " <<
             dc_num << " " <<i<<" "<<config.starting_type<<" "<< generation << " " <<
@@ -1312,6 +1349,8 @@ void load_config()
      else if ((int)line.find("det_volume")!=-1) sin >>config.det_volume;
      else if ((int)line.find("save_neutrinos")!=-1) sin >>config.save_neutrinos;
      else if ((int)line.find("save_charged")!=-1) sin >>config.save_charged;
+     else if ((int)line.find("energy_threshold")!=-1) sin >>config.energy_threshold;
+     else if ((int)line.find("save_on_entrance")!=-1) sin >>config.save_on_entrance;
 
   }
 }
