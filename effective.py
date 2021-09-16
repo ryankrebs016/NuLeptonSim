@@ -15,11 +15,11 @@ from matplotlib.animation import FuncAnimation
 
 process=True
 
-dir='testing_muon/'
+dir='testing_rno_t/'
 particle_dir=dir+'particles/'
 event_dir=dir+'events/'
 bin_dir=dir+'binned/'
-LUTdir=dir+'LUT/'
+LUTdir=particle_dir+'LUT/'
 prob_dir=dir+'p_exit/'
 obj_dir='obj/'
 #set bin energies to something that works for all energy ranges. Easier to interpolate the missing energies
@@ -28,7 +28,9 @@ def main():
     if(len(sys.argv)>1):
         energy_list=[sys.argv[1]]
     else: energy_list=['11.0','12.0','13.0','14.0','15.0','16.0','17.0','18.0','19.0','20.0','21.0']
-    prep_files(5)
+    #prep_files(6)
+    #prep_files(5)
+    #prep_files(4)
     #calc_eff_taus()
     #calc_neutrino_eff_area()
     #get_E_from_CC(18)
@@ -36,7 +38,7 @@ def main():
     #plot_dN_muon(19.0)
 
     
-    plot_an_angle('19.0')
+    plot_an_angle('21.0')
     #
     # plot_an_angle('18.0')
     """
@@ -180,6 +182,51 @@ def main():
     plt.show()
     '''
     #plot_an_angle('19.0')
+def plot_an_angle(energy,what_plot='counts'):
+    fig=plt.figure()
+    ax=plt.axes(xlim=(13,22),ylim=(0,5))
+    ax.set_xlabel('Log(E_t / eV)')
+    ax.set_ylabel('dN/dE')
+    ax.set_title('nuMuon energy ditributions from 10^19 eV neutrino\nFrom 0 degrees to 90 degrees')
+    line,=ax.plot([],[],lw=2)
+    print('plotting')
+    angle_text=ax.text(.02,.95,'',transform=ax.transAxes)
+    th_em_array,bins_by_ang,derivs_by_ang,middle_bins=read_Ntau_files(bin_dir+str(energy)+'_binned_numu.npz')
+    def init():
+        line.set_data([],[])
+        angle_text.set_text('')
+        return line,
+
+    def animate(i):
+       
+        norm,mid_bins=get_normalized(bins_by_ang,middle_bins,i,'tau')
+        x=mid_bins
+        y=norm
+        line.set_data(x,y)
+        angle_text.set_text('angle %.1f degrees'%th_em_array[i])
+        return line,
+
+    anim=FuncAnimation(fig,animate,init_func=init,frames=135,interval=1)
+    anim.save('show_plots/numu_energy_distribution.gif', fps=30)
+    plt.show()
+    
+    # get rid from here 
+    
+    x=np.linspace(11,21,np.size(bins_by_ang[0]))
+    plt.figure(1,figsize=[10,8])
+    plt.title('10^'+energy+' eV Neutrino Energy. '+'Tau energy distribution')
+    plt.xlabel("log(E)")
+
+    if(what_plot=='counts'):
+        plt.ylabel("normalized dN/dE")
+        for i in range(10):
+            norm,mid_bins=get_normalized(bins_by_ang,middle_bins,i,'tau')
+            plt.plot(mid_bins,norm)
+
+
+    plt.legend(th_em_array[25::10])
+    plt.show()
+
     
 def cross_section(E_v):
     c0=-1.826
@@ -408,68 +455,47 @@ def process_lut_for_parts(LUT_fnm, particle_type): #same as load LUT but looks f
         #print(np.size(type_array[k]),np.size(data_array[k]))
         temp_energy=[]
         temp_type=[]
+        nutau_count=0
+        tau_count=0
+        muon_count=0
+        numu_count=0
+        nuel_count=0
         if(len(data_array[k])!=0 ):
             part_count=0
+            
             #print(np.size(type_array[k]))
             #print(np.size(data_array[k]))
             for i in range(0,len(data_array[k])):
                 #print(type_array[k][i],data_array[k][i])
                 #type_array[k][i]
+                if(type_array[k][i]==1):
+                    nuel_count+=1
+                if(type_array[k][i]==2):
+                    numu_count+=1
+                if(type_array[k][i]==3):
+                    nutau_count+=1
+                if(type_array[k][i]==5):
+                    muon_count+=1
+                if(type_array[k][i]==6):
+                    tau_count+=1
+
                 if(type_array[k][i]==particle_type):
                     temp_type.append(type_array[k][i])
                     temp_energy.append(data_array[k][i])
                     part_count+=1
+        
             proc_type.append(temp_type)
             proc_energy.append(temp_energy)
-               
+              
             
 
-            P_exit[k] = part_count/1e5
-        #print(P_exit)    
-
-    return type_array,th_em_array, P_exit, data_array, mean_num_CC, mean_num_NC, mean_num_decays
+            P_exit[k] = part_count/1e6
+            print(part_count)
+        #print(np.size(temp_type))     
+        #print(numu_count,muon_count,nutau_count,tau_count)
+    return proc_type,th_em_array, P_exit, proc_energy, mean_num_CC, mean_num_NC, mean_num_decays
 #returned elements shouldn't have any other particle than the type specified
     
-def plot_an_angle(energy,what_plot='counts'):
-    fig=plt.figure()
-    ax=plt.axes(xlim=(11,21),ylim=(0,5))
-    ax.set_xlabel('Log(E_t / eV)')
-    ax.set_ylabel('dN/dE')
-    ax.set_title('Muon energy ditributions from 10^19 eV neutrino\nFrom 0 degrees to 90 degrees')
-    line,=ax.plot([],[],lw=2)
-    print('plotting')
-    th_em_array,bins_by_ang,derivs_by_ang,middle_bins=read_Ntau_files(bin_dir+str(energy)+'_binned_nutau.npz')
-    def init():
-        line.set_data([],[])
-        return line,
-
-    def animate(i):
-        x=np.linspace(11,21,np.size(bins_by_ang[0]))
-        norm,mid_bins=get_normalized(bins_by_ang,middle_bins,i,'tau')
-        y=norm
-        line.set_data(x,y)
-        return line,
-
-    anim=FuncAnimation(fig,animate,init_func=init,frames=135,interval=1)
-    anim.save('muon_energy_distribution.gif', fps=30)
-    plt.show()
-    
-    # get rid from here
-    
-    x=np.linspace(11,21,np.size(bins_by_ang[0]))
-    plt.figure(1,figsize=[10,8])
-    plt.title('10^'+energy+' eV Neutrino Energy. '+'NuTau energy distribution')
-    plt.xlabel("log(E)")
-
-    if(what_plot=='counts'):
-        plt.ylabel("normalized dN/dE")
-        for i in range(10):
-            norm,mid_bins=get_normalized(bins_by_ang,middle_bins,i,'tau')
-            plt.plot(mid_bins,norm)
-
-
-    plt.legend(th_em_array[25::10])
-    plt.show()
 
 def bin_energies(energy,part,bin_num,LUTdir):
    
@@ -511,14 +537,18 @@ def bin_energies(energy,part,bin_num,LUTdir):
         bins_by_ang.append(bins)
         derivs_by_ang.append(derivs)
     save_string=''
-    if(part==5):
+    if(part==6):
         save_string='tau'
-    if(part==2):
+    if(part==3):
         save_string='nutau'
-    if(part==4):
+    if(part==5):
         save_string='muon'
-    if(part==1):
+    if(part==2):
         save_string='numu'
+    if(part==1):
+        save_string='nuel'
+    if(part==4):
+        save_string='el'
     print(bin_dir+str(energy)+"_binned_%s.npz"%save_string)
     np.savez(bin_dir+str(energy)+"_binned_%s.npz"%save_string,bin_low=min_bin,bin_high=max_bin,th_em_array=th_em_array,bins_by_ang=bins_by_ang,derivs_by_ang=bins_by_ang, middle_bins=middle_bins)
 
@@ -692,11 +722,14 @@ def get_normalized(derivs, middle_bins,angle,type):
 #processes the LUT to make a smaller file for just probabilites
 def process_P(v_energy,type='tau'):
     #print(v_energy)
-    part_num=5
+    part_num=6
     other='nutau'
     if(type=='muon'):
-        part_num=4
+        part_num=5
         other='numu'
+    if(type=='electron'):
+        part_num=4
+        other='nuel'
     nu_num=part_num-3
     print(prob_dir+v_energy+'_p_exit_%s.npz'%type)
     #print(LUTdir+'LUT_%s_eV.npz'%(v_energy))
@@ -996,10 +1029,12 @@ def prep_files(type):
     part_tau=type #taus
     part_nu=type-3
     bin_num=1000
-    if(type==5):
+    if(type==6):
         type_str='tau'
-    if(type==4):
+    if(type==5):
         type_str='muon'
+    if(type==4):
+        type_str='electron'
     for energy in energy_list:
         #print(LUTdir+'LUT_%s_eV.npz'%(energy))
         if(os.path.exists(LUTdir+'LUT_%s_eV.npz'%(energy))):

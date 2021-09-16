@@ -5,7 +5,7 @@ import matplotlib.pyplot as plt
 import os
 rcParams['figure.facecolor'] = 'white'
 rcParams['font.size']=18
-LUTdir='testing/LUT'
+LUTdir='testing_rno_t/particles/LUT'
 def load_LUT(LUT_fnm):
     f = np.load(LUT_fnm,allow_pickle=True)
     type_array=f['type_array']
@@ -54,25 +54,47 @@ def process_lut_for_parts(LUT_fnm, particle_type): #same as load LUT but looks f
         #print(np.size(type_array[k]),np.size(data_array[k]))
         temp_energy=[]
         temp_type=[]
+        nutau_count=0
+        tau_count=0
+        muon_count=0
+        numu_count=0
+        elec_count=0
+        nuelec_count=0
         if(len(data_array[k])!=0 ):
             part_count=0
+            
             #print(np.size(type_array[k]))
             #print(np.size(data_array[k]))
             for i in range(0,len(data_array[k])):
                 #print(type_array[k][i],data_array[k][i])
                 #type_array[k][i]
+                if(type_array[k][i]==2):
+                    numu_count+=1
+                if(type_array[k][i]==3):
+                    nutau_count+=1
+                if(type_array[k][i]==5):
+                    muon_count+=1
+                if(type_array[k][i]==6):
+                    tau_count+=1
+                if(type_array[k][i]==1):
+                    nuelec_count+=1
+                if(type_array[k][i]==4):
+                    elec_count+=1
                 if(type_array[k][i]==particle_type):
                     temp_type.append(type_array[k][i])
                     temp_energy.append(data_array[k][i])
                     part_count+=1
+        
             proc_type.append(temp_type)
             proc_energy.append(temp_energy)
-               
+              
             
 
             P_exit[k] = part_count/1e6
-
-    return type_array,th_em_array, P_exit, data_array, mean_num_CC, mean_num_NC, mean_num_decays
+            print(part_count)
+        #print(np.size(temp_type))     
+        #print(numu_count,muon_count,nutau_count,tau_count)
+    return proc_type,th_em_array, P_exit, proc_energy, mean_num_CC, mean_num_NC, mean_num_decays
 #returned elements shouldn't have any other particle than type 2 - nutau
     
 
@@ -91,11 +113,11 @@ def main():
     energy_list=['11.0','12.0','13.0','14.0','15.0','16.0','17.0','18.0','19.0','20.0','21.0']
     ice_thickness_list = ['0.0', '1.0', '2.0', '3.0', '4.0']
 
-    names=["nuMu","nuTau","Muon","Tau"]
+    names=["nuElec","nuMu","nuTau","Muon","Tau"]
     names_tau=["nuTau","Tau"]
-    part_index=[1,2,4,5]
+    part_index=[1,2,3,5,6]
     part_index_tau=[2,5]
-
+    
     #names=names_tau
     #part_index=part_index_tau
     num=0
@@ -107,7 +129,7 @@ def main():
         #figure(3, figsize=(8,10))
         #figure(4, figsize=(10,10))
         for i in part_index:
-            print(num)
+            print(i)
             gs = gridspec.GridSpec(5, 2, width_ratios=[1, 3]) 
             cc = 0
             ice_thickness = '4.0'
@@ -124,10 +146,13 @@ def main():
                 if(os.path.exists(LUTdir+'/LUT_%s_eV.npz'%(energy))):
                     
                     type_array,th_em_array, P_exit, data_array, mean_num_CC, mean_num_NC, mean_num_decays = process_lut_for_parts(LUTdir+'/LUT_%s_eV.npz'%(energy),i)
+                    #if i ==4:
+                    #    print(type_array[5])
+                    #    print(data_array[5])
+                        
                     #print P_exit
-                
-                    
-                    ax1.set_xscale('log')
+                    '''
+                      ax1.set_xscale('log')
                     ax1.semilogy(th_em_array[P_exit>0.], P_exit[P_exit>0.], '-', lw=2, label='%s eV'%energy)
                     #new_ticks = np.array([0.1, 0.3, 1., 3., 10.,  30.,90.])
                     #ax1.set_xticks(new_ticks)
@@ -139,8 +164,14 @@ def main():
                     ax1.set_xlabel('Emergence Angle, degrees')
                     ax1.set_ylabel('Probability of %s Exit'%names[num])
                     #ax1.set_title('%2')
-                
+                    '''
                     
+                  
+                    print(np.size(data_array[20]))
+                    ax1.hist(data_array[20],bins=100,density=True,log=True,label='%s eV'%energy)
+                    ax1.set_xlabel('log(E)')
+                    ax1.set_ylabel('normalized counts')
+                    ax1.legend(loc=1, fontsize=14, borderpad=0.1, borderaxespad=0, labelspacing=0.1)
                     """
                     ax2.set_xscale('log')
                     ax2.semilogy(th_em_array[P_exit>0.], mean_num_CC[P_exit>0.], '-', lw=2,  label='%s eV'%energy)
@@ -165,9 +196,9 @@ def main():
                     ax3.grid(True, which='both')
                     """
                         
-            #matplotlib.pyplot.savefig(LUTdir+"/5-11_90deg_%s_full_chord.png"%(names[num])) 
+            matplotlib.pyplot.savefig(LUTdir+"/hists_%s.png"%(names[num])) 
             num+=1       
-        plt.show()
+        #plt.show()
 
 if __name__ == "__main__":
     main()

@@ -43,21 +43,25 @@ def read_emerging(filename):
     num_gen=[]
     energy = []
     start_energy=[]
+    end_pos=[]
+    anti_type=[]
 
     for line in open(filename,mode='r',encoding='utf-8'):
         
         if(lc!=0 and lc!=1 and 'END' not in line):
             num_type.append(int(line.split()[0]))
-            num_NC.append(int(line.split()[1]))
-            num_CC.append(int(line.split()[2]))
-            num_decays.append(int(line.split()[3]))
-            num_gen.append(int(line.split()[5]))
+            anti_type.append(int(line.split()[1]))
+            num_NC.append(int(line.split()[2]))
+            num_CC.append(int(line.split()[3]))
+            num_decays.append(int(line.split()[4]))
+            num_gen.append(int(line.split()[6]))
             #num_particles.append(int(line.split()[5]))
-            energy.append(float(line.split()[6]))
-            start_energy.append(float(line.split()[7]))
+            energy.append(float(line.split()[7]))
+            start_energy.append(float(line.split()[8]))
+            #end_pos.append(float(line.split()[8]))
             #print line
         lc+=1
-    return np.array(num_type),np.array(num_CC), np.array(num_NC), np.array(num_decays), np.array(num_particles), np.array(energy)
+    return np.array(num_type),np.array(anti_type),np.array(num_CC), np.array(num_NC), np.array(num_decays), np.array(num_particles), np.array(energy)
 
 tag_list = [tag]
 #for thickness in ['0.0', '1.0', '2.0', '3.0', '4.0']:
@@ -102,6 +106,7 @@ for tag in tag_list:
         mean_num_gen=[]
         data_array  = []
         type_array=[]
+        anti=[]
         #e_pow=log10(e)
         
         for ang in ang_array:
@@ -120,15 +125,17 @@ for tag in tag_list:
                 mean_num_CC.append([0])
                 mean_num_NC.append([0])
                 mean_num_decays.append([0])
+                anti.append([0])
             if os.path.exists(fnm):
-                the_type,num_CC, num_NC, num_decays, num_particles, energy = read_emerging(fnm)
+                the_type,anti_t,num_CC, num_NC, num_decays, num_particles, energy = read_emerging(fnm)
                 print (fnm, np.size(energy))
                 type_array.append(the_type)
+                anti.append(anti_t)
                 data_array.append(energy)
                 mean_num_CC.append(np.mean(num_CC))
                 mean_num_NC.append(np.mean(num_NC))
                 mean_num_decays.append(np.mean(num_decays))
-            np.savez('%s/LUT_%s_eV.npz'%(outdir,e),type_array=type_array, data_array = data_array, th_exit_array = th_exit_array,mean_num_CC=mean_num_CC,mean_num_NC=mean_num_NC,mean_num_decays=mean_num_decays)
+            np.savez('%s/LUT_%s_eV.npz'%(outdir,e),type_array=type_array, anti=anti,data_array = data_array, th_exit_array = th_exit_array,mean_num_CC=mean_num_CC,mean_num_NC=mean_num_NC,mean_num_decays=mean_num_decays)
             
     
         
