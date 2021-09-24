@@ -1,20 +1,21 @@
 config file for NuLeptonSim
 
-data_dir = test_fix
-starting_type = 2
+data_dir = austin_tests
+starting_type = 3
 sim_angles = 1
 low_angle = 90
 high_angle = 180
 regen = 1
 conversion = 1
 energy_distribution = 0
-detector = 1
+energy_threshold = 1E+14
+detector = 2
 det_volume = 1
-save_neutrinos = 0
+save_neutrinos = 1
 save_charged = 1
+save_on_entrance = 0
 
-
-keys: particle type code 0=NuE, 1=NuM, 2=NuT, 3=E, 4=m, 5=T
+keys: particle type code 1=NuE, 2=NuM, 3=NuT, 4=E, 5=m, 6=T
 //lower angle to consider. has to be >90 or >95 ish for icecube
 //max angle <180, 180 is vertical
 // regnerations:nu -> lepton, lepton -> nu

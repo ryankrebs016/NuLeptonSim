@@ -80,10 +80,11 @@ typedef struct {
   stack<int> part_type;       // 0-5
   stack<double> part_energy;  // E_min<part_energy<E_init
   stack<double> part_pos;     // position inside earth
-  stack<bool> anti;           // true if anti particle
+  stack<int> anti;           // true if anti particle
   stack<int> generation;      // number of interactions before this particle was produced
   stack<int> NC_num;          // number of NC preceding creation of this particle
   stack<int> CC_num;          // number of CC preceding creation of this particle
+  stack<int> GR_num;
   stack<int> dc_num;          // number of decays it took to get to the current particle
   stack<double> x_pos;
   stack<double> y_pos;
@@ -153,6 +154,7 @@ double dPdesdx(double E,int type);
 // Tau and muon neutrino cross sections: CC and NC
 double dsigCC(double l1, int CCmode, int type, int AntiNu);	
 double dsigNC(double l1, int CCmode, int type, int AntiNu);
+double dsigGR(double E, int type, int AntiNu);
 
 // -------------------------------------------------
 // Local density as a function of zenith angle
@@ -229,10 +231,10 @@ int main(int argc, char **argv)
   //int starting_type=2; // 0 = Ve , 1= Vm , 2= vT, 3=e, 4=m, 5=T
 
 
-  int type_to_save[4]={-1,-1,-1,-1};
+  int type_to_save[5]={-1,-1,-1,-1,-1};
  
-  if(config.save_charged){type_to_save[0]=4;type_to_save[1]=5;} //add muons and taus to pareticle type to savce
-  if(config.save_neutrinos){type_to_save[2]=1;type_to_save[3]=2;} //add neutrinos to type to save
+  if(config.save_charged){type_to_save[0]=5;type_to_save[1]=6;} //add muons and taus to pareticle type to savce
+  if(config.save_neutrinos){type_to_save[2]=2;type_to_save[3]=3;type_to_save[4]=1;} //add neutrinos to type to save
   
   //for(int i=0;i<4;i++) cout<<type_to_save[i]<<" "; //print which particles will be saved
   //cout<<endl;
@@ -371,8 +373,8 @@ int main(int argc, char **argv)
   double rndm;           // random number throughout the code
   
   //double Ldist;         // Distance along chord length in Earth
-  double Depth1=2.45e5;          // Depth of IceCube bottom layer
-  double Depth2=1.45e5;          // Depth of IceCube top layer
+  //double Depth1=2.45e5;          // Depth of IceCube bottom layer
+  //double Depth2=1.45e5;          // Depth of IceCube top layer
   double depth=2e5; //center of detector
   double Lmax;
   double Lmax1;          // Chord length in Earth to bottom layer
@@ -471,8 +473,8 @@ int main(int argc, char **argv)
     start_point[1]=R0;
     start_point[0]=0;
   }
-  cout<<start_point[0]<<","<<start_point[1]<<endl;
-  cout<<end_point[0]<<","<<end_point[1]<<endl;
+  cout<<start_point[0]<<" , "<<start_point[1]<<endl;
+  cout<<end_point[0]<<" , "<<end_point[1]<<endl;
   
   double maxL=sqrt((start_point[0]-end_point[0])*(start_point[0]-end_point[0])+(start_point[1]-end_point[1])*(start_point[1]-end_point[1]));
   
@@ -555,7 +557,7 @@ int main(int argc, char **argv)
   };
   nameEnergies+=".dat";
   ofstream outEnergies(nameEnergies.c_str());
-  outEnergies << ""<< log10(tot_evt)<<" pow of 10 initial neutrinos of type "<<config.starting_type<<" at energy "<<argv[1]<<". \ntype, NC, CC, DC, InitNuNum, InitNeutrinoType, Gen, OutEnergy, InitEnergy, Part_Pos.\n";
+  outEnergies << "10^"<< log10(tot_evt)<<" initial neutrinos of type "<<config.starting_type<<" at energy "<<argv[1]<<". \ntype, anti, NC, CC, GR, DC, Gen, InitNuNum, InitNeutrinoType, OutEnergy, InitEnergy, Part_Pos.\n";
   cout<<nameEnergies<<endl;
 
   string nameEvents="";
@@ -710,6 +712,7 @@ int main(int argc, char **argv)
   int new_muons=0; //count of pair of particles made. +1 for muon +1 for neutirno
   int total_CC=0;
   int total_NC=0;
+  int total_GR=0;
   double num_tau_decays=0;
   double num_muon_decays=0;
   double distance_loop_num=0;
@@ -719,7 +722,7 @@ int main(int argc, char **argv)
   int taus_below=0;
   bool split_type=false;
   int part_count=0;
-  if(config.starting_type==7) split_type=true;
+  if(config.starting_type==0) split_type=true;
   //cout<<"help"<<endl;
   //cout<<small_r<<", "<<Lmax<<endl;
   for( int i=0;i<tot_evt;i++)
@@ -733,15 +736,17 @@ int main(int argc, char **argv)
     if (config.energy_distribution) Energy_GeV =  pow(10,6 + (6 * (double)rand()/RAND_MAX));
     //cout<<"initial energy GeV is "<<Energy_GeV<<endl;
     //cout<<"threshold energy in GeV is "<<Elim<<endl;
-    int part_type=-1;
-  
+    int part_type=0;
+    
+    if(config.starting_type==3) part_type=3;
     if(config.starting_type==2) part_type=2;
     if(config.starting_type==1) part_type=1;
 
-    if(split_type==true && part_count<tot_evt/2) part_type=2;
-    if(split_type==true && part_count>=tot_evt/2) part_type=1;
-
-    if(part_type==-1)
+    if(split_type==true && part_count<tot_evt/3) part_type=1;
+    if(split_type==true && part_count>=tot_evt/3 && part_count<=2*tot_evt/3 ) part_type=2;
+    if(split_type==true && part_count>2*tot_evt/3) part_type=3;
+ 
+    if(part_type==0)
     {
       cout<<"Particle type failed to intialize...breaking code\n";
       return 0;
@@ -750,26 +755,15 @@ int main(int argc, char **argv)
     part_count++;
     double part_energy=Energy_GeV;
     double part_pos=0;
-    bool anti=0;
+    int anti=0;
     int generation=0;
     int NC_num=0;
     int CC_num=0;
+    int GR_num=0;
     int dc_num=0;
-    
-    
-    
-    
-    /*
-    particle_data.part_type.push(part_type);
-    particle_data.part_energy.push(part_energy);
-    particle_data.part_pos.push(part_pos);
-    particle_data.anti.push(anti);
-    particle_data.generation.push(generation);
-    particle_data.NC_num.push(NC_num);
-    particle_data.CC_num.push(CC_num);
-    particle_data.dc_num.push(dc_num);
-    */
-    //cout<<"Initial- type: "<<part_type<<" .energy: "<<part_energy<<"GeV. pos: "<<part_pos<<"cm . gen: "<< generation<<endl;
+    anti=-1;
+
+
   
     int loop_num=0;
     //======================= Loop over stacks until empty
@@ -793,11 +787,13 @@ int main(int argc, char **argv)
         NC_num=particle_data.NC_num.top();
         CC_num=particle_data.CC_num.top();
         dc_num=particle_data.dc_num.top();
+        GR_num=particle_data.GR_num.top();
         pos[0]=particle_data.x_pos.top();
         pos[1]=particle_data.y_pos.top();
         //cout<<part_type<<endl;
         //======================================================
         particle_data.part_type.pop();
+        particle_data.GR_num.pop();
         particle_data.part_energy.pop();
         particle_data.part_pos.pop();
         particle_data.anti.pop();
@@ -810,7 +806,7 @@ int main(int argc, char **argv)
       }
       
     
-      if(part_type==0||part_type==3) continue; //ignores particles of electron flavor
+      if(part_type==4) continue; //ignores particles of electron flavor
       if(part_energy<Elim) continue; //ignore particles below threshold in case they make it through
       
       
@@ -861,9 +857,10 @@ int main(int argc, char **argv)
         //cout<<pos[0]<<","<<pos[1]<<endl;
         
         //create holding arrays for reactions
-        distance_loop_num++;
-        int reaction_types[6]={-1,-1,-1,-1,-1,-1};
+        //distance_loop_num++;
+        int reaction_types[6]={0,0,0,0,0,0};
         double reaction_energies[6]={0,0,0,0,0,0};
+        int anti_type[6]={1,1,1,1,1,1};
         //cout <<"distance is "<< part_pos << "and energy is "<<part_energy<<endl;
         // Get the local density for this pa rt of the chord.
         dens = get_dens_from_coords(pos);//change to lmax2 for icecube
@@ -874,7 +871,7 @@ int main(int argc, char **argv)
         //===========================
         // Particle is a neutrino
         //===========================
-        if(part_type==0||part_type==1||part_type==2)
+        if(part_type==1||part_type==2||part_type==3)
           {
 
           // Number of interaction lengths propagated in this step is given by an exponentially distributed random number.
@@ -882,7 +879,7 @@ int main(int argc, char **argv)
           
           // Convert the number of interaction lengths to grammage.
           double X_int;
-          X_int = num_int_lens /(Navo*(dsigCC(part_energy, CCmode,part_type,anti)+dsigNC(part_energy, CCmode,part_type, anti)));
+          X_int = num_int_lens /(Navo*(dsigGR(part_energy,part_type,anti)+dsigCC(part_energy, CCmode,part_type,anti)+dsigNC(part_energy, CCmode,part_type, anti)));
       
           // The following lines use the grammage_distance lookup table to estimate what position along the trajectory this Xint corresponds to.
           
@@ -927,27 +924,45 @@ int main(int argc, char **argv)
           if(part_pos<maxL)// for icecube  part_pos<Lmax //!((Lmax1<=part_pos) && (part_pos<=Lmax2))&&part_pos<=Lmax2
           {
             // Check if it is CC or NC interaction
+            double total_cross=dsigNC(part_energy, CCmode,part_type,anti)+dsigCC(part_energy, CCmode,part_type,anti)+dsigGR(part_energy,part_type,anti);
+            double rand_val=((double) rand() / (double)(RAND_MAX));
+
+            double CCratio=dsigCC(part_energy, CCmode,part_type,anti)/total_cross;
+            double NCratio=dsigNC(part_energy, CCmode,part_type,anti)/total_cross;
+            double GRratio=dsigGR(part_energy,part_type,anti)/total_cross;
+            
+            bool CChappens=rand_val<CCratio;
+            bool NChappens=(CCratio<=rand_val && rand_val<CCratio+NCratio);
+            bool GRhappens=(CCratio+NCratio<=rand_val && rand_val<CCratio+NCratio+GRratio);
+
             bool CCTauhappens=((double) rand() / (double)(RAND_MAX))>=dsigNC(part_energy, CCmode,part_type,anti)/(dsigNC(part_energy, CCmode,part_type,anti)+dsigCC(part_energy, CCmode,part_type,anti));
             bool CCMuhappens=((double) rand() / (double)(RAND_MAX))>=dsigNC(part_energy, CCmode,part_type,anti)/(dsigNC(part_energy, CCmode,part_type,anti)+dsigCC(part_energy, CCmode,part_type,anti));
-            if((CCTauhappens&&part_type==2)||(CCMuhappens&&part_type==1))
+            
+            if(CChappens)
             {
               //=======================
               // CC interaction occurs (the tracked particle changes from tau neutrino to tau lepton.)
               //=======================
-              total_CC++;
+              //total_CC++;
               // Save the energy and position in the event structure
               //event.E2[npart]=Energy_GeV;
               //event.v2[npart]=Ldist;
 
-              
+              CC_num++;
               //cout<<"charged current of neutrinos happened \n";
               // Obtain Bjorken y
-              if(part_type==2)tCCFinalData->ThrowFinal(log10(part_energy),finalstatecc);
+              if(part_type==3)tCCFinalData->ThrowFinal(log10(part_energy),finalstatecc);
     
+              if(part_type==2)
+              {
+                if(anti==-1)mCCFinalData->ThrowFinal(log10(part_energy),finalstatecc);
+                if(anti==1)mCCBarFinalData->ThrowFinal(log10(part_energy),finalstatecc);
+              }
               if(part_type==1)
               {
-                if(anti==0)mCCFinalData->ThrowFinal(log10(part_energy),finalstatecc);
-                if(anti==1)mCCBarFinalData->ThrowFinal(log10(part_energy),finalstatecc);
+                broken=true;
+                part_type=4;
+                break;
               }
 
               Bjorken_y=finalstatecc[1];
@@ -958,7 +973,7 @@ int main(int argc, char **argv)
               double shower_energy=initial_energy-part_energy;
               // Increment the cc interaction counter in the event structure.
               //event.ncc++;
-              CC_num++;
+              
               // Increment the particle counter in the event structure
               //event.npart++;
               //npart++;
@@ -976,29 +991,29 @@ int main(int argc, char **argv)
                 outEvents<<""<<part_type<<" "<<1<<" "<<setprecision(7)<<log10(shower_energy)+9<<endl;
 
               }//save event to event file if inside volume
-              if(part_type==1) part_type=4;
               if(part_type==2) part_type=5;
+              if(part_type==3) part_type=6;
               // get the density at the current location before jumping to the tau lepton part of the loop
               dens = get_dens_from_coords(pos);//change to Lmax2 dfor icecube
               change=true;
               
             }
-            else
+            else if (NChappens)
             {
               //=======================
               // NC interaction occurs (the tracked particle remains a tau neutrino with reduced energy.)
               //=======================
-              total_NC++;
+              //total_NC++;
               // Save the energy and position in the event structure
               //event.E2[npart]=Energy_GeV;
               //event.v2[npart]=Ldist;
               //cout<<"neutral current of neutrinos happened \n";
               // Obtain Bjorken y
-              if(part_type==2)tNCFinalData->ThrowFinal(log10(part_energy),finalstatenc);  
+              if(part_type==3)tNCFinalData->ThrowFinal(log10(part_energy),finalstatenc);  
       
-              if(part_type==1)
+              if(part_type==2 || part_type==1)
               {
-                if(anti==0) mNCFinalData->ThrowFinal(log10(part_energy),finalstatenc);
+                if(anti==-1) mNCFinalData->ThrowFinal(log10(part_energy),finalstatenc);
                 if(anti==1) mNCBarFinalData->ThrowFinal(log10(part_energy),finalstatenc);
               }
               
@@ -1027,6 +1042,75 @@ int main(int argc, char **argv)
               // Keep the particle tag as neutrino. so no change in part_tupe should happen
               //if(tag==0){event.id[npart]=0;}
               //if(tag==2){event.id[npart]=2;}
+              change=true;
+            }
+            else if (GRhappens)
+            {
+              //total_GR++;
+              GR_num++;
+              
+              if(part_type!=1 || anti!=-1) 
+              {
+                cout<<CCratio<<" "<<NCratio<<" "<<GRratio<<endl;
+                cout<<"CC happens = "<<CChappens<<" NChappens = "<<NChappens<<" GR happens = "<<GRhappens<<endl;
+                cout<<"GR without a valid particle"<<endl;
+                continue;
+              }
+              
+              double react_rand=((double) rand() / (double)(RAND_MAX));
+              if(react_rand<0.676)
+              {
+                //cout<<"W+ decayed to quarks"<<endl;
+                broken=true;
+                break;
+              }
+              else
+              {
+                //cout<<"W+ decayed to laptons"<<endl;
+                double lep_rand=((double) rand() / (double)(RAND_MAX));
+                double initial_E=part_energy;
+                double lepton_mass=0;
+                double lepton_type=0;
+                int lepton_anti=1;
+                if(lep_rand<1/3)
+                {//e made
+                  part_type=1;
+                  lepton_mass=me;
+                  lepton_type=4;
+                }
+                if(lep_rand<2/3 &&lep_rand>=1/3)
+                {//mu made
+                  part_type=2;
+                  lepton_mass=mmuon;
+                  lepton_type=5;
+                }
+                if(lep_rand>=2/3)
+                {//tau made
+                  part_type=3;
+                  lepton_mass=mtau;
+                  lepton_type=6;
+                }
+                
+                part_energy=((double) rand() / (double)(RAND_MAX))*part_energy*(mW*mW-lepton_mass*lepton_mass)/(mW*mW);
+                double lepton_energy=initial_E-part_energy;
+                //add the lepton to the stack
+                if(lepton_type!=4 || lepton_type!=0)
+                {
+                  particle_data.part_type.push(lepton_type);
+                  particle_data.part_energy.push(lepton_energy);
+                  particle_data.part_pos.push(part_pos);
+                  particle_data.anti.push(1);
+                  particle_data.generation.push(generation);
+                  particle_data.NC_num.push(NC_num);
+                  particle_data.CC_num.push(CC_num);
+                  particle_data.dc_num.push(dc_num);
+                  particle_data.GR_num.push(GR_num);
+                  particle_data.x_pos.push(pos[0]);
+                  particle_data.y_pos.push(pos[1]);
+                }
+                
+              }
+              change=true;
               
             }
           }// end of 'if(Ldist<Lmax)'  (particle still inside Earth)
@@ -1047,7 +1131,7 @@ int main(int argc, char **argv)
         //=========================
         // Particle is a tau lepton or muon lepton
         //=========================
-        if((part_type==3||part_type==4||part_type==5)&&change==false)//&&change==false
+        if((part_type==4||part_type==5||part_type==6)&&change==false)//&&change==false
         {
           // Estimate step length based on Energy, dE/dx, local density, and fraction.
           
@@ -1089,8 +1173,8 @@ int main(int argc, char **argv)
             // Advance the propagation distance by the step dL
             
           
-            if(part_type==5) num_tau_decays++;
-            if(part_type==4) num_muon_decays++;
+            if(part_type==6) num_tau_decays++;
+            if(part_type==5) num_muon_decays++;
             // Account for the tau lepton energy lost in the step dL
             if(!config.regen) { broken=true; break;}
             
@@ -1108,7 +1192,7 @@ int main(int argc, char **argv)
             //cout<<"reaction index is:"<<reaction_index<<"\n\n\n";
             //if tau
             int initial_particle_type=part_type;
-            if(part_type==5)
+            if(part_type==6)
             { 
               //cout<<"tau decay"<<endl;
 
@@ -1116,11 +1200,13 @@ int main(int argc, char **argv)
               {
                 for(int j=1;j<6;j++)
                 {
-                  if(reaction_data.tau_type[reaction_index][j]!=-1) 
+                  if(reaction_data.tau_type[reaction_index][j]!=0) 
                   { 
-                    reaction_types[j]=reaction_data.tau_type[reaction_index][j];
+                    anti_type[j]=anti*reaction_data.tau_type[reaction_index][j]/abs(reaction_data.tau_type[reaction_index][j]);
+                    reaction_types[j]=abs(reaction_data.tau_type[reaction_index][j]);
                     reaction_energies[j]=part_energy*reaction_data.tau_energy[reaction_index][j];
-                    //cout<<"tau decay with type is "<<reaction_types[j]<<" and reaction energy is "<<reaction_energies[j]<<endl;
+                    
+                    //cout<<"tau decay with type  "<<reaction_types[j]<< "has anti ness of "<<anti_type[j]<<" and reaction energy is "<<reaction_energies[j]<<endl;
                   }
                 }
               
@@ -1128,19 +1214,21 @@ int main(int argc, char **argv)
               part_energy*=reaction_data.tau_energy[reaction_index][0];
               //cout<<part_energy<<endl;
               //event.id[npart]=0;
-              part_type=2;
+              part_type=3;
             }
-            if(part_type==4)
+            if(part_type==5)
             {
               //cout<<"muon decay"<<endl;
               if(config.conversion)
               {
               for(int j=1;j<6;j++)
                 {
-                  if(reaction_data.mu_type[reaction_index][j]!=-1) 
-                  {
-                    reaction_types[j]=reaction_data.mu_type[reaction_index][j];
+                  if(reaction_data.mu_type[reaction_index][j]!=0) 
+                  { 
+                    anti_type[j]=anti*reaction_data.tau_type[reaction_index][j]/abs(reaction_data.tau_type[reaction_index][j]);
+                    reaction_types[j]=abs(reaction_data.mu_type[reaction_index][j]);
                     reaction_energies[j]=part_energy*reaction_data.mu_energy[reaction_index][j];
+                    
                     //cout<<"muon decay with type is "<<reaction_types[j]<<" and reaction energy is "<<reaction_energies[j]<<endl;
                   }
                 }
@@ -1148,7 +1236,7 @@ int main(int argc, char **argv)
               }
               part_energy*=reaction_data.mu_energy[reaction_index][0];
               //event.id[npart]=2;
-              part_type=1; 
+              part_type=2; 
             }
             double lost_energy=0;
             for(int i=1;i<6;i++)
@@ -1177,10 +1265,10 @@ int main(int argc, char **argv)
             // break; // do not regenerate i.e. if nu_tau produced
           }
           //save particle if it enters the icecube volume. 
-          if(part_pos<maxL && part_pos>maxL+2*det_entrance_d && !has_been_saved && config.detector!=0 && !config.save_on_entrance)
+          if(part_pos<maxL && part_pos>maxL+2*det_entrance_d && !has_been_saved && config.detector!=0 && config.save_on_entrance&& false)
           {
-            outEnergies <<part_type<<" "<<NC_num << " " << CC_num << " " <<
-            dc_num << " " <<i<<" "<<config.starting_type<<" "<< generation << " " <<
+            outEnergies <<part_type<<" "<<anti<<" "<<NC_num << " " << CC_num << " " <<
+            dc_num << " " <<GR_num<<" "<<i<<" "<<config.starting_type<<" "<< generation << " " <<
             setprecision(9)  << log10(part_energy)+9 << " " << log10(Energy_GeV)+9<<" "<<part_pos<<"\n";
             has_been_saved=true;
 
@@ -1207,17 +1295,18 @@ int main(int argc, char **argv)
           for( int j=1;j<6;j++)
           {
               
-            if((reaction_energies[j]>Elim)&&(part_pos<Lmax)&&(reaction_types[j]!=-1)) //particles inside earth and above threshold are stacked, change to lam2 for icecube
+            if((reaction_energies[j]>Elim)&&(part_pos<Lmax)&&(reaction_types[j]!=0)) //particles inside earth and above threshold are stacked, change to lam2 for icecube
             {
               //cout<<"pushing new particle to stack \n";
               produced_muons+=1;
               particle_data.part_type.push(reaction_types[j]);
               particle_data.part_energy.push(reaction_energies[j]);
               particle_data.part_pos.push(part_pos);
-              particle_data.anti.push(anti);
+              particle_data.anti.push(anti_type[j]);
               particle_data.generation.push(generation);
               particle_data.NC_num.push(NC_num);
               particle_data.CC_num.push(CC_num);
+              particle_data.GR_num.push(GR_num);
               particle_data.dc_num.push(dc_num);
               particle_data.x_pos.push(pos[0]);
               particle_data.y_pos.push(pos[1]);
@@ -1225,10 +1314,10 @@ int main(int argc, char **argv)
           }
         }
         if(part_energy<Elim){
-          if(part_type==2) tau_neutrinos_below++;
-          else if (part_type==1) muon_neutrinos_below++;
-          else if (part_type==5) taus_below++;
-          else if (part_type==4) muons_below++;
+          if(part_type==3) tau_neutrinos_below++;
+          else if (part_type==2) muon_neutrinos_below++;
+          else if (part_type==6) taus_below++;
+          else if (part_type==5) muons_below++;
           break;
           } //uncomment to try to save partoic;e that fa;; below threshold
       } // ends loop 'for(Ldist=0.;Ldist<Lmax;)'
@@ -1259,7 +1348,7 @@ int main(int argc, char **argv)
       //=================================================
       //cout<<"save- type: "<<part_type<<" .energy: "<<part_energy<<".pos: "<<part_pos<<". gen: "<< generation<<endl;
     
-      for(int j=0; j<4;j++)
+      for(int j=0; j<5;j++)
       {
         //cout<<type_to_save[i]<<","<<part_type<<endl;
         //cout<<"part energy is "<<part_energy<<"with threshold "<<Elim<<endl;
@@ -1269,8 +1358,8 @@ int main(int argc, char **argv)
             
             //cout<<"particlesaved!!!"<<endl;
             
-            outEnergies <<part_type<<" "<<NC_num << " " << CC_num << " " <<
-            dc_num << " " <<i<<" "<< generation << " " <<
+            outEnergies <<part_type<<" "<<anti<<" "<<NC_num << " " << CC_num << " " << GR_num<<" "<<
+            dc_num << " " <<generation <<" "<<i<< " " <<
             setprecision(7)  << log10(part_energy)+9 << " " << log10(Energy_GeV)+9<<" "<<part_pos<<"\n";
             has_been_saved=true;
           }
@@ -1306,6 +1395,7 @@ int main(int argc, char **argv)
   //output.flush();
   //cout << "END" << endl;  // write END in the command line  
   double time_elapsed=time(NULL)-time_start;
+  cout<<"Time for this angle and energy is "<<time_elapsed<<" s"<<endl;
   //printf("it took %f minutes to simulate %d neutrinos over %d different angles",time_elapsed/60,(int)atof(argv[3]),n1+n2);
   
   return 0;
@@ -1358,13 +1448,29 @@ void load_config()
 // CC neutrino cross-section (cm2) - various models fitted
 // ########################################################
 
+double dsigGR(double E, int type, int AntiNu)
+{
+  //check if it is anti nuE
+  if(type!=1 || AntiNu!=-1) return 0;
+
+  double GF = 1.166E-5; //GeV^-2
+  
+  double A=1.67E-27;
+  double gammaW=2.085; //GeV/c^2
+
+  double cross_section_num=A*4*GF*GF*E*mW*mW*mW*mW;
+  double cross_section_denom=3*2*PI*((mW*mW-2*me*E)*(mW*mW-2*me*E)+mW*mW*gammaW*gammaW);
+  double cs=cross_section_num/cross_section_denom;
+
+  return cs;
+}
 double dsigCC(double E, int CCmode, int type,int AntiNu )
 {
-    if(type==1)
+    if(type==2||type==1)
     {
         double f=0.;
         double p[4];
-
+        AntiNu=(AntiNu+1)/2;//return AntiNu to be like a bool
         // The value below determines when we switch from the parameterizations 
         // of the neutrino cross sections at ultra-high energis (e.g. CTTW standard values) 
         // to the cross sections to the Ghandi parameterization. These transitions were determined
@@ -1409,7 +1515,7 @@ double dsigCC(double E, int CCmode, int type,int AntiNu )
         f = pow(10,f);
         return f;
     }
-    if(type==2)
+    if(type==3)
     {
         double f=0.;
         
@@ -1491,9 +1597,9 @@ double dsigCC(double E, int CCmode, int type,int AntiNu )
 double dsigNC(double E, int CCmode, int type,int AntiNu)
 {
     double f=0.; 
-    if(type==1)
+    if(type==2||type==1)
     {
-        
+        AntiNu=(AntiNu+1)/2;
         double p[4];
 
         // The value below determines when we switch from the parameterizations 
@@ -1540,7 +1646,7 @@ double dsigNC(double E, int CCmode, int type,int AntiNu)
         return f;
 
     }
-    if(type==2)
+    if(type==3)
     {
        
         
@@ -1609,8 +1715,8 @@ double dsigNC(double E, int CCmode, int type,int AntiNu)
 double dPdesdx(double E, int type)
 {
     double f;
-    if(type==1||type==4) f=mmuon/(E*muondl);
-    if(type==2||type==5) f=mtau/(E*taudl);
+    if(type==2||type==5) f=mmuon/(E*muondl);
+    if(type==3||type==6) f=mtau/(E*taudl);
         
     return f;
 }
@@ -1627,7 +1733,7 @@ double elost(double E, double dens, int ELOSSmode,int type)
   int lyr = 0; // initialize to iron
   if (dens < 7.75) lyr = 1; // density jump between outer core and mantle
   if (dens < 2.0) lyr = 2;  // density jump between rock and water 
-  if(type==4)
+  if(type==5)
   {
   double factor[3] = {0.9304, 1.0, 1.1092}; // ratio Z/A for iron, rock, and water divided by Z/A=0.5 for rock   
 
@@ -1648,7 +1754,7 @@ double elost(double E, double dens, int ELOSSmode,int type)
   // cout << " mfuncalph(&E,&lyr) " << E << " " << lyr << " " << mfuncalph(&E, &zlyr << endl << endl;
   //cout << " beta9fit(&E,&lyr) " << E << " " << beta9fit(&E,&lyr,0) << " " << beta9fit(&E,&lyr,1) << endl << endl;
   }
-  if(type==5)
+  if(type==6)
   {
     f = E * beta9fit(&E,&lyr,ELOSSmode,type) + funcalph(&E, &lyr,type);
     //f = E*(emlost->Eval(E)) + funca->Eval(E);
@@ -1669,7 +1775,7 @@ double funcalph(double *x, int *par, int type)
 // double tfuncalph(double *x)
 { 
   double f;
-  if(type==5)
+  if(type==6)
   {
     
     double p=sqrt(x[0]*x[0]-mtau2);
@@ -1685,7 +1791,7 @@ double funcalph(double *x, int *par, int type)
     //cout << "\tlyr " << par[0] << " factor " << factor[par[0]] << " val " << f << endl; 
   
   }
-  if(type==4)
+  if(type==5)
   {
     double f;
     double p=sqrt(x[0]*x[0]-mmuon2);
@@ -1730,7 +1836,7 @@ double delta(double X)
 //double beta9fit(double *x)
 double beta9fit(double *x, int *par, int ELOSSmode, int type)
 {
-    if(type==2||type==5) //tau
+    if(type==3||type==6) //tau
     {
         //double f=0.;
         double b0 = 0.;
@@ -1793,7 +1899,7 @@ double beta9fit(double *x, int *par, int ELOSSmode, int type)
         return f_pair + f_brem + f_phot;
 
     };
-    if(type==1||type==4) //muon 
+    if(type==2||type==5) //muon 
     {
 
             /*Energy loss parameters here are the sum ofbremmstrahlung, pair production, and photonuclear interactions*/
@@ -1966,7 +2072,7 @@ void initialize_reaction(int tau_type[][6], int mu_type[][6],double tau_ene[][6]
     //parse string for products and fractional energies.
     for(int i=0;i<100000;i++)
     {
-        for(int z=0;z<6;z++) {products[z]="-1,0.0";};
+        for(int z=0;z<6;z++) {products[z]="0,0.0";};
         counter=0;
         done=0;
         
@@ -2036,47 +2142,47 @@ void initialize_reaction(int tau_type[][6], int mu_type[][6],double tau_ene[][6]
 
 int convert_types(int pythia_type) 
 {
-    int type=-1;
+    int type=0;
     switch (pythia_type){
 
         case -15:
-            type=5;
+            type=-6;
             break;
         case 15:
-            type=5;
+            type=6;
             break;
         case -16:
-            type=2;
+            type=-3;
             break;
         case 16:
-            type=2;
+            type=3;
             break;
         case 13:
-            type=4;
+            type=5;
             break;
         case -13:
-            type=4;
+            type=-5;
             break;
         case 14:
-            type=1;
+            type=2;
             break;
         case -14:
-            type=1;
+            type=-2;
             break;
         case 12:
-            type=0;
+            type=1;
             break;
         case -12:
-            type=0;
+            type=-1;
             break;
         case 11:
-            type=3;
+            type=4;
             break;
         case -11:
-            type=3;
+            type=-4;
             break;    
         default:
-            type=-1;   
+            type=0;   
     }
     return type;
 }

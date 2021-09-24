@@ -45,6 +45,7 @@ def read_emerging(filename):
     start_energy=[]
     end_pos=[]
     anti_type=[]
+    num_GR=[]
 
     for line in open(filename,mode='r',encoding='utf-8'):
         
@@ -54,11 +55,12 @@ def read_emerging(filename):
             num_NC.append(int(line.split()[2]))
             num_CC.append(int(line.split()[3]))
             num_decays.append(int(line.split()[4]))
-            num_gen.append(int(line.split()[6]))
+            num_GR.append(int(line.split()[6]))
+            num_gen.append(int(line.split()[7]))
             #num_particles.append(int(line.split()[5]))
-            energy.append(float(line.split()[7]))
-            start_energy.append(float(line.split()[8]))
-            #end_pos.append(float(line.split()[8]))
+            energy.append(float(line.split()[8]))
+            start_energy.append(float(line.split()[9]))
+            #end_pos.append(float(line.split()[9]))
             #print line
         lc+=1
     return np.array(num_type),np.array(anti_type),np.array(num_CC), np.array(num_NC), np.array(num_decays), np.array(num_particles), np.array(energy)

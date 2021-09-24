@@ -28,9 +28,9 @@ def main():
     if(len(sys.argv)>1):
         energy_list=[sys.argv[1]]
     else: energy_list=['11.0','12.0','13.0','14.0','15.0','16.0','17.0','18.0','19.0','20.0','21.0']
-    #prep_files(6)
-    #prep_files(5)
-    #prep_files(4)
+    prep_files(6)
+    prep_files(5)
+    prep_files(4)
     #calc_eff_taus()
     #calc_neutrino_eff_area()
     #get_E_from_CC(18)
