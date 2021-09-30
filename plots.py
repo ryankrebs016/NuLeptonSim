@@ -5,7 +5,7 @@ import matplotlib.pyplot as plt
 import os
 rcParams['figure.facecolor'] = 'white'
 rcParams['font.size']=18
-LUTdir='testing_rno_t/particles/LUT'
+LUTdir='testing_GR/LUT'
 def load_LUT(LUT_fnm):
     f = np.load(LUT_fnm,allow_pickle=True)
     type_array=f['type_array']
@@ -111,6 +111,7 @@ def main():
     energy_list = ['1e+16', '3e+16', '1e+17', '3e+17', '1e+18', '3e+18', '1e+19', '3e+19','1e+20', '3e+20', '1e+21']
     energy_list = ['1e+15', '3e+15', '1e+16', '3e+16', '1e+17', '3e+17', '1e+18', '3e+18', '1e+19', '3e+19','1e+20', '3e+20', '1e+21']
     energy_list=['11.0','12.0','13.0','14.0','15.0','16.0','17.0','18.0','19.0','20.0','21.0']
+    energy_list=['15.6','15.7','15.9']
     ice_thickness_list = ['0.0', '1.0', '2.0', '3.0', '4.0']
 
     names=["nuElec","nuMu","nuTau","Muon","Tau"]
@@ -151,8 +152,8 @@ def main():
                     #    print(data_array[5])
                         
                     #print P_exit
-                    '''
-                      ax1.set_xscale('log')
+                    
+                    ax1.set_xscale('log')
                     ax1.semilogy(th_em_array[P_exit>0.], P_exit[P_exit>0.], '-', lw=2, label='%s eV'%energy)
                     #new_ticks = np.array([0.1, 0.3, 1., 3., 10.,  30.,90.])
                     #ax1.set_xticks(new_ticks)
@@ -164,15 +165,15 @@ def main():
                     ax1.set_xlabel('Emergence Angle, degrees')
                     ax1.set_ylabel('Probability of %s Exit'%names[num])
                     #ax1.set_title('%2')
-                    '''
+                    """
                     
                   
-                    print(np.size(data_array[20]))
+                    #print(np.size(data_array[20]))
                     ax1.hist(data_array[20],bins=100,density=True,log=True,label='%s eV'%energy)
                     ax1.set_xlabel('log(E)')
                     ax1.set_ylabel('normalized counts')
                     ax1.legend(loc=1, fontsize=14, borderpad=0.1, borderaxespad=0, labelspacing=0.1)
-                    """
+                    
                     ax2.set_xscale('log')
                     ax2.semilogy(th_em_array[P_exit>0.], mean_num_CC[P_exit>0.], '-', lw=2,  label='%s eV'%energy)
                     #yticks(fontsize=15)
@@ -196,7 +197,7 @@ def main():
                     ax3.grid(True, which='both')
                     """
                         
-            matplotlib.pyplot.savefig(LUTdir+"/hists_%s.png"%(names[num])) 
+            matplotlib.pyplot.savefig(LUTdir+"/p_exits_%s.png"%(names[num])) 
             num+=1       
         #plt.show()
 

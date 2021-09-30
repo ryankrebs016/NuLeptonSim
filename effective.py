@@ -15,11 +15,11 @@ from matplotlib.animation import FuncAnimation
 
 process=True
 
-dir='testing_rno_t/'
+dir='testing_GR/'
 particle_dir=dir+'particles/'
 event_dir=dir+'events/'
 bin_dir=dir+'binned/'
-LUTdir=particle_dir+'LUT/'
+LUTdir=dir+'LUT/'
 prob_dir=dir+'p_exit/'
 obj_dir='obj/'
 #set bin energies to something that works for all energy ranges. Easier to interpolate the missing energies
@@ -38,7 +38,7 @@ def main():
     #plot_dN_muon(19.0)
 
     
-    plot_an_angle('21.0')
+    #plot_an_angle('19.0')
     #
     # plot_an_angle('18.0')
     """
@@ -187,14 +187,16 @@ def plot_an_angle(energy,what_plot='counts'):
     ax=plt.axes(xlim=(13,22),ylim=(0,5))
     ax.set_xlabel('Log(E_t / eV)')
     ax.set_ylabel('dN/dE')
-    ax.set_title('nuMuon energy ditributions from 10^19 eV neutrino\nFrom 0 degrees to 90 degrees')
+    ax.set_title('NuTau energy ditributions from 10^19 eV neutrino\nFrom 0 degrees to 90 degrees')
     line,=ax.plot([],[],lw=2)
     print('plotting')
     angle_text=ax.text(.02,.95,'',transform=ax.transAxes)
-    th_em_array,bins_by_ang,derivs_by_ang,middle_bins=read_Ntau_files(bin_dir+str(energy)+'_binned_numu.npz')
+    number_text=ax.text(.02,.80,'',transform=ax.transAxes)
+    th_em_array,bins_by_ang,derivs_by_ang,middle_bins=read_Ntau_files(bin_dir+str(energy)+'_binned_nutau.npz')
     def init():
         line.set_data([],[])
         angle_text.set_text('')
+        number_text.set_text('')
         return line,
 
     def animate(i):
@@ -204,17 +206,18 @@ def plot_an_angle(energy,what_plot='counts'):
         y=norm
         line.set_data(x,y)
         angle_text.set_text('angle %.1f degrees'%th_em_array[i])
+        number_text.set_text('%s particles'%np.size(norm))
         return line,
 
     anim=FuncAnimation(fig,animate,init_func=init,frames=135,interval=1)
-    anim.save('show_plots/numu_energy_distribution.gif', fps=30)
+    anim.save('test_plots/19nuTau_energy_distribution.gif', fps=30)
     plt.show()
     
     # get rid from here 
     
     x=np.linspace(11,21,np.size(bins_by_ang[0]))
     plt.figure(1,figsize=[10,8])
-    plt.title('10^'+energy+' eV Neutrino Energy. '+'Tau energy distribution')
+    plt.title('10^'+energy+' eV Neutrino Energy. '+'nuEl energy distribution')
     plt.xlabel("log(E)")
 
     if(what_plot=='counts'):
@@ -504,38 +507,44 @@ def bin_energies(energy,part,bin_num,LUTdir):
     bins_by_ang=[]
     derivs_by_ang=[]
     for ang_ind in range(np.size(th_em_array)):
-        #print(ang_ind)
-        energies=data_array[ang_ind]
-        max_energy=22. #max_energy=np.max(energies)
-        min_energy=10. #min_energy=np.min(energies)
-        bin_size=(max_energy-min_energy)/bin_num
-        bins=np.zeros(bin_num)
-        min_bin=np.zeros(bin_num)
-        max_bin=np.zeros(bin_num)
-        middle_bins=[]
-        
-        for j in range(bin_num):
-            bin_min,bin_max=def_bin_energy(min_energy,max_energy,bin_size,j)
-            #print(j, "    ",bin_min,"    ", bin_max)
-            min_bin[j]=bin_min
-            max_bin[j]=bin_max
-            #print(np.size(energies))
-            middle_bins.append((max_bin[j]-min_bin[j])/2+min_bin[j])
-        for i in range(np.size(energies)):
-            index=int(bin_num*(energies[i]-min_energy)/(max_energy-min_energy))
-            if(index<0):
-                print('particle below min energy')
-                index=0
-         
-            if(index>bin_num):
-                print('particle above max energy')
-                index=bin_num-1
-            bins[index]=bins[index]+1
-            #print('index is %s'%index)
+        try:
+            print(np.shape(data_array),' ',ang_ind)
+            energies=data_array[ang_ind]
+            max_energy=22. #max_energy=np.max(energies)
+            min_energy=10. #min_energy=np.min(energies)
+            bin_size=(max_energy-min_energy)/bin_num
+            bins=np.zeros(bin_num)
+            min_bin=np.zeros(bin_num)
+            max_bin=np.zeros(bin_num)
+            middle_bins=[]
             
-        derivs=middle_bins #discrete_der(middle_bins,bins)       essentially forget aboutdoing d derivs 
-        bins_by_ang.append(bins)
-        derivs_by_ang.append(derivs)
+            for j in range(bin_num):
+                bin_min,bin_max=def_bin_energy(min_energy,max_energy,bin_size,j)
+                #print(j, "    ",bin_min,"    ", bin_max)
+                min_bin[j]=bin_min
+                max_bin[j]=bin_max
+                #print(np.size(energies))
+                middle_bins.append((max_bin[j]-min_bin[j])/2+min_bin[j])
+            for i in range(np.size(energies)):
+                index=int(bin_num*(energies[i]-min_energy)/(max_energy-min_energy))
+                if(index<0):
+                    print('particle below min energy')
+                    index=0
+            
+                if(index>=bin_num):
+                    print('particle above max energy',energies[i],th_em_array[ang_ind],energy,part)
+                    
+                    
+                    index=bin_num-1
+                bins[index]=bins[index]+1
+                #print('index is %s'%index)
+                
+            derivs=middle_bins #discrete_der(middle_bins,bins)       essentially forget aboutdoing d derivs 
+            bins_by_ang.append(bins)
+            derivs_by_ang.append(derivs)
+        except:
+            bins_by_ang.append(np.zeros(bin_num))
+            derivs_by_ang.append(np.zeros(bin_num))
     save_string=''
     if(part==6):
         save_string='tau'
@@ -1024,7 +1033,7 @@ def prep_files(type):
         bin_muon_energies('muon_energies.npz')
 
     energy_list=['11.0','12.0','13.0','14.0','15.0','16.0','17.0','18.0','19.0','20.0','21.0','22.0']
-
+    energy_list=['15.6','15.7','15.9']
 
     part_tau=type #taus
     part_nu=type-3

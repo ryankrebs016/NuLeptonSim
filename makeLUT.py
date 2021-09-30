@@ -50,19 +50,27 @@ def read_emerging(filename):
     for line in open(filename,mode='r',encoding='utf-8'):
         
         if(lc!=0 and lc!=1 and 'END' not in line):
-            num_type.append(int(line.split()[0]))
-            anti_type.append(int(line.split()[1]))
-            num_NC.append(int(line.split()[2]))
-            num_CC.append(int(line.split()[3]))
-            num_decays.append(int(line.split()[4]))
-            num_GR.append(int(line.split()[6]))
-            num_gen.append(int(line.split()[7]))
-            #num_particles.append(int(line.split()[5]))
-            energy.append(float(line.split()[8]))
-            start_energy.append(float(line.split()[9]))
-            #end_pos.append(float(line.split()[9]))
-            #print line
+            try:
+                num_type.append(int(line.split()[0]))
+                anti_type.append(int(line.split()[1]))
+                num_NC.append(int(line.split()[2]))
+                num_CC.append(int(line.split()[3]))
+                num_GR.append(int(line.split()[4]))
+                num_decays.append(int(line.split()[5]))
+                
+                num_gen.append(int(line.split()[6]))
+                #num_particles.append(int(line.split()[7]))
+                energy.append(float(line.split()[8]))
+                start_energy.append(float(line.split()[9]))
+                end_pos.append(float(line.split()[10]))
+                #pos=10
+                #print line
+            except:
+                for i in range(np.size(line.split())):
+                    print(line.split()[i])  
+                    
         lc+=1
+    
     return np.array(num_type),np.array(anti_type),np.array(num_CC), np.array(num_NC), np.array(num_decays), np.array(num_particles), np.array(energy)
 
 tag_list = [tag]
@@ -74,18 +82,20 @@ tag_list = [tag]
 missing_count = 0
 #print (tag_list)
 for tag in tag_list:
-    data_dir = 'testing/particles'
-    paths=os.listdir(data_dir)
+    data_dir = 'testing_E/'
+    particle_dir=data_dir+'particles/'
+    paths=os.listdir(particle_dir)
     eees=[]
     all_energies=['11.0','12.0','13.0','14.0','15.0','16.0','17.0','18.0','19.0','20.0','21.0']
+    all_energies=['15.6','15.7','15.9']
     for e in all_energies:
         for i in paths:
-            print(data_dir+'particles_'+e+'_91.4.dat')
+            print('particles_'+e+'_91.4.dat')
             if('particles_'+e+'_91.4.dat'==i):
                 eees.append(e)
                 break
     
-    
+    print(eees)
     count = 0
     count_true=0
     ang_array = np.concatenate([ np.arange(90.0,95.0,0.1) , np.arange(95.0,181.0,1.0) ])
@@ -93,7 +103,7 @@ for tag in tag_list:
     e_array = np.array([1e15, 3e15, 1e16, 3e16, 1e17, 3e17, 1e18, 3e18, 1e19, 3e19, 1e20, 3e20, 1e21])
     e_array=np.array([1e15,1e16,1e17,1e18,1e19,1e20,1e21])
    
-    outdir = data_dir+'LUT'
+    outdir = data_dir+'LUT/'
     if not os.path.exists(outdir):
         os.makedirs(outdir)
     
@@ -113,7 +123,7 @@ for tag in tag_list:
         
         for ang in ang_array:
            
-            fnm = data_dir+"particles_%s_%.1f.dat"%(e, ang)
+            fnm = particle_dir+"particles_%s_%.1f.dat"%(e, ang)
             print (fnm)
       
             #num_CC, num_NC, num_decays, num_particles, energy = read_emerging(fnm)
@@ -137,7 +147,7 @@ for tag in tag_list:
                 mean_num_CC.append(np.mean(num_CC))
                 mean_num_NC.append(np.mean(num_NC))
                 mean_num_decays.append(np.mean(num_decays))
-            np.savez('%s/LUT_%s_eV.npz'%(outdir,e),type_array=type_array, anti=anti,data_array = data_array, th_exit_array = th_exit_array,mean_num_CC=mean_num_CC,mean_num_NC=mean_num_NC,mean_num_decays=mean_num_decays)
+        np.savez('%sLUT_%s_eV.npz'%(outdir,e),type_array=type_array, anti=anti,data_array = data_array, th_exit_array = th_exit_array,mean_num_CC=mean_num_CC,mean_num_NC=mean_num_NC,mean_num_decays=mean_num_decays)
             
     
         
