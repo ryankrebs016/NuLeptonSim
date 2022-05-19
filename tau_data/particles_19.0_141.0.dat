@@ -1,9 +1,0 @@
-10^5 initial neutrinos of type 2 at energy 1E+19. 
-type, NC, CC, DC, InitNuNum, Gen, OutEnergy, InitEnergy.
-2 2 0 1 4588 3 14.11824 19 
-2 3 0 0 14915 3 14.09672 19 
-2 2 0 1 15411 3 14.17881 19 
-2 1 0 1 18140 2 14.78581 19 
-2 4 0 1 51193 5 14.39328 19 
-2 4 0 0 79204 4 15.61493 19 
-END
