@@ -1,16 +1,16 @@
 SRC= ./include
-CXXFLAGS = -fPIC -fopenmp -Wall -std=c++0x -I$(SRC)
+CXXFLAGS = -fPIC -w -fopenmp -Wall -std=c++0x -I$(SRC)
 
 OBJECTS= Earth.o Table.o
 
-all: Earth.o Table.o Simu_elost
+all: Earth.o Table.o ARA_sec
 
 Earth.o: $(SRC)/Earth.cc
 	$(CXX) -c $(SRC)/Earth.cc -o Earth.o $(CXXFLAGS)
 Table.o: $(SRC)/Table.cc
 	$(CXX) -c $(SRC)/Table.cc -o Table.o $(CXXFLAGS)
-Simu_elost: Simu_elost.cxx $(OBJECTS)
-	$(CXX) Simu_elost.cxx -o Simu_elost $(CXXFLAGS) $(OBJECTS)
+ARA_sec: ARA_sec.cxx $(OBJECTS)
+	$(CXX) ARA_sec.cxx -o ARA_sec $(CXXFLAGS) $(OBJECTS)
 clean:
-	rm *o Simu_elost
+	rm *o ARA_sec
 
