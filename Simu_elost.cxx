@@ -5,8 +5,9 @@
 // calculations of exposure to Earth-skimming neutrinos in Auger
 //############################################################################# 
 // Processes:
-// - CC or NC interaction of nu_tau and nu_mu in Earth (variable density along chord) 
+// - CC or NC interaction of nu_tau, nu_mu, nu_e in Earth (variable density along chord) 
 // - Production of tau and muon leptons with sampling of (1-y) where E_tau=(1-y)*E_nu_tau 
+// - Glashow Resonance for anti E neutrinos leading to lepton - neutrino pairs from W boson decay
 // - Propagation of leptons (including energy loss)
 // - Tau decay sampled from pythia look up tables for resulting neutrino and lepton-neutrino pairs
 // - Reinteraction of nu_tau produced in tau decay 
@@ -16,18 +17,27 @@
 //----------------------------------------------------------------------------- 
 // Energies (GeV), unless otherwise specified.
 //----------------------------------------------------------------------------- 
-// Assume all particles are not anti-matter
-// No electron generation particles are simulated 
-// Config file can be changed to consider regeneration and decays
-// Config files stores settings used in the code such as the starting neutrino type,
-// bool to use energy distribution, what angles to simulate over
+// Config:
+// - Set ouput directory !!! need to first create that directory before running and the /particles subdirectory !!!
+// - Set starting particle type and anti ness (1-E,2-M,3-T,4-nu_E,5-nu_M,6-nu_T) (-1=anti particle, 1=normal)
+// - Bool to consider regeneration and decays (0=false,1=true)
+// - bool to use energy distribution, what angles to simulate over
+// - Set detector type (0 - no detector, so particles are earth emerging; 1 - spherical detector, particles saved upon entering volume
+//    2 - cylindrical detector)
+// - Bool to decide if neutrinos and leptons are saved
+// - Set threshold energy
 //-----------------------------------------------------------------------------
-// calling the code is the form ./Simu_elost 1E+20 95.0 1E+4 0 0 4.0 0.92 test ./
-// if energy dist is used or angles are simulated over then the two values for them is ignored
+// calling the code is the form ./Simu_elost 1E+20 95.0 1E+4 0 0 4.0 0.92 15
+// Command line parameters
+// ./Simu_elost <Initial Neutrino energy> <Emergence Angle> <Number of neutrinos> <Cross section model> <Cross section model> 
+//              <Energy loss model> <ice depth> <ice density> <particle type>
+// Particle types follow pythia particle codes
+// +=Particle, -=Anti Particle. 15=tau, 16=nutau, 13=muons, 14=numus, 12=nue,11=e
 
-//updated on 10/11/2021
 
+//updated on 2/18/22
 
+#include <sys/stat.h>
 #include <vector>
 #include <algorithm>
 #include <string>
@@ -78,7 +88,7 @@ typedef struct {
 */
 typedef struct {
 
-  stack<int> part_type;       // 0-5
+  stack<int> part_type;       // 1-6
   stack<double> part_energy;  // E_min<part_energy<E_init
   stack<double> part_pos;     // position inside earth
   stack<int> anti;           // true if anti particle
@@ -105,9 +115,6 @@ typedef struct {
   string data_dir;            //directory to store the data files
   int anti;                   //+1 is normal, -1 if anti particle
   int starting_type;          // starting type of neutrinos
-  bool sim_angles;            // true or false to simulate all angles in the range
-  double low_angle;           // smallest angle in the simulation range
-  double high_angle;          // largest angle in the simulation range
   bool regen;                 // true or false for lepton regeneration through decays
   bool conversion;            // true or false to include produced particles from W +/- decays
   bool energy_distribution;   // true or false to use energy distribution
@@ -125,6 +132,9 @@ particle_info_def particle_data;
 reaction_tables_def reaction_data;
 config_init config;
 
+
+string make_particle_dir(int argc, char **argv,string out_dir,string es_temp,string angs_temp);
+string make_event_dir(int argc, char **argv,string out_dir,string es_temp,string angs_temp);
 
 
 // initialize reaction from pythia table and convert pythia type to tag code used in code
@@ -154,8 +164,8 @@ double dPdesdx(double E,int type);
 	
 // -------------------------------------------------
 // Tau and muon neutrino cross sections: CC,NC,GR
-double dsigCC(double l1, int CCmode, int type, int AntiNu);	
-double dsigNC(double l1, int CCmode, int type, int AntiNu);
+double dsigCC(double E, int CCmode, int type, int AntiNu);	
+double dsigNC(double E, int CCmode, int type, int AntiNu);
 double dsigGR(double E, int type, int AntiNu);
 
 // -------------------------------------------------
@@ -170,12 +180,7 @@ double mean( double *x, double *par);
 double mean_dens_chord(double theta);
 
 //---------------------------------------------------------------
-// Declare event structure - contains information about event: 
-// nu_tau propagating and creating new nu_tau in NC or tau in CC
-// where tau can decay and produce a new nu_tau.
-//---------------------------------------------------------------
-//---------------------------------------------------------------
-
+void make_dirs(string dirs);
 // Initialize Earth class
 // The arguments are water thickness and density. 
 // They are initialized to bare rock here but it is re-initialized below.
@@ -187,19 +192,26 @@ Earth *terra = new Earth(0.0, 2.6);
 int main(int argc, char **argv)
 {
   double time_start=time(NULL); //set timing variable
-
+ 
+  
   // call function to load config
   load_config(); 
+  
+  make_dirs(config.data_dir);
  
+
+  
   // initializes arrays to hold decay products and populates them from pythia file
   for(int i=0;i<100000;i++){for(int j=0;j<6;j++){reaction_data.tau_type[i][j]=reaction_data.mu_type[i][j]=-1;reaction_data.tau_energy[i][j]=reaction_data.mu_energy[i][j]=0.0;};}  
   initialize_reaction(reaction_data.tau_type,reaction_data.mu_type,reaction_data.tau_energy,reaction_data.mu_energy);
-
+  double initial_energies[100000];
+  double neu_energies[100000];
+  double lep_energies[100000];
+  int gr_counter=0;
   //cout<<config.detector<<" "<<config.det_volume<<endl;
-  //stack <float> angles;
-  //int starting_type=2; // 1 = Ve , 2= Vm , 3= vT, 4=e, 5=m, 6=T
+ 
 
-  int type_to_save[5]={-1,-1,-1,-1,-1};
+  int type_to_save[5]={-1,-1,-1,-1,-1}; //max of 5 types since electrons are forgotten
  
   if(config.save_charged){type_to_save[0]=5;type_to_save[1]=6;} //add muons and taus to pareticle type to savce
   if(config.save_neutrinos){type_to_save[2]=2;type_to_save[3]=3;type_to_save[4]=1;} //add neutrinos to type to save
@@ -234,27 +246,24 @@ int main(int argc, char **argv)
   //-------------------------------------------------
   
   FinalTable TauData;
-  char  taudata[1000];
-  char  tfinalccfile[1000];
-  char  tfinalncfile[1000];
-
   FinalTable MuonData;
+  char  taudata[1000];
   char  muondata[1000];
-  char  mfinalccfile[1000];
-  char  mfinalncfile[1000];
-  char  mfinalccbarfile[1000];
-  char  mfinalncbarfile[1000];  
+
+  //reduce redundant tables
+  char  finalccfile[1000];
+  char  finalncfile[1000];
+
+  char  finalccbarfile[1000];
+  char  finalncbarfile[1000];  
 
   if(argc<=10){
     (void)strcpy(taudata, "tables/tau_decay_tauola.data");
-    (void)strcpy(tfinalccfile, "tables/final_cteq5_cc_nu.data");
-    (void)strcpy(tfinalncfile, "tables/final_cteq5_nc_nu.data");
-    //tau above and muon below
     (void)strcpy(muondata, "tables/nu_mu_samples");
-    (void)strcpy(mfinalccfile, "tables/final_cteq5_cc_nu.data");
-    (void)strcpy(mfinalncfile, "tables/final_cteq5_nc_nu.data");
-    (void)strcpy(mfinalccbarfile, "tables/final_cteq5_cc_nubar.data");
-    (void)strcpy(mfinalncbarfile, "tables/final_cteq5_nc_nubar.data");
+    (void)strcpy(finalccfile, "tables/final_cteq5_cc_nu.data");
+    (void)strcpy(finalncfile, "tables/final_cteq5_nc_nu.data");
+    (void)strcpy(finalccbarfile, "tables/final_cteq5_cc_nubar.data");
+    (void)strcpy(finalncbarfile, "tables/final_cteq5_nc_nubar.data");
   }
   
   //if(argc>10){
@@ -279,29 +288,25 @@ int main(int argc, char **argv)
   cout << "finalncbarfile " << mfinalncbarfile << endl << endl;
   */
   int InitTau = TauData.InitTable(taudata);
-  FinalTable *tCCFinalData = new FinalTable;
-  FinalTable *tNCFinalData = new FinalTable;
-  
   int InitMuon = MuonData.InitTable(muondata);
-  FinalTable *mCCFinalData = new FinalTable;
-  FinalTable *mNCFinalData = new FinalTable;
-  FinalTable *mCCBarFinalData = new FinalTable;
-  FinalTable *mNCBarFinalData = new FinalTable;
+
+  FinalTable *CCFinalData = new FinalTable;
+  FinalTable *NCFinalData = new FinalTable;
+  FinalTable *CCBarFinalData = new FinalTable;
+  FinalTable *NCBarFinalData = new FinalTable;
   
-  tCCFinalData->InitTable(tfinalccfile);
-  tNCFinalData->InitTable(tfinalncfile);
-  mCCFinalData->InitTable(mfinalccfile);
-  mNCFinalData->InitTable(mfinalncfile);
-  mCCBarFinalData->InitTable(mfinalccbarfile);
-  mNCBarFinalData->InitTable(mfinalncbarfile);  
+  CCFinalData->InitTable(finalccfile);
+  NCFinalData->InitTable(finalncfile);
+
+  CCBarFinalData->InitTable(finalccbarfile);
+  NCBarFinalData->InitTable(finalncbarfile);  
 
   //bool useEnergyDistribution = false;
   if (atof(argv[1]) == 0) {
     config.energy_distribution = true;
     cout << "Will throw uniformly random x neutrinos energy between log10(E_nu/eV) = 15 and  log21(E_nu/eV)" << endl;
   }
-  // The finalstate array gets filled by sampling of TauData
-  //double finalstate[6];      // 0=nu_tau, 1=nu_mu, 2=nu_e, 3=hadron, 4=muon, 5=electron
+
   
   // Initialize Random number generator.
   struct timeval time_struct;
@@ -332,7 +337,7 @@ int main(int argc, char **argv)
   //-------------------------------------------------
   // Declare several variables
   double rndm;           // random number throughout the code
-  double depth=2e5; //center of detector
+  double depth=0; //center of detector
   double Lmax;
   double dL=0.;	 	  // Propagation step along chord length. Initialized to zero but it varies for each step.
   double frac=1e-3;	  // Fraction of energy lost by tau in each step. This value stays constant
@@ -350,18 +355,21 @@ int main(int argc, char **argv)
   double small_r=0;
   if(config.detector==1) //sphere
   {
+    depth=2e5;
     small_r=cbrt(3*config.det_volume/4/3.14159);
     small_r=small_r*pow(10,5); //convert km to cm
     det_entrance_d=-small_r;
     det_exit_d=small_r;
+    cout<<"here?"<<endl;
   }
-  double radius=10*pow(10,5);
-  double height=0.25*pow(10,5);
+  double radius=15*pow(10,5); //ARA
+  double height=2.8*pow(10,5); //ARA
   double trans_angle=180/PI*atan(height/2/radius);
   double dh=0;
   double dr=0;
   if(config.detector==2) //cylinder
   {
+    depth=2e5;
     if(angle<trans_angle ||angle>(180-trans_angle)) 
     {
       dr=abs(height/2*tan(PI/180*(180-angle)));
@@ -372,6 +380,7 @@ int main(int argc, char **argv)
       dh=abs(radius*tan(PI/180*(angle-90)));
       small_r=sqrt(height/2*height/2+dr*dr);
     }
+    cout<<"or here?"<<endl;
   }
   if(depth<small_r) //just a check for detector limites
   {
@@ -391,6 +400,7 @@ int main(int argc, char **argv)
   
   end_point[0]=small_r*x_step;//puts end point on left side
   end_point[1]=R0-depth+small_r*y_step;
+  cout<<"depth is "<<depth<<endl;
   //finding start point
   double point_slope=0;
   double y_pos=0;
@@ -440,7 +450,7 @@ int main(int argc, char **argv)
   //int brkcnt=0, brkcnt2=0; // These are used to flag particles that have fallen below the energy threshold (Elim)
   //int prop_mode=0;	  // Used in tau propagation
   
-  //int AntiNu=0;
+
 
   double finalstatecc[2],finalstatenc[2]; // will contain Bjorken (1-y) and y
   
@@ -474,8 +484,8 @@ int main(int argc, char **argv)
   int count=0;
   for(int i =0;i<4;i++)es_temp+=e_temp[i];
   
-  if(angle>=100) count=5;
-  else count =4;
+  if(angle>=100) count=6;
+  else count =5;
   for(int i=0;i<count;i++) angs_temp+=ang_temp[i];
     
 
@@ -485,6 +495,9 @@ int main(int argc, char **argv)
   //-------------------------------------------------
   // Output file names using input arguments
   string nameEnergies="";
+  string nameEvents="";
+  nameEnergies=make_particle_dir(argc,argv,config.data_dir,es_temp,angs_temp); 
+  nameEvents=make_event_dir(argc,argv,config.data_dir,es_temp,angs_temp); 
   /*
   if(argc>=9){
     nameEnergies+=argv[9];
@@ -492,6 +505,8 @@ int main(int argc, char **argv)
   */
   //name output file for particles
   
+  
+  /*
   nameEnergies+=config.data_dir;
   nameEnergies+="/particles";
   nameEnergies+="/particles_";
@@ -513,10 +528,12 @@ int main(int argc, char **argv)
     nameEnergies+="EL";
   };
   nameEnergies+=".dat";
+  if(argc>8) config.starting_type=atoi(argv[8]);
+  */
   ofstream outEnergies(nameEnergies.c_str());
   outEnergies << "10^"<< log10(tot_evt)<<" initial neutrinos of type "<<config.starting_type<<" at energy "<<argv[1]<<". \ntype, anti, NC, CC, GR, DC, Gen, InitNuNum, InitNeutrinoType, OutEnergy, InitEnergy, Part_Pos.\n";
   //cout<<nameEnergies<<endl;
-
+  ofstream outEvents(nameEvents.c_str());
 
   // Get cross-section mode to use
   int CCmode = 0;
@@ -649,7 +666,7 @@ int main(int argc, char **argv)
     bool has_been_saved=false;
     bool save_cond=false;
     bool exit_cond=false;
-    //cout<<endl<<"primary particle: "<<i<<endl;
+    cout<<"primary particle: "<<i<<endl;
     Energy_GeV = atof(argv[1])*pow(10,-9); // Get nu_tau energy from input argument
     if (config.energy_distribution) Energy_GeV =  pow(10,6 + (6 * (double)rand()/RAND_MAX));
     //cout<<"initial energy GeV is "<<Energy_GeV<<endl;
@@ -681,6 +698,13 @@ int main(int argc, char **argv)
     int dc_num=0;
     anti=config.anti;
 
+    //stuff for w decays
+
+    const double e_rest=(mW*mW+me2)/(2*mW);
+    const double m_rest=(mW*mW+mmuon2)/(2*mW);
+    const double t_rest=(mW*mW+mtau2)/(2*mW);
+    
+  
 
   
     int loop_num=0;
@@ -733,35 +757,7 @@ int main(int argc, char **argv)
       // Flag to see how fast code is running
       //if(!((float)i/100000-(int)(i/100000))) cout<< i << endl;
       
-      // Get nu_tau energy from input argument
-    
-   
-      //if(starting_type=="muon"){
-      //  AntiNu=rand()%2;
-      //};
-      
-      /* ------------------event struct is commented out as it is no longer needed
-      // Initialize event info
-      //event.nevt = i;            // event number
-      event.theta = refTheta;      // zenith angle
-      event.Lmax1 = Lmax1;         // max. distance in Earth
-      event.Lmax2 = Lmax2;         // max. distance in Earth
-      event.Estart = Energy_GeV; // initial nu_tau energy
-      event.trig = 0;            // no trigger (tau emerging) so far
-      event.ncc = 0;             // zero CC interactions so far
-      event.nnc = 0;             // zero NC interactions so far
-      event.ndk = 0;             // zero tau decays so far
-      event.npart = 1;           // only 1 particle so far
-      int tag=0;	               // dealing with a nu_tau
-      int npart = 0;
-      event.Shheight = 0;
-      event.Shlong = 0;
-      event.E1[npart] = Energy_GeV;
-      event.v1[npart] = 0;
-      event.E2[npart] = -1;
-      event.v2[npart] = -1;
-      event.id[npart]=0;
-      */
+
       //brkcnt=0;
       //prop_mode =0;
       traversed_grammage = 0.; //initialize traversed grammage for each event
@@ -770,12 +766,10 @@ int main(int argc, char **argv)
       //printf("Ldist, Lmax %1.2e %1.2e\n", Ldist, Lmax);
       //Ldist=0.;
       bool broken=false;
-      while(part_pos<maxL)
+      while(part_pos<maxL) //EDIT HERE FOR END CONDITION
       {
       
-        //cout<<827<<",";
         //create holding arrays for reactions
-        //distance_loop_num++;
         int reaction_types[6]={0,0,0,0,0,0};
         double reaction_energies[6]={0,0,0,0,0,0};
         int anti_type[6]={1,1,1,1,1,1};
@@ -790,7 +784,7 @@ int main(int argc, char **argv)
         //===========================
         // Particle is a neutrino
         //===========================
-        if(part_type==1||part_type==2||part_type==3)
+        if(part_type==1||part_type==2||part_type==3) //CHANGE PARTICLE TYPE TO PYTHIA
           {
 
           // Number of interaction lengths propagated in this step is given by an exponentially distributed random number.
@@ -799,7 +793,7 @@ int main(int argc, char **argv)
           // Convert the number of interaction lengths to grammage.
           double X_int;
           X_int = num_int_lens /(Navo*(dsigGR(part_energy,part_type,anti)+dsigCC(part_energy, CCmode,part_type,anti)+dsigNC(part_energy, CCmode,part_type, anti)));
-      
+          
           // The following lines use the grammage_distance lookup table to estimate what position along the trajectory this Xint corresponds to.
           
           // Add X_int to the total grammage traversed by the particle
@@ -815,6 +809,7 @@ int main(int argc, char **argv)
             traversed_grammage = sum_grammage;
             pos[0]=end_point[0];
             pos[1]=end_point[1];
+            
           }
           // If contained within the trajectory, linearly interpolate its interaction distance.
       
@@ -846,6 +841,7 @@ int main(int argc, char **argv)
             double total_cross=dsigNC(part_energy, CCmode,part_type,anti)+dsigCC(part_energy, CCmode,part_type,anti)+dsigGR(part_energy,part_type,anti);
             double rand_val=((double) rand() / (double)(RAND_MAX));
             if(total_cross==0){cout<<"total_cross is zero"<<endl;}
+
             double CCratio=dsigCC(part_energy, CCmode,part_type,anti)/total_cross;
             double NCratio=dsigNC(part_energy, CCmode,part_type,anti)/total_cross;
             double GRratio=dsigGR(part_energy,part_type,anti)/total_cross;
@@ -853,29 +849,23 @@ int main(int argc, char **argv)
             bool CChappens=rand_val<CCratio;
             bool NChappens=(CCratio<=rand_val && rand_val<CCratio+NCratio);
             bool GRhappens=(CCratio+NCratio<=rand_val && rand_val<CCratio+NCratio+GRratio);
+            
 
-            //bool CCTauhappens=((double) rand() / (double)(RAND_MAX))>=dsigNC(part_energy, CCmode,part_type,anti)/(dsigNC(part_energy, CCmode,part_type,anti)+dsigCC(part_energy, CCmode,part_type,anti));
-            //bool CCMuhappens=((double) rand() / (double)(RAND_MAX))>=dsigNC(part_energy, CCmode,part_type,anti)/(dsigNC(part_energy, CCmode,part_type,anti)+dsigCC(part_energy, CCmode,part_type,anti));
-            //cout<<910<<",";
             if(CChappens)
             {
               //=======================
               // CC interaction occurs (the tracked particle changes from tau neutrino to tau lepton.)
               //=======================
               //total_CC++;
-              // Save the energy and position in the event structure
-              //event.E2[npart]=Energy_GeV;
-              //event.v2[npart]=Ldist;
 
               CC_num++;
               //cout<<"charged current of neutrinos happened \n";
               // Obtain Bjorken y
-              if(part_type==3)tCCFinalData->ThrowFinal(log10(part_energy),finalstatecc);
-    
-              if(part_type==2)
+             
+              if(part_type==2 || part_type==3)
               {
-                if(anti==-1)mCCFinalData->ThrowFinal(log10(part_energy),finalstatecc);
-                if(anti==1)mCCBarFinalData->ThrowFinal(log10(part_energy),finalstatecc);
+                if(anti==1)CCFinalData->ThrowFinal(log10(part_energy),finalstatecc);
+                if(anti==-1)CCBarFinalData->ThrowFinal(log10(part_energy),finalstatecc);
               }
               if(part_type==1)
               {
@@ -884,7 +874,7 @@ int main(int argc, char **argv)
                 break;
               }
 
-              Bjorken_y=finalstatecc[1];
+              Bjorken_y=finalstatecc[1];//INEASTIVITY?
             
               // Set the tau lepton energy from the sampled Bjorken y.
               double initial_energy=part_energy;
@@ -906,12 +896,13 @@ int main(int argc, char **argv)
               //tag=1;
               
              
-              if(part_type==2) part_type=5;
-              if(part_type==3) part_type=6;
+              if(part_type==2) part_type=5;//nu_mu -> mu
+              if(part_type==3) part_type=6;//nu_tau -> tau
+
               // get the density at the current location before jumping to the tau lepton part of the loop
               dens = get_dens_from_coords(pos);//change to Lmax2 dfor icecube
-              change=true;
-              
+              change=true;//signify that particle type changed so simulation of decay delayed until next distance loop iteration
+              //ADD EVENT SAVING!!
             }
             else if (NChappens)
             {
@@ -919,20 +910,18 @@ int main(int argc, char **argv)
               // NC interaction occurs (the tracked particle remains a tau neutrino with reduced energy.)
               //=======================
               //total_NC++;
-              // Save the energy and position in the event structure
-              //event.E2[npart]=Energy_GeV;
-              //event.v2[npart]=Ldist;
               //cout<<"neutral current of neutrinos happened \n";
               // Obtain Bjorken y
-              if(part_type==3)tNCFinalData->ThrowFinal(log10(part_energy),finalstatenc);  
+
+              
       
-              if(part_type==2 || part_type==1)
+              if(part_type==2 || part_type==1 || part_type==3)
               {
-                if(anti==-1) mNCFinalData->ThrowFinal(log10(part_energy),finalstatenc);
-                if(anti==1) mNCBarFinalData->ThrowFinal(log10(part_energy),finalstatenc);
+                if(anti==1) NCFinalData->ThrowFinal(log10(part_energy),finalstatenc);
+                if(anti==-1) NCBarFinalData->ThrowFinal(log10(part_energy),finalstatenc);
               }
               
-              Bjorken_y=finalstatenc[1];
+              Bjorken_y=finalstatenc[1]; //INELASTICITY
               
               // Set the neutrino energy from the sampled Bjorken y.
               double initial_energy=part_energy;
@@ -955,6 +944,7 @@ int main(int argc, char **argv)
               //if(tag==0){event.id[npart]=0;}
               //if(tag==2){event.id[npart]=2;}
               change=true;
+              //ADD SAVE EVENT!!
             }
             else if (GRhappens)
             {
@@ -984,29 +974,45 @@ int main(int argc, char **argv)
                 double lepton_mass=0;
                 double lepton_type=0;
                 int lepton_anti=1;
-                if(lep_rand<(1/3))
+                
+                if(lep_rand<(1./3.))    //change particle types
                 {//e made
                   part_type=1;
                   lepton_mass=me;
                   lepton_type=4;
+                  
                 }
-                if(lep_rand<(2/3) &&lep_rand>=(1/3))
+                else if(lep_rand<(2./3.) &&lep_rand>=(1/3))
                 {//mu made
                   part_type=2;
                   lepton_mass=mmuon;
                   lepton_type=5;
+                  
                 }
-                if(lep_rand>=(2/3))
+                else if(lep_rand>=(2./3.))
                 {//tau made
                   part_type=3;
                   lepton_mass=mtau;
                   lepton_type=6;
+                  
                 }
                 //cout<<"GR happened at "<<pos[0]<<" "<<pos[1]<<" and decayed to "<<part_type<<" and "<<lepton_type<<endl;
+                //cout<<part_type<<","<<lepton_type<<endl;
                 part_energy=((double) rand() / (double)(RAND_MAX))*part_energy*(mW*mW-lepton_mass*lepton_mass)/(mW*mW);
-                double lepton_energy=initial_E-part_energy;
-                //add the lepton to the stack
-                if(lepton_type!=4 || lepton_type!=0)
+                //gamma=E_nu/mW, E_e_rest=mW^2+ml^2)/(2mW), 
+                double angle_rand=(double)rand()/(double)RAND_MAX;
+                double lepton_energy=initial_E/mW*(mW*mW+lepton_mass*lepton_mass)/(2*mW)*cbrt(8-8*angle_rand);
+                part_energy=initial_E-lepton_energy;
+                
+                if(gr_counter<100000 && lepton_type==6){
+                  initial_energies[gr_counter]=initial_E;
+                  neu_energies[gr_counter]=part_energy;
+                  lep_energies[gr_counter]=lepton_energy;
+                  gr_counter++;
+                }
+                //ADD EVENT SAVING!
+
+                if(lepton_type!=4 || lepton_type!=0) //throw extra lepton into stack and continue on with the produced nu
                 {
                   particle_data.part_type.push(lepton_type);
                   particle_data.part_energy.push(lepton_energy);
@@ -1022,34 +1028,22 @@ int main(int argc, char **argv)
                 }
                 
               }
-              change=true;
+              change=true;//signify that particle type changed so simulation of decay delayed until next distance loop iteration
               
             }
           }// end of 'if(Ldist<Lmax)'  (particle still inside Earth)
-        //cout<<1087<<",";
-          // Energy of new tau or nu_tau produced below threshold => stop
-          //if(part_energy < Elim){
-            
-            // Flag particle below threshold
-          //  brkcnt=1;
-            
-            // Count the number of times the particle fell below threshold
-          //  brkcnt2++;
-            
-          //  break;
-          //}
+
         }// end of 'if (tag == 0,1,2)' (particle is a nu_e,nu_m,nu_t)
         
         //=========================
         // Particle is a tau lepton or muon lepton
         //=========================
-        if((part_type==4||part_type==5||part_type==6)&&change==false&&broken==false)//&&change==false
+        if((part_type==4||part_type==5||part_type==6)&&change==false&&broken==false) //change particle types
         {
           // Estimate step length based on Energy, dE/dx, local density, and fraction.
-          //cout<<1107<<",";
           dL=(part_energy/(dens*elost(part_energy, dens, ELOSSmode,part_type)))*frac;
           //cout << "Ldist " << 1.e-5*Ldist << "  R " << 1.e-5*sqrt(R02 - (Ldist*Lmax)+Ldist*Ldist) << " dens " << dens << endl;
-          //cout<<"simulating tau"<<endl;
+
           // Check if tau leaves the Earth after dL. If it does then adjust last step
           if(part_pos+dL > maxL) dL=maxL-part_pos;//change tolmax1 for icecube
           
@@ -1058,13 +1052,16 @@ int main(int argc, char **argv)
           
           // Calculate the probability that the tau lepton will decay along the step dL.
           dPdes=1.-exp(-dL*dPdesdx(part_energy,part_type));
+
+          //update particle position
           part_pos=part_pos+dL;
           pos[0]=pos[0]-dL*x_step;
           pos[1]=pos[1]+dL*y_step;
+
           // Calculate a random number used for determining whether the tau decays or not in this step.
           rndm=((double) rand() / (double)(RAND_MAX));
           part_energy = part_energy-dL*dens*elost(part_energy, dens, ELOSSmode,part_type);
-          // Determine whether the tau decays or not.
+          // Determine whether the lepton decays or not.
           if(rndm > dPdes)
           {
             //==============================
@@ -1084,6 +1081,7 @@ int main(int argc, char **argv)
             dc_num++;
             //if(part_type==6) num_tau_decays++;
             //if(part_type==5) num_muon_decays++;
+
             // Account for the tau lepton energy lost in the step dL
             if(!config.regen) { broken=true; break;}
             
@@ -1161,35 +1159,12 @@ int main(int argc, char **argv)
             //}
             //double shower_energy=initial_energy-part_energy-lost_energy;
             
-            // count the tau decay and the total number of interactions
-            //event.ndk++;
-            //event.npart++;
-            //npart++;
-          
-            // Save the new particle energy and distance in the event structure/
-            //event.E1[npart]=Energy_GeV;
-            //event.v1[npart]=Ldist;
-            
-            // New particle is tagged as a tau neutrino.
-            //event.id[npart]=0;
-            //tag=0;
-            // Comment next line to INCLUDE regeneration due to nu_tau(CC)->tau(decay)->nu_tau
-            // break; // do not regenerate i.e. if nu_tau produced
           }
-        }
+        }// end of 'if (tag == 1,2,3)' (particle is lepton)
           
-        // Energy of tau below threshold => stop
-        //if(Energy_GeV < Elim) break;
-            
-        // Flag particle below threshold
-        //  brkcnt=1;
-            
-        // Count the number of times the particle fell below threshold
-        //  brkcnt2++;
-            
-        //  break;}
-          
-        //} // end of 'if (tag == 1||3)' (particle is tau)
+
+
+    
 
         //time to pop all the extra particles back in the stack to be looped over after
         if(config.conversion)
@@ -1225,27 +1200,6 @@ int main(int argc, char **argv)
           }
       } // ends loop 'for(Ldist=0.;Ldist<Lmax;)'
       
-      // If the propagation was not terminated, then save the final energy of the particle in the event structure.
-      //if(brkcnt!=1) event.Eend = Energy_GeV;
-      
-      //========================================
-      // Tau above threshold emerging from Earth
-      //========================================
-      /*
-      if((tag==1)&&(Energy_GeV>=Elim))
-        {
-        // Record this in the event structure.
-        event.trig=1;
-        
-        // Generate a random number to sample shower position
-        rndm = ((double) rand() / (double)(RAND_MAX));
-        
-        // Estimate the shower position (not used in this code)
-        event.Shheight=(-1./dPdesdx(Energy_GeV,tag)*log(1.-rndm)+1000000.)*sin(PI*(refTheta/180.-1./2));
-        event.Shlong=(-1./dPdesdx(Energy_GeV,tag)*log(1.-rndm)+1000000.)*cos(PI*(refTheta/180.-1./2));
-        }
-      */
-      
       //=================================================
       // Write energy of emerging tau to output text file
       //=================================================
@@ -1257,6 +1211,7 @@ int main(int argc, char **argv)
         //cout<<"part energy is "<<part_energy<<"with threshold "<<Elim<<endl;
         if((part_type==type_to_save[j])&&(part_energy>Elim)&&broken==false&&has_been_saved==false)//changge to just poarticle tyoe if saving all particls even below thrwhpold
           {
+            
             outEnergies <<part_type<<" "<<anti<<" "<<NC_num << " " << CC_num << " " << GR_num<<" "<<
             dc_num << " " <<generation <<" "<<i<< " " <<
             setprecision(7)  << log10(part_energy)+9 << " " << log10(Energy_GeV)+9<<" "<<part_pos<<"\n";
@@ -1270,10 +1225,13 @@ int main(int argc, char **argv)
   
   outEnergies << "END" << endl; // write END in the last line of the text output file. 
   outEnergies.flush();
+  outEvents <<"END"<<endl;
+  outEvents.flush();
   double angle_time_end=time(NULL);
   cout<<"total CC "<<total_CC<<". total NC "<<total_NC<<". total GR "<<total_GR<<endl;
   //muon_output<<angle<<" "<<produced_muons<<endl;
   //output<<angle<<" "<<tot_evt<<" " <<angle_time_end-angle_time_start<<" "<<endl;
+
   /*
   cout<<"total CC "<<total_CC<<". total NC "<<total_NC<<endl;
   cout<<"num of CC "<<total_CC<<endl;
@@ -1300,6 +1258,48 @@ int main(int argc, char **argv)
 // ===================================================
 // Several functions
 // ===================================================
+string make_particle_dir(int argc, char **argv,string out_dir,string es_temp,string angs_temp)
+{
+  string nameEnergies="";
+  nameEnergies+=config.data_dir;
+  nameEnergies+="/particles";
+  nameEnergies+="/particles_";
+  nameEnergies+=es_temp;
+  nameEnergies+="_";
+  nameEnergies+=angs_temp;
+  
+  if(argc==8){
+    nameEnergies+="_";
+
+    nameEnergies+=argv[6];
+    nameEnergies+="km_ice_";
+    if(atof(argv[4])==0) nameEnergies+="mid";
+    if(atof(argv[4])==1) nameEnergies+="low";
+    if(atof(argv[4])==2) nameEnergies+="upp";
+    nameEnergies+="CS_";
+    if(atof(argv[5])==0) nameEnergies+="std";
+    if(atof(argv[5])==1) nameEnergies+="low";
+    nameEnergies+="EL";
+  };
+  nameEnergies+=".dat";
+  if(argc>8) config.starting_type=atoi(argv[8]);
+  return nameEnergies;
+}
+string make_event_dir(int argc, char **argv,string out_dir,string es_temp,string angs_temp)
+{
+  string nameEvents="";
+  nameEvents+=config.data_dir;
+  nameEvents+="/events";
+  nameEvents+="/events_";
+  nameEvents+=es_temp;
+  nameEvents+="_";
+  nameEvents+=angs_temp;
+  nameEvents+=".dat";
+
+  return nameEvents;
+
+}
+
 
 double get_dens_from_coords(double *coords)
 {
@@ -1322,9 +1322,6 @@ void load_config()
      if((int)line.find("data_dir")!=-1) sin>>config.data_dir;
      else if ((int)line.find("starting_type")!=-1) sin>>config.starting_type;
      else if ((int)line.find("anti")!=-1) sin >>config.anti;
-     else if ((int)line.find("sim_angles")!=-1) sin>>config.sim_angles;
-     else if ((int)line.find("low_angle")!=-1) sin>>config.low_angle;
-     else if ((int)line.find("high_angle")!=-1) sin>>config.high_angle;
      else if ((int)line.find("regen")!=-1) sin>>config.regen;
      else if ((int)line.find("conversion")!=-1) sin>>config.conversion;
      else if ((int)line.find("energy_distribution")!=-1) sin>>config.energy_distribution;
@@ -1360,247 +1357,146 @@ double dsigGR(double E, int type, int AntiNu)
 }
 double dsigCC(double E, int CCmode, int type,int AntiNu )
 {
-    if(type==2||type==1)
-    {
-        double f=0.;
-        double p[4];
-        AntiNu=(AntiNu+1)/2;//return AntiNu to be like a bool
-        // The value below determines when we switch from the parameterizations 
-        // of the neutrino cross sections at ultra-high energis (e.g. CTTW standard values) 
-        // to the cross sections to the Ghandi parameterization. These transitions were determined
-        // using the parameterization made for this code. They are likely a bit different if the user 
-        // switches the cross section to the upper or lower cross section models. 
+  
+  double f=0.;
+  double p[4];
+  
+  AntiNu=int(abs(AntiNu-1)/2);//return AntiNu to be like a bool
+  // The value below determines when we switch from the parameterizations 
+  // of the neutrino cross sections at ultra-high energis (e.g. CTTW standard values) 
+  // to the cross sections to the Ghandi parameterization. These transitions were determined
+  // using the parameterization made for this code. They are likely a bit different if the user 
+  // switches the cross section to the upper or lower cross section models. 
 
-        double E_switch = 2.00e6;  // GeV
+  double E_switch = 2.00e6;  // GeV
 
-        // If the energy is below E_sigma_switch, set CCmode to the Ghandi cross-section.
-        // If the particle is a neutrino, AntiNu = 0 and the cross-section is set to the
-        // the Ghandi model for neutrinos. If it is an anti-neutrino, AntiNu=1 and the
-        // cross-section is set to the Ghdni model for anti-neutrinos.
+  // If the energy is below E_sigma_switch, set CCmode to the Ghandi cross-section.
+  // If the particle is a neutrino, AntiNu = 0 and the cross-section is set to the
+  // the Ghandi model for neutrinos. If it is an anti-neutrino, AntiNu=1 and the
+  // cross-section is set to the Ghdni model for anti-neutrinos.
 
-        if( E < E_switch ){
-        CCmode = 3 + AntiNu;
-        } 
+  if( E < E_switch ){
+  CCmode = 3 + AntiNu;
+  } 
 
-        // Connolly+, 2011 lower model (ARW's parametrization)
-        double p0[4] = {-4.26355014e+01,   4.89151126e-01,   2.94975025e-02,  -1.32969832e-03};
-        // Connolly+, 2011 middle model (ARW's parametrization)
-        double p1[4] = { -5.35400180e+01,   2.65901551e+00, -1.14017685e-01,   1.82495442e-03};
-        // Connolly+, 2011 upper model (ARW's parametrization)
-        double p2[4] = {-5.31078363e+01,   2.72995742e+00,  -1.28808188e-01,   2.36800261e-03};
+  // Connolly+, 2011 middle model (ARW's parametrization)
+  double p0[4] = { -5.35400180e+01,   2.65901551e+00, -1.14017685e-01,   1.82495442e-03};
+  // Connolly+, 2011 lower model (ARW's parametrization)
+  double p1[4] = {-4.26355014e+01,   4.89151126e-01,   2.94975025e-02,  -1.32969832e-03};
+  // Connolly+, 2011 upper model (ARW's parametrization)
+  double p2[4] = {-5.31078363e+01,   2.72995742e+00,  -1.28808188e-01,   2.36800261e-03};
 
-        // Gandhi, Quigg, Reno 1995 Neutrino cross section
-        double p3[4] = { -6.24043607e+01,   4.21769574e+00, -2.06814586e-01,   3.70730061e-03};
-        // Gandhi, Quigg, Reno 1995 Anti-Neutrino cross section
-        double p4[4] = { -6.43574494e+01,   4.41740442e+00, -2.10856220-01,   3.65724741e-03};
+  // Gandhi, Quigg, Reno 1995 Neutrino cross section
+  double p3[4] = { -6.24043607e+01,   4.21769574e+00, -2.06814586e-01,   3.70730061e-03};
+  // Gandhi, Quigg, Reno 1995 Anti-Neutrino cross section
+  double p4[4] = { -6.43574494e+01,   4.41740442e+00, -2.10856220-01,   3.65724741e-03};
 
-        double log10_E_eV = log10(E)+9.;
-        for (int ii = 0 ; ii<4; ii++)
-        {
-          if(CCmode==0) p[ii] = p0[ii];
-          if(CCmode==1) p[ii] = p1[ii];
-          if(CCmode==2) p[ii] = p2[ii];
-          if(CCmode==3) p[ii] = p3[ii];
-          if(CCmode==4) p[ii] = p4[ii];
+  double log10_E_eV = log10(E)+9.;
+  for (int ii = 0 ; ii<4; ii++)
+  {
+    if(CCmode==0) p[ii] = p0[ii];
+    if(CCmode==1) p[ii] = p1[ii];
+    if(CCmode==2) p[ii] = p2[ii];
+    if(CCmode==3) p[ii] = p3[ii];
+    if(CCmode==4) p[ii] = p4[ii];
+
+    f += p[ii]*pow(log10_E_eV,ii);
+  }
+
+  f = pow(10,f);
+  return f;
+
     
-          f += p[ii]*pow(log10_E_eV,ii);
-        }
-
-        f = pow(10,f);
-        return f;
-    }
-    if(type==3)
-    {
-        double f=0.;
         
-        // 	double l1=log10(E);
-        // 	double l2=l1*l1;
-        // 	double l3=l2*l1;
-        // 	double l4=l3*l1;
-        // 	double l5=l4*l1;
-        // 	double l6=l5*l1;
-        // 	double l7=l6*l1;
-        // 	f=pCC0+pCC1*l1+pCC2*l2+pCC3*l3+pCC4*l4+pCC5*l5+pCC6*l6+pCC7*l7;
+  // 	double l1=log10(E);
+  // 	double l2=l1*l1;
+  // 	double l3=l2*l1;
+  // 	double l4=l3*l1;
+  // 	double l5=l4*l1;
+  // 	double l6=l5*l1;
+  // 	double l7=l6*l1;
+  // 	f=pCC0+pCC1*l1+pCC2*l2+pCC3*l3+pCC4*l4+pCC5*l5+pCC6*l6+pCC7*l7;
+  
+  //      f = 6.37994*pow(E,0.355991)*1e-36;
+  
+  /* CKMT */
+  //      f = (-36.3345965603+7.14693605311*pow(E,0.293313250614))*1.e-36;
+  
+  /* ALLM */
+  // H. Abramowicz et al., Phys. Lett. B 269, 465 (1991);
+  // H. Abramowicz and A. Levy, hep-ph/9712415.
+  //	f = (-280.544665122+10.3452620208*pow(E,0.317119535055))*1.e-36;
+  
+  /* ASW */   // Saturation of pdfs
+              // N. Armesto et al., Phys. Rev. D 77, 013001 (2008).
+              // N. Armesto et al., Phys. Rev. Lett. 94, 022002 (2005).
+              //      f = (-799.252409182+52.4932827684*pow(E,0.244551044541))*1.e-36;
+  
+  /* Sarkar */  // Default model used in Auger
+                  // A. Cooper-Sarkar and S. Sarkar, JHEP 0801, 075 (2008).
+                  // Amanda Cooper-Sarkar, Philipp Mertsch, Subir Sarkar. JHEP 08, 042 (2011).
+                  //      f = (-649.265343982+26.4437052803*pow(E,0.296160447336))*1.e-36;
+  
+  // Sarkar model (Yann's parametrization)
+  //    double AS=-0.391641;
+  //    double BS=0.635232;
+  //    double CS=-0.0158144;
+  //    f= (pow(10,AS+BS*log10(E)+CS*pow(log10(E),2)))*1.e-36;
         
-        //      f = 6.37994*pow(E,0.355991)*1e-36;
-        
-        /* CKMT */
-        //      f = (-36.3345965603+7.14693605311*pow(E,0.293313250614))*1.e-36;
-        
-        /* ALLM */
-        // H. Abramowicz et al., Phys. Lett. B 269, 465 (1991);
-        // H. Abramowicz and A. Levy, hep-ph/9712415.
-        //	f = (-280.544665122+10.3452620208*pow(E,0.317119535055))*1.e-36;
-        
-        /* ASW */   // Saturation of pdfs
-                    // N. Armesto et al., Phys. Rev. D 77, 013001 (2008).
-                    // N. Armesto et al., Phys. Rev. Lett. 94, 022002 (2005).
-                    //      f = (-799.252409182+52.4932827684*pow(E,0.244551044541))*1.e-36;
-        
-        /* Sarkar */  // Default model used in Auger
-                        // A. Cooper-Sarkar and S. Sarkar, JHEP 0801, 075 (2008).
-                        // Amanda Cooper-Sarkar, Philipp Mertsch, Subir Sarkar. JHEP 08, 042 (2011).
-                        //      f = (-649.265343982+26.4437052803*pow(E,0.296160447336))*1.e-36;
-        
-        // Sarkar model (Yann's parametrization)
-        //    double AS=-0.391641;
-        //    double BS=0.635232;
-        //    double CS=-0.0158144;
-        //    f= (pow(10,AS+BS*log10(E)+CS*pow(log10(E),2)))*1.e-36;
-        
-        if(CCmode==0){
-            // Connolly+, 2011 middle model (ARW's parametrization)
-            double p[4] = { -5.35400180e+01,   2.65901551e+00, -1.14017685e-01,   1.82495442e-03};
-            double log10_E_eV = log10(E)+9.; // E is in GeV, this parameterization is in log_10 ( E / eV ).
-            for (int ii = 0 ; ii<4; ii++){
-            f += p[ii]*pow(log10_E_eV,ii);
-            //printf("\t %1.2e %1.2f %1.2e %1.2e %1.2e \n", E, log10_E_eV, p[ii], pow(log10_E_eV,ii), f);
-            }
-            f = pow(10,f);
-            // printf("CC middle %1.2e %1.2f %1.2e %1.2f\n", E, log10_E_eV, f, log10(f));
-        }
-        
-        if(CCmode==1){
-            // Connolly+, 2011 lower model (ARW's parametrization)
-            double p[4] = {-4.26355014e+01,   4.89151126e-01,   2.94975025e-02,  -1.32969832e-03};
-            double log10_E_eV = log10(E)+9.; // E is in GeV, this parameterization is in log_10 ( E / eV ).
-            for (int ii = 0 ; ii<4; ii++){
-            f += p[ii]*pow(log10_E_eV,ii);
-            //printf("\t %1.2e %1.2f %1.2e %1.2e %1.2e \n", E, log10_E_eV, p[ii], pow(log10_E_eV,ii), f);
-            }
-            f = pow(10,f);
-            // printf("CC lower %1.2e %1.2f %1.2e %1.2f\n", E, log10_E_eV, f, log10(f));
-        }
-        
-        if(CCmode==2){
-            // Connolly+, 2011 upper model (ARW's parametrization)
-            double p[4] = {-5.31078363e+01,   2.72995742e+00,  -1.28808188e-01,   2.36800261e-03};
-            double log10_E_eV = log10(E)+9.; // E is in GeV, this parameterization is in log_10 ( E / eV ).
-            for (int ii = 0 ; ii<4; ii++){
-            f += p[ii]*pow(log10_E_eV,ii);
-            //printf("\t %1.2e %1.2f %1.2e %1.2e %1.2e \n", E, log10_E_eV, p[ii], pow(log10_E_eV,ii), f);
-            }
-            f = pow(10,f);
-            // printf("CC upper %1.2e %1.2f %1.2e %1.2f\n", E, log10_E_eV, f, log10(f));
-        }
-        
-        return f;
-    }
+      
 }
 
 double dsigNC(double E, int CCmode, int type,int AntiNu)
 {
-    double f=0.; 
-    if(type==2||type==1)
-    {
-        AntiNu=(AntiNu+1)/2;
-        double p[4];
-
-        // The value below determines when we switch from the parameterizations 
-        // of the neutrino cross sections at ultra-high energis (e.g. CTTW standard values) 
-        // to the cross sections to the Ghandi parameterization. These transitions were determined
-        // using the parameterization made for this code. They are likely a bit different if the user 
-        // switches the cross section to the upper or lower cross section models. 
-        
-        double E_switch = 2.00e6;  // GeV
-
-        // If the energy is below E_sigma_switch, set CCmode to the Ghandi cross-section.
-        // If the particle is a neutrino, AntiNu = 0 and the cross-section is set to the
-        // the Ghandi model for neutrinos. If it is an anti-neutrino, AntiNu=1 and the
-        // cross-section is set to the Ghdni model for anti-neutrinos.
-
-        if( E < E_switch ){
-        CCmode = 3 + AntiNu;
-        }
-
-        // Connolly+, 2011 lower model (ARW's parametrization)
-        double p0[4] = {-4.42377028e+01, 7.07758518e-01, 1.55925146e-02, -1.02484763e-03};
-        // Connolly+, 2011 middle model (ARW's parametrization)
-        double p1[4] = { -5.41463399e+01,   2.65465169e+00,  -1.11848922e-01,   1.75469643e-03};
-        // Connolly+, 2011 upper model (ARW's parametrization)
-        double p2[4] = {-5.36713302e+01,   2.72528813e+00,  -1.27067769e-01,   2.31235293e-03};
-            
-        // Gandhi, Quigg, Reno 1995 Neutrino cross section
-        double p3[4] = { -6.33753554e+01,   4.26790713e+00,  -2.07426844e-01,   3.68501726e-03};
-        // Gandhi, Quigg, Reno 1995 Anti-Neutrino cross section
-        double p4[4] = { -6.33697437e+01,   4.11592385e+00,  -1.90600183e-01,   3.22478095e-03};
-
-        double log10_E_eV = log10(E)+9.;
-        for (int ii = 0 ; ii<4; ii++){
-          if(CCmode==0) p[ii] = p0[ii];
-          if(CCmode==1) p[ii] = p1[ii];
-          if(CCmode==2) p[ii] = p2[ii];
-          if(CCmode==3) p[ii] = p3[ii];
-          if(CCmode==4) p[ii] = p4[ii];
-
-          f += p[ii]*pow(log10_E_eV,ii);
-        }
-
-        f = pow(10,f);
-        return f;
-
-    }
-    if(type==3)
-    {
-       
-        
-        // 	double l1=log10(E);
-        // 	double l2=l1*l1;
-        // 	double l3=l2*l1;
-        // 	double l4=l3*l1;
-        // 	double l5=l4*l1;
-        // 	double l6=l5*l1;
-        // 	double l7=l6*l1;
-        // 	double l8=l7*l1;
-        // 	double l9=l8*l1;
-        // 	f = pNC0+pNC1*l1+pNC2*l2+pNC3*l3+pNC4*l4+pNC5*l5+pNC6*l6+pNC7*l7+pNC8*l8+pNC9*l9;
-        
-        //      f = 5.00969*pow(E,0.34944)*1e-36;
-        
-        // See references of models in dsigCC
-        //      f = (-36.3345965603+7.14693605311*pow(E,0.293313250614))/2.4*1.e-36; // CKMT
-        //	f = (-280.544665122+10.3452620208*pow(E,0.317119535055))/2.4*1.e-36; // ALLM
-        //      f = (-799.252409182+52.4932827684*pow(E,0.244551044541))/2.4*1.e-36; // ASW
-        // f = (-259.30822396+9.31732621406*pow(E,0.302056103343))*1.e-36;      // Sarkar
-        
-        if(CCmode==0){
-            // Connolly+, 2011 middle model (ARW's parametrization)
-            double p[4] = { -5.41463399e+01,   2.65465169e+00,  -1.11848922e-01,   1.75469643e-03};
-            double log10_E_eV = log10(E)+9.; // E is in GeV, this parameterization is in log_10 ( E / eV ).
-            for (int ii = 0 ; ii<4; ii++){
-            f += p[ii]*pow(log10_E_eV,ii);
-            //printf("\t %1.2e %1.2f %1.2e %1.2e %1.2e \n", E, log10_E_eV, p[ii], pow(log10_E_eV,ii), f);
-            }
-            f = pow(10,f);
-            // printf("NC middle %1.2e %1.2f %1.2e %1.2f\n", E, log10_E_eV, f, log10(f));
-        }
-        
-        if(CCmode==1){
-            // Connolly+, 2011 lower model (ARW's parametrization)
-            double p[4] = {-4.42377028e+01, 7.07758518e-01, 1.55925146e-02, -1.02484763e-03};
-            double log10_E_eV = log10(E)+9.; // E is in GeV, this parameterization is in log_10 ( E / eV ).
-            for (int ii = 0 ; ii<4; ii++){
-            f += p[ii]*pow(log10_E_eV,ii);
-            //printf("\t %1.2e %1.2f %1.2e %1.2e %1.2e \n", E, log10_E_eV, p[ii], pow(log10_E_eV,ii), f);
-            }
-            f = pow(10,f);
-            // printf("NC lower %1.2e %1.2f %1.2e %1.2f\n", E, log10_E_eV, f, log10(f));
-        }
-        
-        if(CCmode==2){
-            // Connolly+, 2011 upper model (ARW's parametrization)
-            double p[4] = {-5.36713302e+01,   2.72528813e+00,  -1.27067769e-01,   2.31235293e-03};
-            double log10_E_eV = log10(E)+9.; // E is in GeV, this parameterization is in log_10 ( E / eV ).
-            for (int ii = 0 ; ii<4; ii++){
-            f += p[ii]*pow(log10_E_eV,ii);
-            //printf("\t %1.2e %1.2f %1.2e %1.2e %1.2e \n", E, log10_E_eV, p[ii], pow(log10_E_eV,ii), f);
-            }
-            f = pow(10,f);
-            // printf("NC upper %1.2e %1.2f %1.2e %1.2f\n", E, log10_E_eV, f, log10(f));
-        }
+  double f=0.; 
+  
       
-    }  
-    return f;
+  AntiNu=int(abs(AntiNu-1)/2);//return anti ness as a bool
+  double p[4];
+
+  // The value below determines when we switch from the parameterizations 
+  // of the neutrino cross sections at ultra-high energis (e.g. CTTW standard values) 
+  // to the cross sections to the Ghandi parameterization. These transitions were determined
+  // using the parameterization made for this code. They are likely a bit different if the user 
+  // switches the cross section to the upper or lower cross section models. 
+  
+  double E_switch = 2.00e6;  // GeV
+
+  // If the energy is below E_sigma_switch, set CCmode to the Ghandi cross-section.
+  // If the particle is a neutrino, AntiNu = 0 and the cross-section is set to the
+  // the Ghandi model for neutrinos. If it is an anti-neutrino, AntiNu=1 and the
+  // cross-section is set to the Ghdni model for anti-neutrinos.
+
+  if( E < E_switch ){
+  CCmode = 3 + AntiNu;
+  }
+
+  // Connolly+, 2011 middle model (ARW's parametrization)
+  double p0[4] = { -5.41463399e+01,   2.65465169e+00,  -1.11848922e-01,   1.75469643e-03};
+  // Connolly+, 2011 lower model (ARW's parametrization)
+  double p1[4] = {-4.42377028e+01, 7.07758518e-01, 1.55925146e-02, -1.02484763e-03};
+  // Connolly+, 2011 upper model (ARW's parametrization)
+  double p2[4] = {-5.36713302e+01,   2.72528813e+00,  -1.27067769e-01,   2.31235293e-03};
+      
+  // Gandhi, Quigg, Reno 1995 Neutrino cross section
+  double p3[4] = { -6.33753554e+01,   4.26790713e+00,  -2.07426844e-01,   3.68501726e-03};
+  // Gandhi, Quigg, Reno 1995 Anti-Neutrino cross section
+  double p4[4] = { -6.33697437e+01,   4.11592385e+00,  -1.90600183e-01,   3.22478095e-03};
+
+  double log10_E_eV = log10(E)+9.;
+  for (int ii = 0 ; ii<4; ii++){
+    if(CCmode==0) p[ii] = p0[ii];
+    if(CCmode==1) p[ii] = p1[ii];
+    if(CCmode==2) p[ii] = p2[ii];
+    if(CCmode==3) p[ii] = p3[ii];
+    if(CCmode==4) p[ii] = p4[ii];
+
+    f += p[ii]*pow(log10_E_eV,ii);
+  }
+
+  f = pow(10,f);
+  
+  return f;
 }
 
 // ###################################################
@@ -2032,6 +1928,13 @@ void initialize_reaction(int tau_type[][6], int mu_type[][6],double tau_ene[][6]
         }
     }
     mu_decays.close();
+}
+void make_dirs(string dirs)
+{
+  mkdir(dirs.c_str(),0755);
+  mkdir((dirs+"/particles").c_str(),0755);
+  mkdir((dirs+"/events").c_str(),0755);
+  mkdir((dirs+"/LUT").c_str(),0755);
 }
 
 int convert_types(int pythia_type) 
