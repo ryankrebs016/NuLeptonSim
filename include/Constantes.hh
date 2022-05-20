@@ -15,6 +15,7 @@ const double mpi=0.1349766;		// Masse du PI0 en GeV
 const double taudl=86.93*1e-4; 	// longueur de d�sint�gration du tau en cm
 const double R0=6.378e8; 		// Rayon de la terre en cm
 const double muondl=658.8; 	// longueur de désintégration du muon en cm
+const double mW=80.38;     //mass of W boson, GeV/c^2
 
 // Constantes secondaires
 
