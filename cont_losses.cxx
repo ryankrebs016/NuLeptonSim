@@ -2,11 +2,13 @@
 #include<stdio.h>
 #include<iostream>
 #include<math.h>
-#include<"include/constantes.hh">
+#include"include/Constantes.hh"
 
+using namespace std; 
 
 class continuous_loss_prop 
 {
+    public:
     double energy_eV;
     double dens;
     int p_type;
@@ -22,27 +24,34 @@ class continuous_loss_prop
     double funcalph(int lyr);
     double beta9fit(int lyr);
     void set_values(double energy,double t_dens,int type,int t_loss_model);
-    double delta(int lyr);
+    double delta(double en);
+    void set_zero();
 };
 
+void continuous_loss_prop::set_zero()
+{
+    dL=0;
+    elost=0;
+}
 double continuous_loss_prop::get_interaction_length()
 {
-    if (elost==0) calc_e_lost();
+    calc_e_loss();
 
     if(p_type==13)
     {
-        dL=energy_eV/dens*elost*m_frac;
+        dL=energy_eV/(dens*elost)*m_frac;
     }
     else if(p_type==15)
     {
-        dL=energy_eV/dens*elost*t_frac;
+        dL=energy_eV/(dens*elost)*t_frac;
+        
     }
     return dL;
 
 }
 double continuous_loss_prop::get_energy_loss()
 {
-    if(elost==0.||dL==0.) calc_e_loss();
+    
     
     return dL*dens*elost;
     
@@ -61,7 +70,7 @@ double continuous_loss_prop::calc_e_loss()
   int lyr = 0; // initialize to iron
   if (dens < 7.75) lyr = 1; // density jump between outer core and mantle
   if (dens < 2.0) lyr = 2;  // density jump between rock and water 
-  if(type==13)
+  if(p_type==13)
   {
   double factor[3] = {0.9304, 1.0, 1.1092}; // ratio Z/A for iron, rock, and water divided by Z/A=0.5 for rock   
 
@@ -72,8 +81,9 @@ double continuous_loss_prop::calc_e_loss()
   //printf("factor %1.2f \n", factor);
   
   //f = E * beta9fit(&E,&lyr,ELOSSmode) + mfuncalph(&E, &lyr,type);
-  f = 2e-3*factor[lyr] + E * beta9fit(lyr);
-	
+  f = 2e-3*factor[lyr] + energy_eV * beta9fit(lyr);
+  
+  
 	//f = E*(emlost->Eval(E)) + funca->Eval(E);
   // cout << "\tE " << E << endl;
   //cout << "\tlyr " << lyr << " dens = " << dens << endl;
@@ -82,9 +92,10 @@ double continuous_loss_prop::calc_e_loss()
   // cout << " mfuncalph(&E,&lyr) " << E << " " << lyr << " " << mfuncalph(&E, &zlyr << endl << endl;
   //cout << " beta9fit(&E,&lyr) " << E << " " << beta9fit(&E,&lyr,0) << " " << beta9fit(&E,&lyr,1) << endl << endl;
   }
-  if(type==15)
+  if(p_type==15)
   {
-    f = E * beta9fit(lyr) + funcalph(lyr);
+    f = energy_eV * beta9fit(lyr) + funcalph(lyr);
+
     //f = E*(emlost->Eval(E)) + funca->Eval(E);
     // cout << "\tE " << E << endl;
     //cout << "\tlyr " << lyr << " dens = " << dens << endl;
@@ -104,54 +115,57 @@ void continuous_loss_prop::set_values(double energy,double t_dens,int type,int t
     dens=t_dens;
     p_type=type;
     loss_model=t_loss_model;
-    elost=0;
-    dL=0;
+    
 }
 
 double continuous_loss_prop::funcalph(int lyr)
 {
-  static double f;
-  static double p,b,b2,gamma,EE,X;
-  const double factor[3]={0.9304,1.0,1.1092};
+  double f;
+  double p,b,b2,gamma,EE,X;
+  double factor[3]={0.9304,1.0,1.1092};
 
-  if(type==15)
+  if(p_type==15)
   {
       p=sqrt(energy_eV*energy_eV-mtau2);
       b=p/energy_eV;
+      b2=b*b;
       gamma=energy_eV/mtau;
       EE=Cbb2*p*p/(me2+mtau2+Cbb2*energy_eV);
       X=log10(b*gamma);
       
   }
-  else if( type==13)
+  else if( p_type==13)
   {
     
   
       p=sqrt(energy_eV*energy_eV-mmuon2);
       b=p/energy_eV;
+      b2=b*b;
       gamma=energy_eV/mmuon;
       EE=Cbb2*p*p/(me2+mmuon2+Cbb2*energy_eV);
       X=log10(b*gamma);
       
   
   }
+  //printf("p,b,b2,gamma,EE,X %f,%f,%f,%f,%f,%f\n",p,b,b2,gamma,EE,X);
 
-  f=Cbb1/(b2)*(log(Cbb2*b2*gamma*gamma/I2)-2*b2+EE*EE/(4*energy_eV*energy_eV)-delta(energy_eV));
+  f=Cbb1/(b2)*(log(Cbb2*b2*gamma*gamma/I2)-2.*b2+EE*EE/(4.*energy_eV*energy_eV)-delta(X));
+  
   f*=factor[lyr];
   return f;
 
 }
-double continuous_loss_prop::delta(double energy)
+double continuous_loss_prop::delta(double en)
 {
   double f=0;
   
-  if(energy > X1)
+  if(en > X1)
   {
-    f=4.6052*X+CC;
+    f=4.6052*en+CC;
   }
-  else if((energy>X0)&&(energy<X1))
+  else if((en>X0)&&(en<X1))
   {
-    f=4.6052*energy+CC+aa*pow((X1-energy),mm);
+    f=4.6052*en+CC+aa*pow((X1-en),mm);
   }
   
   return f;
@@ -214,8 +228,8 @@ double continuous_loss_prop::beta9fit(int lyr)
         //f=b0+b1*pow(x[0],b2);
         //printf("%1.2e \n", f);
         
-        double f_brem = pBrem[lyr][0]*pow(1.-exp(-pow((log10E)/pBrem[lry][1], pBrem[par[0]][2])),pBrem[lyr][3]);
-        double f_pair = pPair[lyr][0]*pow(1.-exp(-pow((log10E)/pPair[lyr][1], pPair[par[0]][2])),pPair[lyr][3]);
+        double f_brem = pBrem[lyr][0]*pow(1.-exp(-pow((log10E)/pBrem[lyr][1], pBrem[lyr][2])),pBrem[lyr][3]);
+        double f_pair = pPair[lyr][0]*pow(1.-exp(-pow((log10E)/pPair[lyr][1], pPair[lyr][2])),pPair[lyr][3]);
 
         // cout << "\tpar[0] " << par[0] << endl;
         // cout << "\tBrem " << pBrem[par[0]][0] << " " <<  pBrem[par[0]][1] << " " <<  pBrem[par[0]][2] << " " <<  pBrem[par[0]][3] << endl;
@@ -226,7 +240,7 @@ double continuous_loss_prop::beta9fit(int lyr)
         
 
     };
-    if(type==13||type==14) //muon 
+    if(p_type==13||p_type==14) //muon 
     {
 
             /*Energy loss parameters here are the sum ofbremmstrahlung, pair production, and photonuclear interactions*/
@@ -238,7 +252,7 @@ double continuous_loss_prop::beta9fit(int lyr)
             /* BB */
             /* Bezrukov and Bugaev Model for photonuclear losses*/
             /* L. B. Bezrukov and E. V. Bugaev, Sov. J. Nucl. Phys. 33, 635 (1981). */
-            if(loss_mode==1)
+            if(loss_model==1)
             {
                 if (lyr==1){//Rock
                 b0 = 5.83467127e-7;
@@ -267,7 +281,7 @@ double continuous_loss_prop::beta9fit(int lyr)
             /* ALLM */
             /* ALLM Model for photonuclear losses*/
             /* S. Dutta, M. H. Reno, I. Sarcevic, D. Seckel Phys.Rev. D63 (2001) 094020 */
-            if(loss_mode==0)
+            if(loss_model==0)
             {
                 if (lyr==1){//Rock
                 b0 = 8.75384980e-8;
@@ -297,6 +311,36 @@ double continuous_loss_prop::beta9fit(int lyr)
 
             
     }
+    
     return f;
 }
 
+/*
+how to use it in the main sim.
+int main()
+{
+    continuous_loss_prop cont;
+    int loop=100000;
+    double energy=1E19;
+    cont.set_values(1E19,.92,15,0);
+   
+    int loop_num=0;
+    double dist=0;
+    for(int i=0;i<loop;i++)
+    {
+        loop_num++;
+        dist+=cont.get_interaction_length();
+        
+        energy=energy-cont.get_energy_loss();
+        //cout<<cont.dL<<","<<cont.get_energy_loss()<<endl;;
+        cout<<dist<<","<<energy<<endl;
+        cont.set_values(energy,.92,15,0);
+        if(energy<1E16) break;
+
+    }
+    cout<<"traveled "
+    cout<<loop_num<<"loops"<<endl;
+   return 0;
+
+}
+*/
