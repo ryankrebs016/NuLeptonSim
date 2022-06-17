@@ -236,9 +236,9 @@ double stochastic_lepton_prop::interpolate_cs(int sto)
     {
         switch (sto)
         {
-            case 0: return log_energy_MeV*(cs_brem_muon[index+1]-cs_brem_muon[index])/(MeV_energy[index+1]-MeV_energy[index]);
-            case 1: return log_energy_MeV*(cs_pp_muon[index+1]-cs_pp_muon[index])/(MeV_energy[index+1]-MeV_energy[index]);
-            case 2: return log_energy_MeV*(cs_pn_muon[index+1]-cs_pn_muon[index])/(MeV_energy[index+1]-MeV_energy[index]);
+            case 0: return log_energy_MeV*(cs_brem_muon[index+1]-cs_brem_muon[index])/(MeV_energy[index+1]-MeV_energy[index])+cs_brem_muon[index];
+            case 1: return log_energy_MeV*(cs_pp_muon[index+1]-cs_pp_muon[index])/(MeV_energy[index+1]-MeV_energy[index])+cs_pp_muon[index];
+            case 2: return log_energy_MeV*(cs_pn_muon[index+1]-cs_pn_muon[index])/(MeV_energy[index+1]-MeV_energy[index])+cs_pn_muon[index];
            
         }
             
@@ -247,9 +247,9 @@ double stochastic_lepton_prop::interpolate_cs(int sto)
     {
         switch (sto)
         {
-            case 0: return log_energy_MeV*(cs_brem_tau[index+1]-cs_brem_tau[index])/(MeV_energy[index+1]-MeV_energy[index]);
-            case 1: return log_energy_MeV*(cs_pp_tau[index+1]-cs_pp_tau[index])/(MeV_energy[index+1]-MeV_energy[index]);
-            case 2: return log_energy_MeV*(cs_pn_tau[index+1]-cs_pn_tau[index])/(MeV_energy[index+1]-MeV_energy[index]);
+            case 0: return log_energy_MeV*(cs_brem_tau[index+1]-cs_brem_tau[index])/(MeV_energy[index+1]-MeV_energy[index])+cs_brem_tau[index];
+            case 1: return log_energy_MeV*(cs_pp_tau[index+1]-cs_pp_tau[index])/(MeV_energy[index+1]-MeV_energy[index])+cs_pp_tau[index];
+            case 2: return log_energy_MeV*(cs_pn_tau[index+1]-cs_pn_tau[index])/(MeV_energy[index+1]-MeV_energy[index])+cs_pn_tau[index];
            
         }
             
@@ -279,8 +279,10 @@ double stochastic_lepton_prop::interpolate_int_length()
         //cout<<total_cs_tau[index+1]<<","<<total_cs_tau[index]<<endl;
         //cout<<MeV_energy[index+1]<<","<<MeV_energy[index]<<endl;
         //cout<<log10(energy_eV*pow(10,-6))<<endl;
-        if(p_type==13) return 22.*1.66E-24*(1./total_cs_muon[index+1]-1./total_cs_muon[index])/(MeV_energy[index+1]-MeV_energy[index])*log_energy_MeV;
-        if(p_type==15) return 22.*1.66E-24*(1./total_cs_tau[index+1]-1./total_cs_tau[index])/(MeV_energy[index+1]-MeV_energy[index])*log_energy_MeV;
+        //cout<<total_cs_tau[index+1]<<","<<total_cs_tau[index]<<endl;
+
+        if(p_type==13) return 22.*1.66E-24*((1./total_cs_muon[index+1]-1./total_cs_muon[index])/(MeV_energy[index+1]-MeV_energy[index])+1./total_cs_muon[index])*log_energy_MeV;
+        if(p_type==15) return 22.*1.66E-24*((1./total_cs_tau[index+1]-1./total_cs_tau[index])/(MeV_energy[index+1]-MeV_energy[index])+1./total_cs_tau[index])*log_energy_MeV;
     }
     
     //again, shouldnt reach this, buttt
@@ -307,16 +309,21 @@ double stochastic_lepton_prop::get_interaction_length()//needs work
     //double rando=(double)rand()/(double)RAND_MAX;
     //cout<<rando<<endl;
     double rand_lin=(double)rand()/(double)RAND_MAX;//*M_E;
+    //cout<<rand_lin<<endl;
     //double rand_lin2=(double)rand()/(double)RAND_MAX;//*M_E;
     //cout<<rand_lin<<","<<rand_lin2<<endl;
     //cout<<rand_lin<<endl;
     //double random_exponential;
     //if((1-rand_lin)==0) random_exponential=
-    double random_exponential=-log(abs(1.-rand_lin)); //need to come up with a way to generate random exponentials like numpy.random.exponentioal
+    
+    double random_exponential=-log(1.-rand_lin); //need to come up with a way to generate random exponentials like numpy.random.exponentioal
     //cout<<random_exponential<<endl;
     //double val=interpolate_int_length();
     //cout<<val<<endl;
-    return abs(random_exponential*interpolate_int_length()/dens);
+    //cout<<interpolate_int_length()<<endl;
+    //cout<<random_exponential*interpolate_int_length()/dens<<endl;
+    
+    return random_exponential*interpolate_int_length()/dens;
 
 }
 
