@@ -2,18 +2,19 @@
 #include<stdio.h>
 #include<iostream>
 #include<math.h>
-#include"include/Constantes.hh"
+#include"Constantes.hh"
+
 
 using namespace std; 
 
 class continuous_loss_prop 
 {
     public:
-    double energy_eV;
+    double energy_GeV;
     double dens;
     int p_type;
     const double m_frac = 1e-2;
-    const double t_frac=1e-3;
+    const double t_frac=1e-2;
     int loss_model;
     double dL;
     double elost;
@@ -39,11 +40,11 @@ double continuous_loss_prop::get_interaction_length()
 
     if(p_type==13)
     {
-        dL=energy_eV/(dens*elost)*m_frac;
+        dL=energy_GeV/(dens*elost)*m_frac;
     }
     else if(p_type==15)
     {
-        dL=energy_eV/(dens*elost)*t_frac;
+        dL=energy_GeV/(dens*elost)*t_frac;
         
     }
     return dL;
@@ -81,7 +82,7 @@ double continuous_loss_prop::calc_e_loss()
   //printf("factor %1.2f \n", factor);
   
   //f = E * beta9fit(&E,&lyr,ELOSSmode) + mfuncalph(&E, &lyr,type);
-  f = 2e-3*factor[lyr] + energy_eV * beta9fit(lyr);
+  f = 2e-3*factor[lyr] + energy_GeV * beta9fit(lyr);
   
   
 	//f = E*(emlost->Eval(E)) + funca->Eval(E);
@@ -94,7 +95,7 @@ double continuous_loss_prop::calc_e_loss()
   }
   if(p_type==15)
   {
-    f = energy_eV * beta9fit(lyr) + funcalph(lyr);
+    f = energy_GeV * beta9fit(lyr) + funcalph(lyr);
 
     //f = E*(emlost->Eval(E)) + funca->Eval(E);
     // cout << "\tE " << E << endl;
@@ -111,7 +112,7 @@ double continuous_loss_prop::calc_e_loss()
 }
 void continuous_loss_prop::set_values(double energy,double t_dens,int type,int t_loss_model)
 {
-    energy_eV=energy;
+    energy_GeV=energy;
     dens=t_dens;
     p_type=type;
     loss_model=t_loss_model;
@@ -126,11 +127,11 @@ double continuous_loss_prop::funcalph(int lyr)
 
   if(p_type==15)
   {
-      p=sqrt(energy_eV*energy_eV-mtau2);
-      b=p/energy_eV;
+      p=sqrt(energy_GeV*energy_GeV-mtau2);
+      b=p/energy_GeV;
       b2=b*b;
-      gamma=energy_eV/mtau;
-      EE=Cbb2*p*p/(me2+mtau2+Cbb2*energy_eV);
+      gamma=energy_GeV/mtau;
+      EE=Cbb2*p*p/(me2+mtau2+Cbb2*energy_GeV);
       X=log10(b*gamma);
       
   }
@@ -138,18 +139,18 @@ double continuous_loss_prop::funcalph(int lyr)
   {
     
   
-      p=sqrt(energy_eV*energy_eV-mmuon2);
-      b=p/energy_eV;
+      p=sqrt(energy_GeV*energy_GeV-mmuon2);
+      b=p/energy_GeV;
       b2=b*b;
-      gamma=energy_eV/mmuon;
-      EE=Cbb2*p*p/(me2+mmuon2+Cbb2*energy_eV);
+      gamma=energy_GeV/mmuon;
+      EE=Cbb2*p*p/(me2+mmuon2+Cbb2*energy_GeV);
       X=log10(b*gamma);
       
   
   }
   //printf("p,b,b2,gamma,EE,X %f,%f,%f,%f,%f,%f\n",p,b,b2,gamma,EE,X);
 
-  f=Cbb1/(b2)*(log(Cbb2*b2*gamma*gamma/I2)-2.*b2+EE*EE/(4.*energy_eV*energy_eV)-delta(X));
+  f=Cbb1/(b2)*(log(Cbb2*b2*gamma*gamma/I2)-2.*b2+EE*EE/(4.*energy_GeV*energy_GeV)-delta(X));
   
   f*=factor[lyr];
   return f;
@@ -223,7 +224,7 @@ double continuous_loss_prop::beta9fit(int lyr)
         b2 = -2.24340096e-03;
         //printf("ASW \n");
         }
-        double log10E = log10(energy_eV);
+        double log10E = log10(energy_GeV);
         double f_phot = pow(10., b0 + b1*(log10E+9.) + b2*(log10E+9.)*(log10E+9.));
         //f=b0+b1*pow(x[0],b2);
         //printf("%1.2e \n", f);
@@ -306,7 +307,7 @@ double continuous_loss_prop::beta9fit(int lyr)
                 }
                 //printf("ALLM \n");
             }
-            double log10E = log10(energy_eV);
+            double log10E = log10(energy_GeV);
             f = b0+b1*log10E+b2*log10E*log10E+b3*log10E*log10E*log10E;
 
             

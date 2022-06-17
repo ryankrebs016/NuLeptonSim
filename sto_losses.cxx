@@ -19,7 +19,7 @@ using namespace std;
 class stochastic_lepton_prop
 {
     public:
-    double energy_eV;
+    double energy_GeV;
     double log_energy_MeV;
     int p_type;
     int loss_mode;
@@ -290,8 +290,8 @@ double stochastic_lepton_prop::interpolate_int_length()
 
 void stochastic_lepton_prop::set_val(double energy, int particle, double temp_dens)
 {
-    energy_eV=energy;
-    log_energy_MeV=log10(energy_eV*pow(10,-6));
+    energy_GeV=energy;
+    log_energy_MeV=log10(energy_GeV)+3.;
     p_type=particle;
     dens=temp_dens;
 }
