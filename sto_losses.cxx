@@ -25,36 +25,89 @@ class stochastic_lepton_prop
     int loss_mode;
     int loss_model;
     int sto_type;
-    double dens;
-    double 
+    double dens=0.92;
+    //double z=11;
+    double A; //ROCK =22, ICE =11.9
+
+    //string table_dir="new_tables/txt_1e-5_ice/";
+    string ice_table_dir="new_tables/txt_1e-7_ice/";
+    string rock_table_dir="new_tables/txt_1e-5_rock/";
+    bool new_table;
+    double switch_dens=1.2;
+    //string table_dir="stochastic_tables_ice/";
 
     static const int ts1=51;
     static const int ts2=10000;
     double log_energies_MeV[ts1];
    
-  
+    //pointers to be used in the code
+    //assign the loaded tables to these pointers
+    //keep same name so Idon;t have to change code
     //muon tables
-    double cs_brem_muon[ts1];
-    double cs_pp_muon[ts1];
-    double cs_pn_muon[ts1];
-    double cdf_val_muon[ts2];
-    double **cdf_xs_brem_muon=new double *[ts1];
-    double **cdf_xs_pp_muon=new double *[ts1];
-    double **cdf_xs_pn_muon=new double *[ts1];
-    double total_cs_muon[ts1];
-
-
+    double *cs_brem_muon;
+    double *cs_pp_muon;
+    double *cs_pn_muon;
+    double *cdf_val_muon;
+    double **cdf_xs_brem_muon;
+    double **cdf_xs_pp_muon;
+    double **cdf_xs_pn_muon;
+    double *total_cs_muon;
 
     //tau tables
-    double cs_brem_tau[ts1];
-    double cs_pp_tau[ts1];
-    double cs_pn_tau[ts1];
-    double cdf_val_tau[ts2];
-    double **cdf_xs_brem_tau=new double* [ts1];
-    double **cdf_xs_pp_tau= new double *[ts1];
-    double **cdf_xs_pn_tau= new double *[ts1];
-    double total_cs_tau[ts1];
+    double *cs_brem_tau;
+    double *cs_pp_tau;
+    double *cs_pn_tau;
+    double *cdf_val_tau;
+    double **cdf_xs_brem_tau;
+    double **cdf_xs_pp_tau;
+    double **cdf_xs_pn_tau;
+    double *total_cs_tau;
 
+  
+    //rock tables
+    //muon tables
+    double cs_brem_muon_rock[ts1];
+    double cs_pp_muon_rock[ts1];
+    double cs_pn_muon_rock[ts1];
+    double cdf_val_muon_rock[ts2];
+    double **cdf_xs_brem_muon_rock=new double *[ts1];
+    double **cdf_xs_pp_muon_rock=new double *[ts1];
+    double **cdf_xs_pn_muon_rock=new double *[ts1];
+    double total_cs_muon_rock[ts1];
+
+    //tau tables
+    double cs_brem_tau_rock[ts1];
+    double cs_pp_tau_rock[ts1];
+    double cs_pn_tau_rock[ts1];
+    double cdf_val_tau_rock[ts2];
+    double **cdf_xs_brem_tau_rock=new double* [ts1];
+    double **cdf_xs_pp_tau_rock= new double *[ts1];
+    double **cdf_xs_pn_tau_rock= new double *[ts1];
+    double total_cs_tau_rock[ts1];
+
+    //ice tables
+    //muon tables
+    double cs_brem_muon_ice[ts1];
+    double cs_pp_muon_ice[ts1];
+    double cs_pn_muon_ice[ts1];
+    double cdf_val_muon_ice[ts2];
+    double **cdf_xs_brem_muon_ice=new double *[ts1];
+    double **cdf_xs_pp_muon_ice=new double *[ts1];
+    double **cdf_xs_pn_muon_ice=new double *[ts1];
+    double total_cs_muon_ice[ts1];
+
+    //tau tables
+    double cs_brem_tau_ice[ts1];
+    double cs_pp_tau_ice[ts1];
+    double cs_pn_tau_ice[ts1];
+    double cdf_val_tau_ice[ts2];
+    double **cdf_xs_brem_tau_ice=new double* [ts1];
+    double **cdf_xs_pp_tau_ice= new double *[ts1];
+    double **cdf_xs_pn_tau_ice= new double *[ts1];
+    double total_cs_tau_ice[ts1];
+
+
+    //class functions
     void set_val(double energy,int particle,double temp_dens);
     void set_model(int temp_loss_mode, int temp_loss_model);
     double get_interaction_length();//uses loss_mode and loss_model and energy and density
@@ -64,41 +117,117 @@ class stochastic_lepton_prop
     double interpolate_int_length();
     void save_event(ofstream * lepton_file,double dep_energy);
     void set_sto_type();
+    bool set_table_pointer(double temp_dens);
 };
+
+bool stochastic_lepton_prop::set_table_pointer(double temp_dens)
+{
+    if(!new_table)return 1;
+    
+    if(temp_dens>switch_dens)
+    {
+    //cout<<"using rock tables"<<endl;
+        //set tables to rock
+    cs_brem_muon=cs_brem_muon_rock;
+    cs_pp_muon=cs_pp_muon_rock;
+    cs_pn_muon=cs_pn_muon_rock;
+    cdf_val_muon=cdf_val_muon_rock;
+    cdf_xs_brem_muon=cdf_xs_brem_muon_rock;
+    cdf_xs_pp_muon=cdf_xs_pp_muon_rock;
+    cdf_xs_pn_muon=cdf_xs_pn_muon_rock;
+    total_cs_muon=total_cs_muon_rock;
+
+    //tau tables
+    cs_brem_tau=cs_brem_tau_rock;
+    cs_pp_tau=cs_pp_tau_rock;
+    cs_pn_tau=cs_pn_tau_rock;
+    cdf_val_tau=cdf_val_tau_rock;
+    cdf_xs_brem_tau= cdf_xs_brem_tau_rock;
+    cdf_xs_pp_tau=cdf_xs_pp_tau_rock;
+    cdf_xs_pn_tau= cdf_xs_pn_tau_rock;
+    total_cs_tau=total_cs_tau_rock;
+    A=22.;
+
+    }
+    else
+    {
+        //cout<<"using ice tables"<<endl;
+        //set tables to ice
+    cs_brem_muon=cs_brem_muon_ice;
+    cs_pp_muon=cs_pp_muon_ice;
+    cs_pn_muon=cs_pn_muon_ice;
+    cdf_val_muon=cdf_val_muon_ice;
+    cdf_xs_brem_muon=cdf_xs_brem_muon_ice;
+    cdf_xs_pp_muon=cdf_xs_pp_muon_ice;
+    cdf_xs_pn_muon=cdf_xs_pn_muon_ice;
+    total_cs_muon=total_cs_muon_ice;
+
+    //tau tables
+    cs_brem_tau=cs_brem_tau_ice;
+    cs_pp_tau=cs_pp_tau_ice;
+    cs_pn_tau=cs_pn_tau_ice;
+    cdf_val_tau=cdf_val_tau_ice;
+    cdf_xs_brem_tau= cdf_xs_brem_tau_ice;
+    cdf_xs_pp_tau=cdf_xs_pp_tau_ice;
+    cdf_xs_pn_tau= cdf_xs_pn_tau_ice;
+    total_cs_tau=total_cs_tau_ice;
+    A=11.9;
+    }
+    new_table=false;
+    return 0;
+}
 
 void stochastic_lepton_prop::load_tables()
 {   int time1=time(NULL);
-    cout<<"loading tables"<<endl;;
+    cout<<"loading ice tables"<<endl;;
+
+    //load both rock and ice at same time. use correct array when needed
     for(int i = 0;i<ts1;i++)
     {
-        cdf_xs_brem_tau[i]=new double [ts2];
-        cdf_xs_pp_tau[i]=new double [ts2];
-        cdf_xs_pn_tau[i]=new double [ts2];
-        cdf_xs_brem_muon[i]=new double [ts2];
-        cdf_xs_pp_muon[i]=new double [ts2];
-        cdf_xs_pn_muon[i]=new double [ts2];
+        cdf_xs_brem_tau_ice[i]=new double [ts2];
+        cdf_xs_pp_tau_ice[i]=new double [ts2];
+        cdf_xs_pn_tau_ice[i]=new double [ts2];
+        cdf_xs_brem_muon_ice[i]=new double [ts2];
+        cdf_xs_pp_muon_ice[i]=new double [ts2];
+        cdf_xs_pn_muon_ice[i]=new double [ts2];
     }
     
     string temp_str,temp_str2,temp_str3,temp_str4,temp_str5,temp_str6;
     string delim=" ";
-    ifstream energy_file("stochastic_tables_ice/MeV_energies.txt");
+    ifstream energy_file(ice_table_dir+"MeV_energies.txt");
 
-    ifstream muon_cs_brem("stochastic_tables_ice/cs_brem_muon.txt");
-    ifstream muon_cs_pp("stochastic_tables_ice/cs_pp_muon.txt"); 
-    ifstream muon_cs_pn("stochastic_tables_ice/cs_pn_muon.txt");
-    ifstream muon_cdf_val("stochastic_tables_ice/cdf_values_muon.txt");
-    ifstream muon_cdf_xs_brem("stochastic_tables_ice/cdf_xs_brem_muon.txt");
-    ifstream muon_cdf_xs_pp("stochastic_tables_ice/cdf_xs_pp_muon.txt");
-    ifstream muon_cdf_xs_pn("stochastic_tables_ice/cdf_xs_pn_muon.txt");
+    ifstream muon_cs_brem(ice_table_dir+"cs_brem_tau.txt");
+    ifstream muon_cs_pp(ice_table_dir+"cs_pp_tau.txt"); 
+    ifstream muon_cs_pn(ice_table_dir+"cs_pn_tau.txt");
+    ifstream muon_cdf_val(ice_table_dir+"cdf_values_tau.txt");
+    ifstream muon_cdf_xs_brem(ice_table_dir+"cdf_xs_brem_tau.txt");
+    ifstream muon_cdf_xs_pp(ice_table_dir+"cdf_xs_pp_tau.txt");
+    ifstream muon_cdf_xs_pn(ice_table_dir+"cdf_xs_pn_tau.txt");
 
-    ifstream tau_cs_brem("stochastic_tables_ice/cs_brem_tau.txt");
-    ifstream tau_cs_pp("stochastic_tables_ice/cs_pp_tau.txt"); 
-    ifstream tau_cs_pn("stochastic_tables_ice/cs_pn_tau.txt");
-    ifstream tau_cdf_val("stochastic_tables_ice/cdf_values_tau.txt");
-    ifstream tau_cdf_xs_brem("stochastic_tables_ice/cdf_xs_brem_tau.txt");
-    ifstream tau_cdf_xs_pp("stochastic_tables_ice/cdf_xs_pp_tau.txt");
-    ifstream tau_cdf_xs_pn("stochastic_tables_ice/cdf_xs_pn_tau.txt");
+    ifstream tau_cs_brem(ice_table_dir+"cs_brem_muon.txt");
+    ifstream tau_cs_pp(ice_table_dir+"cs_pp_muon.txt"); 
+    ifstream tau_cs_pn(ice_table_dir+"cs_pn_muon.txt");
+    ifstream tau_cdf_val(ice_table_dir+"cdf_values_muon.txt");
+    ifstream tau_cdf_xs_brem(ice_table_dir+"cdf_xs_brem_muon.txt");
+    ifstream tau_cdf_xs_pp(ice_table_dir+"cdf_xs_pp_muon.txt");
+    ifstream tau_cdf_xs_pn(ice_table_dir+"cdf_xs_pn_muon.txt");
+    /*
+    ifstream muon_cs_brem(table_dir+"cs_brem_muon.txt");
+    ifstream muon_cs_pp(table_dir+"cs_pp_muon.txt"); 
+    ifstream muon_cs_pn(table_dir+"cs_pn_muon.txt");
+    ifstream muon_cdf_val(table_dir+"cdf_values_muon.txt");
+    ifstream muon_cdf_xs_brem(table_dir+"cdf_xs_brem_muon.txt");
+    ifstream muon_cdf_xs_pp(table_dir+"cdf_xs_pp_muon.txt");
+    ifstream muon_cdf_xs_pn(table_dir+"cdf_xs_pn_muon.txt");
 
+    ifstream tau_cs_brem(table_dir+"cs_brem_tau.txt");
+    ifstream tau_cs_pp(table_dir+"cs_pp_tau.txt"); 
+    ifstream tau_cs_pn(table_dir+"cs_pn_tau.txt");
+    ifstream tau_cdf_val(table_dir+"cdf_values_tau.txt");
+    ifstream tau_cdf_xs_brem(table_dir+"cdf_xs_brem_tau.txt");
+    ifstream tau_cdf_xs_pp(table_dir+"cdf_xs_pp_tau.txt");
+    ifstream tau_cdf_xs_pn(table_dir+"cdf_xs_pn_tau.txt");
+    */
     //printf("files open\n");
     for(int i=0;i<ts1;i++)
     {
@@ -107,25 +236,25 @@ void stochastic_lepton_prop::load_tables()
         log_energies_MeV[i]=atof(temp_str.c_str());
         //cout<<MeV_energy[i]<<"-";
         getline(muon_cs_brem,temp_str);
-        cs_brem_muon[i]=atof(temp_str.c_str());
+        cs_brem_muon_ice[i]=atof(temp_str.c_str());
         
         getline(muon_cs_pp,temp_str);
-        cs_pp_muon[i]=atof(temp_str.c_str());
+        cs_pp_muon_ice[i]=atof(temp_str.c_str());
         
         getline(muon_cs_pn,temp_str);
-        cs_pn_muon[i]=atof(temp_str.c_str());
+        cs_pn_muon_ice[i]=atof(temp_str.c_str());
         
         getline(tau_cs_brem,temp_str);
-        cs_brem_tau[i]=atof(temp_str.c_str());
+        cs_brem_tau_ice[i]=atof(temp_str.c_str());
         
         getline(tau_cs_pp,temp_str);
-        cs_pp_tau[i]=atof(temp_str.c_str());
+        cs_pp_tau_ice[i]=atof(temp_str.c_str());
         
         getline(tau_cs_pn,temp_str);
-        cs_pn_tau[i]=atof(temp_str.c_str());
+        cs_pn_tau_ice[i]=atof(temp_str.c_str());
 
-        total_cs_muon[i]=cs_brem_muon[i]+cs_pp_muon[i]+cs_pn_muon[i];
-        total_cs_tau[i]=cs_brem_tau[i]+cs_pp_tau[i]+cs_pn_tau[i];
+        total_cs_muon_ice[i]=cs_brem_muon_ice[i]+cs_pp_muon_ice[i]+cs_pn_muon_ice[i];
+        total_cs_tau_ice[i]=cs_brem_tau_ice[i]+cs_pp_tau_ice[i]+cs_pn_tau_ice[i];
         
         int counter=0;
 
@@ -134,10 +263,10 @@ void stochastic_lepton_prop::load_tables()
             for(int q=0;q<ts2;q++)
             {
                 getline(muon_cdf_val,temp_str);
-                cdf_val_muon[q]=atof(temp_str.c_str());
+                cdf_val_muon_ice[q]=atof(temp_str.c_str());
                 //cout<<cdf_val_muon[j]<<",";
                 getline(tau_cdf_val,temp_str);
-                cdf_val_tau[q]=atof(temp_str.c_str());
+                cdf_val_tau_ice[q]=atof(temp_str.c_str());
             }
             //cout<<j<<" ";
         }
@@ -155,34 +284,34 @@ void stochastic_lepton_prop::load_tables()
           
             if(temp_str.find(delim)!=string::npos)
             {
-                cdf_xs_brem_muon[i][j]=atof(temp_str.substr(0,temp_str.find(delim)).c_str());
+                cdf_xs_brem_muon_ice[i][j]=atof(temp_str.substr(0,temp_str.find(delim)).c_str());
                 temp_str.erase(0,temp_str.find(delim)+1);
 
-                cdf_xs_pp_muon[i][j]=atof(temp_str2.substr(0,temp_str2.find(delim)).c_str());
+                cdf_xs_pp_muon_ice[i][j]=atof(temp_str2.substr(0,temp_str2.find(delim)).c_str());
                 temp_str2.erase(0,temp_str2.find(delim)+1);
 
-                cdf_xs_pn_muon[i][j]=atof(temp_str3.substr(0,temp_str3.find(delim)).c_str());
+                cdf_xs_pn_muon_ice[i][j]=atof(temp_str3.substr(0,temp_str3.find(delim)).c_str());
                 temp_str3.erase(0,temp_str3.find(delim)+1);
 
-                cdf_xs_brem_tau[i][j]=atof(temp_str4.substr(0,temp_str4.find(delim)).c_str());
+                cdf_xs_brem_tau_ice[i][j]=atof(temp_str4.substr(0,temp_str4.find(delim)).c_str());
                 temp_str4.erase(0,temp_str4.find(delim)+1);
 
-                cdf_xs_pp_tau[i][j]=atof(temp_str5.substr(0,temp_str5.find(delim)).c_str());
+                cdf_xs_pp_tau_ice[i][j]=atof(temp_str5.substr(0,temp_str5.find(delim)).c_str());
                 temp_str5.erase(0,temp_str5.find(delim)+1);
 
-                cdf_xs_pn_tau[i][j]=atof(temp_str6.substr(0,temp_str6.find(delim)).c_str());
+                cdf_xs_pn_tau_ice[i][j]=atof(temp_str6.substr(0,temp_str6.find(delim)).c_str());
                 temp_str6.erase(0,temp_str6.find(delim)+1);
 
                 
             }
             if(temp_str.find(delim)==string::npos)
             {
-                cdf_xs_brem_muon[i][ts2-1]=atof(temp_str.c_str());
-                cdf_xs_pp_muon[i][ts2-1]=atof(temp_str2.c_str());
-                cdf_xs_pn_muon[i][ts2-1]=atof(temp_str3.c_str());
-                cdf_xs_brem_tau[i][ts2-1]=atof(temp_str4.c_str());
-                cdf_xs_pp_tau[i][ts2-1]=atof(temp_str5.c_str());
-                cdf_xs_pn_tau[i][ts2-1]=atof(temp_str6.c_str());
+                cdf_xs_brem_muon_ice[i][ts2-1]=atof(temp_str.c_str());
+                cdf_xs_pp_muon_ice[i][ts2-1]=atof(temp_str2.c_str());
+                cdf_xs_pn_muon_ice[i][ts2-1]=atof(temp_str3.c_str());
+                cdf_xs_brem_tau_ice[i][ts2-1]=atof(temp_str4.c_str());
+                cdf_xs_pp_tau_ice[i][ts2-1]=atof(temp_str5.c_str());
+                cdf_xs_pn_tau_ice[i][ts2-1]=atof(temp_str6.c_str());
                 
                 
             }
@@ -207,7 +336,161 @@ void stochastic_lepton_prop::load_tables()
     tau_cdf_xs_pp.close();
     tau_cdf_xs_pn.close();
 
+    cout<<"loading rock tables"<<endl;
+
+    for(int i = 0;i<ts1;i++)
+    {
+        cdf_xs_brem_tau_rock[i]=new double [ts2];
+        cdf_xs_pp_tau_rock[i]=new double [ts2];
+        cdf_xs_pn_tau_rock[i]=new double [ts2];
+        cdf_xs_brem_muon_rock[i]=new double [ts2];
+        cdf_xs_pp_muon_rock[i]=new double [ts2];
+        cdf_xs_pn_muon_rock[i]=new double [ts2];
+    }
     
+    temp_str,temp_str2,temp_str3,temp_str4,temp_str5,temp_str6="","","","","","";
+    delim=" ";
+    ifstream energy_file2(rock_table_dir+"MeV_energies.txt");
+
+    ifstream muon_cs_brem2(rock_table_dir+"cs_brem_tau.txt");
+    ifstream muon_cs_pp2(rock_table_dir+"cs_pp_tau.txt"); 
+    ifstream muon_cs_pn2(rock_table_dir+"cs_pn_tau.txt");
+    ifstream muon_cdf_val2(rock_table_dir+"cdf_values_tau.txt");
+    ifstream muon_cdf_xs_brem2(rock_table_dir+"cdf_xs_brem_tau.txt");
+    ifstream muon_cdf_xs_pp2(rock_table_dir+"cdf_xs_pp_tau.txt");
+    ifstream muon_cdf_xs_pn2(rock_table_dir+"cdf_xs_pn_tau.txt");
+
+    ifstream tau_cs_brem2(rock_table_dir+"cs_brem_muon.txt");
+    ifstream tau_cs_pp2(rock_table_dir+"cs_pp_muon.txt"); 
+    ifstream tau_cs_pn2(rock_table_dir+"cs_pn_muon.txt");
+    ifstream tau_cdf_val2(rock_table_dir+"cdf_values_muon.txt");
+    ifstream tau_cdf_xs_brem2(rock_table_dir+"cdf_xs_brem_muon.txt");
+    ifstream tau_cdf_xs_pp2(rock_table_dir+"cdf_xs_pp_muon.txt");
+    ifstream tau_cdf_xs_pn2(rock_table_dir+"cdf_xs_pn_muon.txt");
+    /*
+    ifstream muon_cs_brem(table_dir+"cs_brem_muon.txt");
+    ifstream muon_cs_pp(table_dir+"cs_pp_muon.txt"); 
+    ifstream muon_cs_pn(table_dir+"cs_pn_muon.txt");
+    ifstream muon_cdf_val(table_dir+"cdf_values_muon.txt");
+    ifstream muon_cdf_xs_brem(table_dir+"cdf_xs_brem_muon.txt");
+    ifstream muon_cdf_xs_pp(table_dir+"cdf_xs_pp_muon.txt");
+    ifstream muon_cdf_xs_pn(table_dir+"cdf_xs_pn_muon.txt");
+
+    ifstream tau_cs_brem(table_dir+"cs_brem_tau.txt");
+    ifstream tau_cs_pp(table_dir+"cs_pp_tau.txt"); 
+    ifstream tau_cs_pn(table_dir+"cs_pn_tau.txt");
+    ifstream tau_cdf_val(table_dir+"cdf_values_tau.txt");
+    ifstream tau_cdf_xs_brem(table_dir+"cdf_xs_brem_tau.txt");
+    ifstream tau_cdf_xs_pp(table_dir+"cdf_xs_pp_tau.txt");
+    ifstream tau_cdf_xs_pn(table_dir+"cdf_xs_pn_tau.txt");
+    */
+    //printf("files open\n");
+    for(int i=0;i<ts1;i++)
+    {
+        //cout<<i<<",";
+        getline(energy_file2,temp_str);
+        log_energies_MeV[i]=atof(temp_str.c_str());
+        //cout<<MeV_energy[i]<<"-";
+        getline(muon_cs_brem2,temp_str);
+        cs_brem_muon_rock[i]=atof(temp_str.c_str());
+        
+        getline(muon_cs_pp2,temp_str);
+        cs_pp_muon_rock[i]=atof(temp_str.c_str());
+        
+        getline(muon_cs_pn2,temp_str);
+        cs_pn_muon_rock[i]=atof(temp_str.c_str());
+        
+        getline(tau_cs_brem2,temp_str);
+        cs_brem_tau_rock[i]=atof(temp_str.c_str());
+        
+        getline(tau_cs_pp2,temp_str);
+        cs_pp_tau_rock[i]=atof(temp_str.c_str());
+        
+        getline(tau_cs_pn2,temp_str);
+        cs_pn_tau_rock[i]=atof(temp_str.c_str());
+
+        total_cs_muon_rock[i]=cs_brem_muon_rock[i]+cs_pp_muon_rock[i]+cs_pn_muon_rock[i];
+        total_cs_tau_rock[i]=cs_brem_tau_rock[i]+cs_pp_tau_rock[i]+cs_pn_tau_rock[i];
+        
+        int counter=0;
+
+        if(i==0)
+        {
+            for(int q=0;q<ts2;q++)
+            {
+                getline(muon_cdf_val2,temp_str);
+                cdf_val_muon_rock[q]=atof(temp_str.c_str());
+                //cout<<cdf_val_muon[j]<<",";
+                getline(tau_cdf_val2,temp_str);
+                cdf_val_tau_rock[q]=atof(temp_str.c_str());
+            }
+            //cout<<j<<" ";
+        }
+
+        getline(muon_cdf_xs_brem2,temp_str);
+        getline(muon_cdf_xs_pp2,temp_str2);
+        getline(muon_cdf_xs_pn2,temp_str3);
+
+        getline(tau_cdf_xs_brem2,temp_str4);
+        getline(tau_cdf_xs_pp2,temp_str5);
+        getline(tau_cdf_xs_pn2,temp_str6);
+
+        for(int j=0;j<ts2;j++)
+        {
+          
+            if(temp_str.find(delim)!=string::npos)
+            {
+                cdf_xs_brem_muon_rock[i][j]=atof(temp_str.substr(0,temp_str.find(delim)).c_str());
+                temp_str.erase(0,temp_str.find(delim)+1);
+
+                cdf_xs_pp_muon_rock[i][j]=atof(temp_str2.substr(0,temp_str2.find(delim)).c_str());
+                temp_str2.erase(0,temp_str2.find(delim)+1);
+
+                cdf_xs_pn_muon_rock[i][j]=atof(temp_str3.substr(0,temp_str3.find(delim)).c_str());
+                temp_str3.erase(0,temp_str3.find(delim)+1);
+
+                cdf_xs_brem_tau_rock[i][j]=atof(temp_str4.substr(0,temp_str4.find(delim)).c_str());
+                temp_str4.erase(0,temp_str4.find(delim)+1);
+
+                cdf_xs_pp_tau_rock[i][j]=atof(temp_str5.substr(0,temp_str5.find(delim)).c_str());
+                temp_str5.erase(0,temp_str5.find(delim)+1);
+
+                cdf_xs_pn_tau_rock[i][j]=atof(temp_str6.substr(0,temp_str6.find(delim)).c_str());
+                temp_str6.erase(0,temp_str6.find(delim)+1);
+
+                
+            }
+            if(temp_str.find(delim)==string::npos)
+            {
+                cdf_xs_brem_muon_rock[i][ts2-1]=atof(temp_str.c_str());
+                cdf_xs_pp_muon_rock[i][ts2-1]=atof(temp_str2.c_str());
+                cdf_xs_pn_muon_rock[i][ts2-1]=atof(temp_str3.c_str());
+                cdf_xs_brem_tau_rock[i][ts2-1]=atof(temp_str4.c_str());
+                cdf_xs_pp_tau_rock[i][ts2-1]=atof(temp_str5.c_str());
+                cdf_xs_pn_tau_rock[i][ts2-1]=atof(temp_str6.c_str());
+                
+                
+            }
+
+
+        }
+        //.same format just like 16 times rip lol
+        //and one more loop in here for the 2d arrays
+    }
+    energy_file2.close();
+    muon_cs_brem2.close();
+    muon_cs_pp2.close();
+    muon_cdf_val2.close();
+    muon_cdf_xs_brem2.close();
+    muon_cdf_xs_pp2.close();
+    muon_cdf_xs_pn2.close();
+
+    tau_cs_brem2.close();
+    tau_cs_pp2.close();
+    tau_cdf_val2.close();
+    tau_cdf_xs_brem2.close();
+    tau_cdf_xs_pp2.close();
+    tau_cdf_xs_pn2.close();
 
    
     //printf("\n\n\n");
@@ -218,13 +501,38 @@ void stochastic_lepton_prop::load_tables()
     //for(int i=0;i<ts2;i++)cout<<cdf_xs_brem_muon[0][i]<<",";
     cout<<"loaded tables "<<time(NULL)-time1<<" s"<<endl;
 
+    //setting to ice to start
+        //set tables to ice
+    cs_brem_muon=cs_brem_muon_ice;
+    cs_pp_muon=cs_pp_muon_ice;
+    cs_pn_muon=cs_pn_muon_ice;
+    cdf_val_muon=cdf_val_muon_ice;
+    cdf_xs_brem_muon=cdf_xs_brem_muon_ice;
+    cdf_xs_pp_muon=cdf_xs_pp_muon_ice;
+    cdf_xs_pn_muon=cdf_xs_pn_muon_ice;
+    total_cs_muon=total_cs_muon_ice;
+
+    //tau tables
+    cs_brem_tau=cs_brem_tau_ice;
+    cs_pp_tau=cs_pp_tau_ice;
+    cs_pn_tau=cs_pn_tau_ice;
+    cdf_val_tau=cdf_val_tau_ice;
+    cdf_xs_brem_tau= cdf_xs_brem_tau_ice;
+    cdf_xs_pp_tau=cdf_xs_pp_tau_ice;
+    cdf_xs_pn_tau= cdf_xs_pn_tau_ice;
+    total_cs_tau=total_cs_tau_ice;
+    A=11.9;
+
+
 };
 
 double stochastic_lepton_prop::interpolate_cs(int sto)
 {
+    //if dens>1. then do rock. else ice
     int index= (log_energy_MeV - 5. )/(10./(ts1-1));
-    if(index==ts1-1)
+    if(index>=ts1-1)
     {
+        index=ts1-1;
     if (p_type == 13)
     {
         switch (sto)
@@ -290,10 +598,13 @@ double stochastic_lepton_prop::interpolate_int_length()
     //cout<<index<<endl;
     //cout<<index<<endl;
     //cout<<"got here"<<endl;
-    if(index==ts1-1)
+
+    //if dens>1. then do rock. else ice
+    if(index>=(ts1-1))
     {
-        if(p_type==13)return 22.*1.66E-24/total_cs_muon[index];
-        if(p_type==15)return 22.*1.66E-24/total_cs_tau[index];
+        index=ts1-1;
+        if(p_type==13)return A*1.66E-24/total_cs_muon[index];
+        if(p_type==15)return A*1.66E-24/total_cs_tau[index];
     }
     else
     {
@@ -330,7 +641,7 @@ double stochastic_lepton_prop::interpolate_int_length()
             
             //return 22.*1.66E-24*((1./total_cs_tau[index+1]-1./total_cs_tau[index])/(log_energies_MeV[index+1]-log_energies_MeV[index])*log_energy_MeV+1./total_cs_tau[index]);
         }
-        val=22.*1.66E-24*((log_energies_MeV[index+1]-log_energy_MeV)/0.2*f2+(log_energy_MeV-log_energies_MeV[index])/0.2*f1);
+        val=A*1.66E-24*((log_energies_MeV[index+1]-log_energy_MeV)/0.2*f2+(log_energy_MeV-log_energies_MeV[index])/0.2*f1);
      
         return val;
     }
@@ -345,6 +656,12 @@ void stochastic_lepton_prop::set_val(double energy, int particle, double temp_de
     energy_GeV=energy;
     log_energy_MeV=log10(energy_GeV)+3.;
     p_type=particle;
+    if((temp_dens<switch_dens&&dens>switch_dens)||(temp_dens>switch_dens&&dens<switch_dens))
+    {
+        new_table=true;
+        set_table_pointer(temp_dens);
+    }
+
     dens=temp_dens;
     if((p_type!=15&&p_type!=13)||dens<0.)
     {
@@ -384,6 +701,9 @@ double stochastic_lepton_prop::get_interaction_length()//needs work
 
 void stochastic_lepton_prop::set_sto_type()
 {
+
+    //if dens>1 use rock table, else use ice
+
     double brem,pp,pn,tot;
     brem=interpolate_cs(0);
     pp=interpolate_cs(1);
@@ -406,13 +726,13 @@ double stochastic_lepton_prop::get_sampled_energy()
     //2d interpolation based on energy and on a random number between 0,ts2
     
 
-    
+    //if dens >1. use rock else use ice.
     int index1= (log_energy_MeV - 5. )/(10./(ts1-1));
-    double rand_index=(double)rand()/(double)RAND_MAX * (double)(ts2-1.);//old way in lin space
-    rand_index=rand_index/(ts2-1.)*log10(ts2);
-    
+    if(index1>=(ts1-1))index1=ts1-1;
+    //double rand_index=(double)rand()/(double)RAND_MAX * (double)(ts2-1.);//old way in lin space
+    double rand_index=(double)rand()/(double)RAND_MAX *log10(ts2);
     //lets leave this mess for when I'm caffeinated
-
+    
     rand_index=pow(10,rand_index)-1.;//new way in log space
     double rando=(double)rand()/(double)RAND_MAX;
     //cout<<rando<<",";
