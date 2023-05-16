@@ -1,19 +1,23 @@
 config file for NuLeptonSim
 
-data_dir = no_save_over_stuff
-starting_type = 14
+data_dir = paper_2-10/
+starting_type = 16
 anti = 1
 regen = 1
-conversion = 1
+conversion = 0
 energy_distribution = 0
-energy_threshold = 1E+16
+energy_threshold = 1E+14
 detector = 0
 det_volume = 1
 save_neutrinos = 0
-save_charged = 0
+save_charged = 1
 save_events = 0
-save_sto = 1
-n_throws = 1000
-n_traj = 1000
+save_sto = 0
+n_throws = 10000
+n_traj = 10000
+save_nu_events = 0
+save_dec_events = 0
+save_sto_events = 0
+save_emerging = 1
 
 
