@@ -2,7 +2,7 @@ import numpy as np
 from scipy import interpolate
 from scipy.interpolate import RegularGridInterpolator
 import matplotlib.pyplot as plt
-
+import os
 import time
 
 #Setting material properties
@@ -14,41 +14,71 @@ Z, A = 11, 22
 rho = 0.92 #g/cm^3
 
 #Loading cdf data table
-cdf_data_muon = np.load("Muon_Radiative_Cross_Section_CDFs.npy", allow_pickle = True)
-cdf_data_tau = np.load("Tau_Radiative_Cross_Section_CDFs.npy", allow_pickle = True)
 
-MeV_energies_muon, cross_sections_muon, cdf_values_muon, cdf_xs_muon = cdf_data_muon[0], cdf_data_muon[1], cdf_data_muon[2], cdf_data_muon[3]
-cross_section_brem_muon, cross_section_pp_muon, cross_section_pn_muon = cross_sections_muon[:,0], cross_sections_muon[:,1], cross_sections_muon[:,2]
-cross_section_total_muon = cross_section_brem_muon+cross_section_pp_muon+cross_section_pn_muon
-print(np.shape(MeV_energies_muon),np.shape(cross_sections_muon), np.shape(cdf_values_muon),np.shape(cdf_xs_muon))
-'''
-np.savetxt('stochastic_tables/MeV_energies.txt',MeV_energies_muon)
+in_folder='stochastic_tables_2-10/'
 
-np.savetxt('stochastic_tables/cs_brem_muon.txt',cross_section_brem_muon)
-np.savetxt('stochastic_tables/cs_pp_muon.txt',cross_section_pp_muon)
-np.savetxt('stochastic_tables/cs_pn_muon.txt',cross_section_pn_muon)
+spec_folder='1e-5_ice/'
+#in_name='_Radiative_Cross_Section_CDFs_Ice_1e-9 (1).npy'    
+in_name='_Radiative_Cross_Section_CDFs_Ice_1e-5 (1).npy'    
 
-np.savetxt('stochastic_tables/cdf_values_muon.txt',cdf_values_muon)
-np.savetxt('stochastic_tables/cdf_xs_brem_muon.txt',cdf_xs_muon[:,0,:],delimiter=' ')
-np.savetxt('stochastic_tables/cdf_xs_pp_muon.txt',cdf_xs_muon[:,1,:],delimiter=' ')
-np.savetxt('stochastic_tables/cdf_xs_pn_muon.txt',cdf_xs_muon[:,2,:],delimiter=' ')
+try: 
+    print('loading numpy file',in_folder+spec_folder+'Muon'+in_name)
+    
+    cdf_data_muon = np.load(in_folder+spec_folder+'Muon'+in_name, allow_pickle = True)
+    MeV_energies_muon, cross_sections_muon, cdf_values_muon, cdf_xs_muon = cdf_data_muon[0], cdf_data_muon[1], cdf_data_muon[2], cdf_data_muon[3]
+    cross_section_brem_muon, cross_section_pp_muon, cross_section_pn_muon = cross_sections_muon[:,0], cross_sections_muon[:,1], cross_sections_muon[:,2]
+    cross_section_total_muon = cross_section_brem_muon+cross_section_pp_muon+cross_section_pn_muon
+    print(np.shape(MeV_energies_muon),np.shape(cross_sections_muon), np.shape(cdf_values_muon),np.shape(cdf_xs_muon))
+    print(MeV_energies_muon)
+    '''
+    out_folder=in_folder+'muon_txt_'+spec_folder
+    if not os.path.exists(out_folder):
+        os.mkdir(out_folder)
+    
+    np.savetxt(out_folder+'MeV_energies.txt',MeV_energies_muon)
 
-'''
+    np.savetxt(out_folder+'cs_brem_muon.txt',cross_section_brem_muon)
+    np.savetxt(out_folder+'cs_pp_muon.txt',cross_section_pp_muon)
+    np.savetxt(out_folder+'cs_pn_muon.txt',cross_section_pn_muon)
 
-MeV_energies_tau, cross_sections_tau, cdf_values_tau, cdf_xs_tau = cdf_data_tau[0], cdf_data_tau[1], cdf_data_tau[2], cdf_data_tau[3]
-cross_section_brem_tau, cross_section_pp_tau, cross_section_pn_tau = cross_sections_tau[:,0], cross_sections_tau[:,1], cross_sections_tau[:,2]
-cross_section_total_tau = cross_section_brem_tau+cross_section_pp_tau+cross_section_pn_tau
-'''
-np.savetxt('stochastic_tables/cs_brem_tau.txt',cross_section_brem_tau)
-np.savetxt('stochastic_tables/cs_pp_tau.txt',cross_section_pp_tau)
-np.savetxt('stochastic_tables/cs_pn_tau.txt',cross_section_pn_tau)
+    np.savetxt(out_folder+'cdf_values_muon.txt',cdf_values_muon)
+    np.savetxt(out_folder+'cdf_xs_brem_muon.txt',cdf_xs_muon[:,0,:],delimiter=' ')
+    np.savetxt(out_folder+'cdf_xs_pp_muon.txt',cdf_xs_muon[:,1,:],delimiter=' ')
+    np.savetxt(out_folder+'cdf_xs_pn_muon.txt',cdf_xs_muon[:,2,:],delimiter=' ')
+    '''
+    
+except: print('skipping muons bc files not there')
 
-np.savetxt('stochastic_tables/cdf_values_tau.txt',cdf_values_tau)
-np.savetxt('stochastic_tables/cdf_xs_brem_tau.txt',cdf_xs_tau[:,0,:],delimiter=' ')
-np.savetxt('stochastic_tables/cdf_xs_pp_tau.txt',cdf_xs_tau[:,1,:],delimiter=' ')
-np.savetxt('stochastic_tables/cdf_xs_pn_tau.txt',cdf_xs_tau[:,2,:],delimiter=' ')
-'''
-print(MeV_energies_muon,MeV_energies_tau)
+try:
+    print('loading numpy file',in_folder+spec_folder+'Tau'+in_name)
+    
+    cdf_data_tau = np.load(in_folder+spec_folder+'Tau'+in_name, allow_pickle = True)
+
+    MeV_energies_tau, cross_sections_tau, cdf_values_tau, cdf_xs_tau = cdf_data_tau[0], cdf_data_tau[1], cdf_data_tau[2], cdf_data_tau[3]
+    cross_section_brem_tau, cross_section_pp_tau, cross_section_pn_tau = cross_sections_tau[:,0], cross_sections_tau[:,1], cross_sections_tau[:,2]
+    cross_section_total_tau = cross_section_brem_tau+cross_section_pp_tau+cross_section_pn_tau
+    print(np.shape(MeV_energies_tau),np.shape(cross_sections_tau), np.shape(cdf_values_tau),np.shape(cdf_xs_tau))
+    
+    print(MeV_energies_tau)
+    '''
+
+    out_folder=in_folder+'tau_txt_'+spec_folder
+    if not os.path.exists(out_folder):
+        os.mkdir(out_folder)
+    
+    np.savetxt(out_folder+'MeV_energies.txt',MeV_energies_tau)
+    np.savetxt(out_folder+'cs_brem_tau.txt',cross_section_brem_tau)
+    np.savetxt(out_folder+'cs_pp_tau.txt',cross_section_pp_tau)
+    np.savetxt(out_folder+'cs_pn_tau.txt',cross_section_pn_tau)
+
+    np.savetxt(out_folder+'cdf_values_tau.txt',cdf_values_tau)
+    np.savetxt(out_folder+'cdf_xs_brem_tau.txt',cdf_xs_tau[:,0,:],delimiter=' ')
+    np.savetxt(out_folder+'cdf_xs_pp_tau.txt',cdf_xs_tau[:,1,:],delimiter=' ')
+    np.savetxt(out_folder+'cdf_xs_pn_tau.txt',cdf_xs_tau[:,2,:],delimiter=' ')
+    '''
+    
+except: print("skipping taus bc files not there")
+exit()
 
 # Interpolating cross sections
 cs_brem_muon, cs_pp_muon, cs_pn_muon = interpolate.interp1d(MeV_energies_muon, cross_section_brem_muon), interpolate.interp1d(MeV_energies_muon, cross_section_pp_muon), interpolate.interp1d(MeV_energies_muon, cross_section_pn_muon)
