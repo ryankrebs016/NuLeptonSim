@@ -14,13 +14,7 @@
 
 
 
-//if theres still a bug, upload this one so rand/randmax=/=1
-
-
-
-
-
-
+//if theres still a bug, upload this one so rand/randmax=/=
 using namespace std;
 //class to handle all stochastic losses in NuLeptonSim. requires initialization before particle loops
 //and requires particle properties to be updated before getting sampled energy and interaction length
@@ -38,13 +32,16 @@ class stochastic_lepton_prop
     //double z=11;
     double A; //ROCK =22, ICE =11.9
 
-    //string table_dir="new_tables/txt_1e-5_ice/";
-    string ice_table_dir="new_tables/txt_1e-7_ice/";
-    //string ice_table_dir="new_tables/txt_1e-5_ice/";
-    string rock_table_dir="new_tables/txt_1e-7_rock/";
+    string table_dir="stochastic_tables/";
+
+    string muon_ice_table_dir=table_dir+"muon_txt_1e-4_ice/";
+    string muon_rock_table_dir=table_dir+"muon_txt_1e-4_rock/";
+    string tau_ice_table_dir=table_dir+"tau_txt_1e-4_ice/";
+    string tau_rock_table_dir=table_dir+"tau_txt_1e-4_rock/";
+
+
     bool new_table;
-    double switch_dens=2.;
-    //string table_dir="stochastic_tables_ice/";
+    double switch_dens=1.6;
 
     static const int ts1=51;
     static const int ts2=10000;
@@ -204,23 +201,27 @@ void stochastic_lepton_prop::load_tables()
     
     string temp_str,temp_str2,temp_str3,temp_str4,temp_str5,temp_str6;
     string delim=" ";
-    ifstream energy_file(ice_table_dir+"MeV_energies.txt");
+    ifstream energy_file(muon_ice_table_dir+"MeV_energies.txt");
 
-    ifstream muon_cs_brem(ice_table_dir+"cs_brem_tau.txt");
-    ifstream muon_cs_pp(ice_table_dir+"cs_pp_tau.txt"); 
-    ifstream muon_cs_pn(ice_table_dir+"cs_pn_tau.txt");
-    ifstream muon_cdf_val(ice_table_dir+"cdf_values_tau.txt");
-    ifstream muon_cdf_xs_brem(ice_table_dir+"cdf_xs_brem_tau.txt");
-    ifstream muon_cdf_xs_pp(ice_table_dir+"cdf_xs_pp_tau.txt");
-    ifstream muon_cdf_xs_pn(ice_table_dir+"cdf_xs_pn_tau.txt");
+    ifstream muon_cs_brem(muon_ice_table_dir+"cs_brem_muon.txt");
+    ifstream muon_cs_pp(muon_ice_table_dir+"cs_pp_muon.txt"); 
+    ifstream muon_cs_pn(muon_ice_table_dir+"cs_pn_muon.txt");
+    ifstream muon_cdf_val(muon_ice_table_dir+"cdf_values_muon.txt");
+    ifstream muon_cdf_xs_brem(muon_ice_table_dir+"cdf_xs_brem_muon.txt");
+    ifstream muon_cdf_xs_pp(muon_ice_table_dir+"cdf_xs_pp_muon.txt");
+    ifstream muon_cdf_xs_pn(muon_ice_table_dir+"cdf_xs_pn_muon.txt");
 
-    ifstream tau_cs_brem(ice_table_dir+"cs_brem_muon.txt");
-    ifstream tau_cs_pp(ice_table_dir+"cs_pp_muon.txt"); 
-    ifstream tau_cs_pn(ice_table_dir+"cs_pn_muon.txt");
-    ifstream tau_cdf_val(ice_table_dir+"cdf_values_muon.txt");
-    ifstream tau_cdf_xs_brem(ice_table_dir+"cdf_xs_brem_muon.txt");
-    ifstream tau_cdf_xs_pp(ice_table_dir+"cdf_xs_pp_muon.txt");
-    ifstream tau_cdf_xs_pn(ice_table_dir+"cdf_xs_pn_muon.txt");
+    ifstream tau_cs_brem(tau_ice_table_dir+"cs_brem_tau.txt");
+    ifstream tau_cs_pp(tau_ice_table_dir+"cs_pp_tau.txt"); 
+    ifstream tau_cs_pn(tau_ice_table_dir+"cs_pn_tau.txt");
+    ifstream tau_cdf_val(tau_ice_table_dir+"cdf_values_tau.txt");
+    ifstream tau_cdf_xs_brem(tau_ice_table_dir+"cdf_xs_brem_tau.txt");
+    ifstream tau_cdf_xs_pp(tau_ice_table_dir+"cdf_xs_pp_tau.txt");
+    ifstream tau_cdf_xs_pn(tau_ice_table_dir+"cdf_xs_pn_tau.txt");
+    
+    if(!muon_cs_brem.is_open()) cout<<"breaking"<<endl;
+    
+    
     /*
     ifstream muon_cs_brem(table_dir+"cs_brem_muon.txt");
     ifstream muon_cs_pp(table_dir+"cs_pp_muon.txt"); 
@@ -360,23 +361,23 @@ void stochastic_lepton_prop::load_tables()
     
     temp_str,temp_str2,temp_str3,temp_str4,temp_str5,temp_str6="","","","","","";
     delim=" ";
-    ifstream energy_file2(rock_table_dir+"MeV_energies.txt");
+    ifstream energy_file2(muon_rock_table_dir+"MeV_energies.txt");
 
-    ifstream muon_cs_brem2(rock_table_dir+"cs_brem_tau.txt");
-    ifstream muon_cs_pp2(rock_table_dir+"cs_pp_tau.txt"); 
-    ifstream muon_cs_pn2(rock_table_dir+"cs_pn_tau.txt");
-    ifstream muon_cdf_val2(rock_table_dir+"cdf_values_tau.txt");
-    ifstream muon_cdf_xs_brem2(rock_table_dir+"cdf_xs_brem_tau.txt");
-    ifstream muon_cdf_xs_pp2(rock_table_dir+"cdf_xs_pp_tau.txt");
-    ifstream muon_cdf_xs_pn2(rock_table_dir+"cdf_xs_pn_tau.txt");
+    ifstream muon_cs_brem2(muon_rock_table_dir+"cs_brem_muon.txt");
+    ifstream muon_cs_pp2(muon_rock_table_dir+"cs_pp_muon.txt"); 
+    ifstream muon_cs_pn2(muon_rock_table_dir+"cs_pn_muon.txt");
+    ifstream muon_cdf_val2(muon_rock_table_dir+"cdf_values_muon.txt");
+    ifstream muon_cdf_xs_brem2(muon_rock_table_dir+"cdf_xs_brem_muon.txt");
+    ifstream muon_cdf_xs_pp2(muon_rock_table_dir+"cdf_xs_pp_muon.txt");
+    ifstream muon_cdf_xs_pn2(muon_rock_table_dir+"cdf_xs_pn_muon.txt");
 
-    ifstream tau_cs_brem2(rock_table_dir+"cs_brem_muon.txt");
-    ifstream tau_cs_pp2(rock_table_dir+"cs_pp_muon.txt"); 
-    ifstream tau_cs_pn2(rock_table_dir+"cs_pn_muon.txt");
-    ifstream tau_cdf_val2(rock_table_dir+"cdf_values_muon.txt");
-    ifstream tau_cdf_xs_brem2(rock_table_dir+"cdf_xs_brem_muon.txt");
-    ifstream tau_cdf_xs_pp2(rock_table_dir+"cdf_xs_pp_muon.txt");
-    ifstream tau_cdf_xs_pn2(rock_table_dir+"cdf_xs_pn_muon.txt");
+    ifstream tau_cs_brem2(tau_rock_table_dir+"cs_brem_tau.txt");
+    ifstream tau_cs_pp2(tau_rock_table_dir+"cs_pp_tau.txt"); 
+    ifstream tau_cs_pn2(tau_rock_table_dir+"cs_pn_tau.txt");
+    ifstream tau_cdf_val2(tau_rock_table_dir+"cdf_values_tau.txt");
+    ifstream tau_cdf_xs_brem2(tau_rock_table_dir+"cdf_xs_brem_tau.txt");
+    ifstream tau_cdf_xs_pp2(tau_rock_table_dir+"cdf_xs_pp_tau.txt");
+    ifstream tau_cdf_xs_pn2(tau_rock_table_dir+"cdf_xs_pn_tau.txt");
     /*
     ifstream muon_cs_brem(table_dir+"cs_brem_muon.txt");
     ifstream muon_cs_pp(table_dir+"cs_pp_muon.txt"); 

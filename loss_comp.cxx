@@ -21,6 +21,11 @@ double dPdesdx(double E, int type)
     return f;
 }
 
+void usage()
+{
+    cout<<"1st arg is initial energy\n second arg is type\n third arg is number to sim\n";
+}
+
 
 int main(int argc, char * argv[])
 {
@@ -40,11 +45,12 @@ int main(int argc, char * argv[])
     stochastic_lepton_prop sto;
     sto.load_tables();
 
-    double i_energy=1E9;
-    
-    if(argc>0) i_energy=atof(argv[1]);
+    double i_energy=1E6; //GeV?
+    cout<<argc<<endl;
+    if(argc>1) i_energy=atof(argv[2]);
+
     double log_i_energy=log10(i_energy);
-    double thresh=1E2;
+    double thresh=1E2; //GeV, lowest energy on LUT is 10^11 eV
 
     int type=15;
     if(argc>2)type=atoi(argv[3]);
@@ -65,8 +71,8 @@ int main(int argc, char * argv[])
     int sto_loop=0;
     int sto_decays=0;
     int cont_decays=0;
-    int num_parts=10000;
-    if(argc>1)num_parts=atof(argv[2]);
+    int num_parts=1000;
+    if(argc>3)num_parts=atof(argv[4]);
     printf("%i particles at 10^%.1f GeV\n",num_parts,log10(i_energy));
     double cont_dists[num_parts];
     double sto_dists[num_parts];
@@ -138,7 +144,7 @@ int main(int argc, char * argv[])
             dL=sto.get_interaction_length();
             if(dL<0.)
             {
-                cout<<"fuuuuuuccccck"<<endl;
+                cout<<"negative step, oospie"<<endl;
                 exit(1);
 
             }
@@ -186,6 +192,7 @@ int main(int argc, char * argv[])
         
         }
         sto_e[i]=energy;
+        sto_dist+=sto_dists[i]/num_parts;
     }
     
     time(&sto2);
