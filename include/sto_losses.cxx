@@ -219,7 +219,11 @@ void stochastic_lepton_prop::load_tables()
     ifstream tau_cdf_xs_pp(tau_ice_table_dir+"cdf_xs_pp_tau.txt");
     ifstream tau_cdf_xs_pn(tau_ice_table_dir+"cdf_xs_pn_tau.txt");
     
-    if(!muon_cs_brem.is_open()) cout<<"breaking"<<endl;
+    if(!muon_cs_brem.is_open() || !tau_cs_brem.is_open()) 
+    {
+        cout<<"muon or taus tables don't exist"<<endl;
+        exit(-1);
+        }
     
     
     /*
