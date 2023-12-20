@@ -36,8 +36,8 @@ class stochastic_lepton_prop
 
     string muon_ice_table_dir=table_dir+"muon_txt_1e-4_ice/";
     string muon_rock_table_dir=table_dir+"muon_txt_1e-4_rock/";
-    string tau_ice_table_dir=table_dir+"tau_txt_1e-4_ice/";
-    string tau_rock_table_dir=table_dir+"tau_txt_1e-4_rock/";
+    string tau_ice_table_dir=table_dir+"tau_txt_1e-5_ice/";
+    string tau_rock_table_dir=table_dir+"tau_txt_1e-5_rock/";
 
 
     bool new_table;
@@ -223,26 +223,8 @@ void stochastic_lepton_prop::load_tables()
     {
         cout<<"muon or taus tables don't exist"<<endl;
         exit(-1);
-        }
+    }
     
-    
-    /*
-    ifstream muon_cs_brem(table_dir+"cs_brem_muon.txt");
-    ifstream muon_cs_pp(table_dir+"cs_pp_muon.txt"); 
-    ifstream muon_cs_pn(table_dir+"cs_pn_muon.txt");
-    ifstream muon_cdf_val(table_dir+"cdf_values_muon.txt");
-    ifstream muon_cdf_xs_brem(table_dir+"cdf_xs_brem_muon.txt");
-    ifstream muon_cdf_xs_pp(table_dir+"cdf_xs_pp_muon.txt");
-    ifstream muon_cdf_xs_pn(table_dir+"cdf_xs_pn_muon.txt");
-
-    ifstream tau_cs_brem(table_dir+"cs_brem_tau.txt");
-    ifstream tau_cs_pp(table_dir+"cs_pp_tau.txt"); 
-    ifstream tau_cs_pn(table_dir+"cs_pn_tau.txt");
-    ifstream tau_cdf_val(table_dir+"cdf_values_tau.txt");
-    ifstream tau_cdf_xs_brem(table_dir+"cdf_xs_brem_tau.txt");
-    ifstream tau_cdf_xs_pp(table_dir+"cdf_xs_pp_tau.txt");
-    ifstream tau_cdf_xs_pn(table_dir+"cdf_xs_pn_tau.txt");
-    */
     //printf("files open\n");
     for(int i=0;i<ts1;i++)
     {
@@ -294,44 +276,54 @@ void stochastic_lepton_prop::load_tables()
         getline(tau_cdf_xs_pp,temp_str5);
         getline(tau_cdf_xs_pn,temp_str6);
 
+        int current_places[6]={0,0,0,0,0,0};
+        int last_places[6]={0,0,0,0,0,0};
+        int shifter=0;
+
         for(int j=0;j<ts2;j++)
         {
-          
-            if(temp_str.find(delim)!=string::npos)
+            if(j==0)shifter=0;
+            else shifter=1;
+
+            if(temp_str.find(delim,last_places[0]+shifter)!=string::npos)
             {
-                cdf_xs_brem_muon_ice[i][j]=atof(temp_str.substr(0,temp_str.find(delim)).c_str());
-                temp_str.erase(0,temp_str.find(delim)+1);
+                current_places[0]=temp_str.find(delim,last_places[0]+shifter);
+                cdf_xs_brem_muon_ice[i][j]=atof(temp_str.substr(last_places[0]+1,current_places[0]-last_places[0]-1).c_str());
+                last_places[0]=current_places[0];
 
-                cdf_xs_pp_muon_ice[i][j]=atof(temp_str2.substr(0,temp_str2.find(delim)).c_str());
-                temp_str2.erase(0,temp_str2.find(delim)+1);
-
-                cdf_xs_pn_muon_ice[i][j]=atof(temp_str3.substr(0,temp_str3.find(delim)).c_str());
-                temp_str3.erase(0,temp_str3.find(delim)+1);
-
-                cdf_xs_brem_tau_ice[i][j]=atof(temp_str4.substr(0,temp_str4.find(delim)).c_str());
-                temp_str4.erase(0,temp_str4.find(delim)+1);
-
-                cdf_xs_pp_tau_ice[i][j]=atof(temp_str5.substr(0,temp_str5.find(delim)).c_str());
-                temp_str5.erase(0,temp_str5.find(delim)+1);
-
-                cdf_xs_pn_tau_ice[i][j]=atof(temp_str6.substr(0,temp_str6.find(delim)).c_str());
-                temp_str6.erase(0,temp_str6.find(delim)+1);
+                current_places[1]=temp_str2.find(delim,last_places[1]+shifter);
+                cdf_xs_pp_muon_ice[i][j]=atof(temp_str2.substr(last_places[1]+1,current_places[1]-last_places[1]-1).c_str());
+                last_places[1]=current_places[1];
 
                 
+                current_places[2]=temp_str3.find(delim,last_places[2]+shifter);
+                cdf_xs_pn_muon_ice[i][j]=atof(temp_str3.substr(last_places[2]+1,current_places[2]-last_places[2]-1).c_str());
+                last_places[2]=current_places[2];
+
+
+                current_places[3]=temp_str4.find(delim,last_places[3]+shifter);
+                cdf_xs_brem_tau_ice[i][j]=atof(temp_str4.substr(last_places[3]+1,current_places[3]-last_places[3]-1).c_str());
+                last_places[3]=current_places[3];
+
+
+                current_places[4]=temp_str5.find(delim,last_places[4]+shifter);
+                cdf_xs_pp_tau_ice[i][j]=atof(temp_str5.substr(last_places[4]+1,current_places[4]-last_places[4]-1).c_str());
+                last_places[4]=current_places[4];
+
+                current_places[5]=temp_str6.find(delim,last_places[5]+shifter);
+                cdf_xs_pn_tau_ice[i][j]=atof(temp_str6.substr(last_places[5]+1,current_places[5]-last_places[5]-1).c_str());
+                last_places[5]=current_places[5];
+
             }
-            if(temp_str.find(delim)==string::npos)
+            if(temp_str.find(delim,last_places[0]+shifter)==string::npos)
             {
-                cdf_xs_brem_muon_ice[i][ts2-1]=atof(temp_str.c_str());
-                cdf_xs_pp_muon_ice[i][ts2-1]=atof(temp_str2.c_str());
-                cdf_xs_pn_muon_ice[i][ts2-1]=atof(temp_str3.c_str());
-                cdf_xs_brem_tau_ice[i][ts2-1]=atof(temp_str4.c_str());
-                cdf_xs_pp_tau_ice[i][ts2-1]=atof(temp_str5.c_str());
-                cdf_xs_pn_tau_ice[i][ts2-1]=atof(temp_str6.c_str());
-                
-                
+                cdf_xs_brem_muon_ice[i][ts2-1]=atof(temp_str.substr(last_places[0]+1,string::npos).c_str());
+                cdf_xs_pp_muon_ice[i][ts2-1]=atof(temp_str2.substr(last_places[1]+1,string::npos).c_str());
+                cdf_xs_pn_muon_ice[i][ts2-1]=atof(temp_str3.substr(last_places[2]+1,string::npos).c_str());
+                cdf_xs_brem_tau_ice[i][ts2-1]=atof(temp_str4.substr(last_places[3]+1,string::npos).c_str());
+                cdf_xs_pp_tau_ice[i][ts2-1]=atof(temp_str5.substr(last_places[4]+1,string::npos).c_str());
+                cdf_xs_pn_tau_ice[i][ts2-1]=atof(temp_str6.substr(last_places[5]+1,string::npos).c_str());   
             }
-
-
         }
         //.same format just like 16 times rip lol
         //and one more loop in here for the 2d arrays
@@ -382,23 +374,7 @@ void stochastic_lepton_prop::load_tables()
     ifstream tau_cdf_xs_brem2(tau_rock_table_dir+"cdf_xs_brem_tau.txt");
     ifstream tau_cdf_xs_pp2(tau_rock_table_dir+"cdf_xs_pp_tau.txt");
     ifstream tau_cdf_xs_pn2(tau_rock_table_dir+"cdf_xs_pn_tau.txt");
-    /*
-    ifstream muon_cs_brem(table_dir+"cs_brem_muon.txt");
-    ifstream muon_cs_pp(table_dir+"cs_pp_muon.txt"); 
-    ifstream muon_cs_pn(table_dir+"cs_pn_muon.txt");
-    ifstream muon_cdf_val(table_dir+"cdf_values_muon.txt");
-    ifstream muon_cdf_xs_brem(table_dir+"cdf_xs_brem_muon.txt");
-    ifstream muon_cdf_xs_pp(table_dir+"cdf_xs_pp_muon.txt");
-    ifstream muon_cdf_xs_pn(table_dir+"cdf_xs_pn_muon.txt");
 
-    ifstream tau_cs_brem(table_dir+"cs_brem_tau.txt");
-    ifstream tau_cs_pp(table_dir+"cs_pp_tau.txt"); 
-    ifstream tau_cs_pn(table_dir+"cs_pn_tau.txt");
-    ifstream tau_cdf_val(table_dir+"cdf_values_tau.txt");
-    ifstream tau_cdf_xs_brem(table_dir+"cdf_xs_brem_tau.txt");
-    ifstream tau_cdf_xs_pp(table_dir+"cdf_xs_pp_tau.txt");
-    ifstream tau_cdf_xs_pn(table_dir+"cdf_xs_pn_tau.txt");
-    */
     //printf("files open\n");
     for(int i=0;i<ts1;i++)
     {
@@ -450,44 +426,55 @@ void stochastic_lepton_prop::load_tables()
         getline(tau_cdf_xs_pp2,temp_str5);
         getline(tau_cdf_xs_pn2,temp_str6);
 
+        int current_places[6]={0,0,0,0,0,0};
+        int last_places[6]={0,0,0,0,0,0};
+        int shifter=0;
+
         for(int j=0;j<ts2;j++)
         {
-          
-            if(temp_str.find(delim)!=string::npos)
+            if(j==0)shifter=0;
+            else shifter=1;
+
+            if(temp_str.find(delim,last_places[0]+shifter)!=string::npos)
             {
-                cdf_xs_brem_muon_rock[i][j]=atof(temp_str.substr(0,temp_str.find(delim)).c_str());
-                temp_str.erase(0,temp_str.find(delim)+1);
+                
+                current_places[0]=temp_str.find(delim,last_places[0]+shifter);
+                cdf_xs_brem_muon_rock[i][j]=atof(temp_str.substr(last_places[0]+1,current_places[0]-last_places[0]-1).c_str());
+                last_places[0]=current_places[0];
 
-                cdf_xs_pp_muon_rock[i][j]=atof(temp_str2.substr(0,temp_str2.find(delim)).c_str());
-                temp_str2.erase(0,temp_str2.find(delim)+1);
+                current_places[1]=temp_str2.find(delim,last_places[1]+shifter);
+                cdf_xs_pp_muon_rock[i][j]=atof(temp_str2.substr(last_places[1]+1,current_places[1]-last_places[1]-1).c_str());
+                last_places[1]=current_places[1];
 
-                cdf_xs_pn_muon_rock[i][j]=atof(temp_str3.substr(0,temp_str3.find(delim)).c_str());
-                temp_str3.erase(0,temp_str3.find(delim)+1);
+                
+                current_places[2]=temp_str3.find(delim,last_places[2]+shifter);
+                cdf_xs_pn_muon_rock[i][j]=atof(temp_str3.substr(last_places[2]+1,current_places[2]-last_places[2]-1).c_str());
+                last_places[2]=current_places[2];
 
-                cdf_xs_brem_tau_rock[i][j]=atof(temp_str4.substr(0,temp_str4.find(delim)).c_str());
-                temp_str4.erase(0,temp_str4.find(delim)+1);
 
-                cdf_xs_pp_tau_rock[i][j]=atof(temp_str5.substr(0,temp_str5.find(delim)).c_str());
-                temp_str5.erase(0,temp_str5.find(delim)+1);
+                current_places[3]=temp_str4.find(delim,last_places[3]+shifter);
+                cdf_xs_brem_tau_rock[i][j]=atof(temp_str4.substr(last_places[3]+1,current_places[3]-last_places[3]-1).c_str());
+                last_places[3]=current_places[3];
 
-                cdf_xs_pn_tau_rock[i][j]=atof(temp_str6.substr(0,temp_str6.find(delim)).c_str());
-                temp_str6.erase(0,temp_str6.find(delim)+1);
 
+                current_places[4]=temp_str5.find(delim,last_places[4]+shifter);
+                cdf_xs_pp_tau_rock[i][j]=atof(temp_str5.substr(last_places[4]+1,current_places[4]-last_places[4]-1).c_str());
+                last_places[4]=current_places[4];
+
+                current_places[5]=temp_str6.find(delim,last_places[5]+shifter);
+                cdf_xs_pn_tau_rock[i][j]=atof(temp_str6.substr(last_places[5]+1,current_places[5]-last_places[5]-1).c_str());
+                last_places[5]=current_places[5];
                 
             }
-            if(temp_str.find(delim)==string::npos)
+            if(temp_str.find(delim,last_places[0]+shifter)==string::npos)
             {
-                cdf_xs_brem_muon_rock[i][ts2-1]=atof(temp_str.c_str());
-                cdf_xs_pp_muon_rock[i][ts2-1]=atof(temp_str2.c_str());
-                cdf_xs_pn_muon_rock[i][ts2-1]=atof(temp_str3.c_str());
-                cdf_xs_brem_tau_rock[i][ts2-1]=atof(temp_str4.c_str());
-                cdf_xs_pp_tau_rock[i][ts2-1]=atof(temp_str5.c_str());
-                cdf_xs_pn_tau_rock[i][ts2-1]=atof(temp_str6.c_str());
-                
-                
+                cdf_xs_brem_muon_rock[i][ts2-1]=atof(temp_str.substr(last_places[0]+1,string::npos).c_str());
+                cdf_xs_pp_muon_rock[i][ts2-1]=atof(temp_str2.substr(last_places[1]+1,string::npos).c_str());
+                cdf_xs_pn_muon_rock[i][ts2-1]=atof(temp_str3.substr(last_places[2]+1,string::npos).c_str());
+                cdf_xs_brem_tau_rock[i][ts2-1]=atof(temp_str4.substr(last_places[3]+1,string::npos).c_str());
+                cdf_xs_pp_tau_rock[i][ts2-1]=atof(temp_str5.substr(last_places[4]+1,string::npos).c_str());
+                cdf_xs_pn_tau_rock[i][ts2-1]=atof(temp_str6.substr(last_places[5]+1,string::npos).c_str());
             }
-
-
         }
         //.same format just like 16 times rip lol
         //and one more loop in here for the 2d arrays
@@ -507,7 +494,6 @@ void stochastic_lepton_prop::load_tables()
     tau_cdf_xs_pp2.close();
     tau_cdf_xs_pn2.close();
 
-   
     //printf("\n\n\n");
     //for(int i=0;i<ts1;i++)cout<<MeV_energy[i]<<",";
     //cout<<endl;
@@ -517,7 +503,7 @@ void stochastic_lepton_prop::load_tables()
     cout<<"loaded tables "<<time(NULL)-time1<<" s"<<endl;
 
     //setting to ice to start
-        //set tables to ice
+    //set tables to ice
     cs_brem_muon=cs_brem_muon_ice;
     cs_pp_muon=cs_pp_muon_ice;
     cs_pn_muon=cs_pn_muon_ice;

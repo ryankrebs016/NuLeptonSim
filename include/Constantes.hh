@@ -13,8 +13,15 @@ const double me=0.510998902*1e-3;	// Masse de l'�lectron en GeV
 const double e=2.718;
 const double mpi=0.1349766;		// Masse du PI0 en GeV
 const double taudl=86.93*1e-4; 	// longueur de d�sint�gration du tau en cm
+const double tau_lifetime=2.903e-13; // rest frame mean lifetime of taus in s
+const double c_light=2.998e8; //speed of light in m/s
+//const double taudl=0.008709; 	// longueur de d�sint�gration du tau en cm
+
 const double R0=6.378e8; 		// Rayon de la terre en cm
 const double muondl=658.8; 	// longueur de désintégration du muon en cm
+const double muon_lifetime=2.917e-6; //rest frame mean lifetime of muon in s
+//const double muondl=65909; 	// longueur de désintégration du muon en cm
+
 const double mW=80.38;     //mass of W boson, GeV/c^2
 
 // Constantes secondaires
