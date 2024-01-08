@@ -2,7 +2,7 @@
 #include<stdio.h>
 #include<iostream>
 #include<math.h>
-//#include"Constantes.hh"
+#include"Constantes.hh"
 
 
 using namespace std; 
@@ -13,8 +13,8 @@ class continuous_loss_prop
     double energy_GeV;
     double dens;
     int p_type;
-    const double m_frac = 1e-2;
-    const double t_frac = 1e-2;
+    const double m_frac = 1e-4;//1e-2
+    const double t_frac = 1e-4;
     int loss_model;
     double dL;
     double elost;
