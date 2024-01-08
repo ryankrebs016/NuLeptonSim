@@ -1,11 +1,5 @@
-//code for Austin
-
-
-
-
-
 //############################################################################# 
-// Event generator code using NuLeptonSim framework
+// Event generator or particle survival code using NuLeptonSim framework
 //
 // Adapted from code used to obtain probability of emerging tau leptons in 
 // calculations of exposure to Earth-skimming neutrinos in Auger and later
@@ -37,7 +31,8 @@
 // - save_neutrinos - Bool to decide if neutrinos neutrinos are saved
 // - save_charged - Bool to decide if charged leptons are saved
 // - save_events - Bool to decide if events are saved
-
+// - use_sto_inst_of_cont - Bool (True for stochastic, false for continuous)
+// - NOT ADDED sto_in_volume - Bool (if true will use stochastic losses inside a prescribed simulation volume to generate detector events) 
 //-----------------------------------------------------------------------------
 // calling the code is the form ./Event_gen 1E+20 95.0 1E+4 0 0 4.0 0.92 16
 // Command line parameters
@@ -47,7 +42,7 @@
 // +=Particle, -=Anti Particle. 15=tau, 16=nutau, 13=muons, 14=numus, 12=nue,11=e
 
 
-//updated on 2/18/22
+//updated on 1/8/24 by Ryan Krebs
 
 #include <sys/stat.h>
 #include <vector>
@@ -253,13 +248,14 @@ typedef struct {
   bool save_sto_events;
   bool save_dec_events;
   bool save_emerging;
+  bool use_sto_inst_of_cont;
 }config_init;   // data struct to hold the value read from config file
 
 
 
 typedef struct
 {
-  
+  //last 6 are on the surface. first 6 are on a set interface --not used
   double xi;
   double yi;
   double zi;
@@ -299,7 +295,7 @@ particle_info_def particle_data;
 reaction_tables_def reaction_data;
 config_init config;
 det_geom det;
-
+double decay_length(double P, double E, int particle_type);
 bool in_volume(double x,double y,double z);
 //void generate_events(det* detec);
 
@@ -1276,6 +1272,9 @@ int main(int argc, char **argv)
 
           //bool cont_sto=false;//temp var for which prop moldule to use
           double frac_loss=0;
+          double sampled_decay_length=0;
+          double random_num=0;
+
           //if(!in_volume(pos[0],pos[1],pos[2]))
           //{
           //cont.set_values(part_energy,dens,part_type,0);
@@ -1289,59 +1288,78 @@ int main(int argc, char **argv)
           //  dL=sto.get_interaction_length();
           //  frac_loss=sto.get_sampled_energy();
          // }
-          //stochastic only
-          
-          sto.set_val(part_energy,part_type,dens);
-          dL=sto.get_interaction_length();
+    
+          //get a decay length
+          random_num=(double)rand()/(double)RAND_MAX;
+          sampled_decay_length=decay_length((double)rand()/(double)RAND_MAX,energy,type); //cm
 
-          frac_loss=sto.get_sampled_energy();
-          if(dL>1E6){cout<<"dens"<<dens<<"   buggy particle from a super long step with step "<<dL<<"and en loss "<<frac_loss<<endl;}
+          //get the interaction info
+          if(use_sto_inst_of_cont) //true is sto
+          {
+            sto.set_val(part_energy,part_type,dens);
+            dL=sto.get_interaction_length();
+            frac_loss=sto.get_sampled_energy();
+          }
+          else //false is cont
+          {
+            cont.set_values(part_energy,dens,part_type,0);
+            dL=cont.get_interaction_length();
+            frac_loss=cont.get_energy_loss()/part_energy;
+          }
+
+
+
+          //if(dL>1E6){cout<<"dens"<<dens<<"   buggy particle from a super long step with step "<<dL<<"and en loss "<<frac_loss<<endl;}
           // Estimate step length based on Energy, dE/dx, local density, and fraction.
           //dL=(part_energy/(dens*elost(part_energy, dens, ELOSSmode,part_type)))*frac;
           
           //if(tau_path==0)cout<<"tau energy start "<<part_energy<<endl;
-          tau_path+=dL;
+          //tau_path+=dL;
           //cout<<tau_path/100000<<"__";
           //cout<<dL<<endl;
           // Check if tau leaves the Earth after dL. If it does then adjust last step
-          if(part_pos+dL > maxL) 
-          {
-            dL=maxL-part_pos;//change tolmax1 for icecube
-            //cout<<"tau left before decaying "<<endl;
-          }
+          //if(part_pos+dL > maxL) 
+          //{
+          //  dL=maxL-part_pos;//change tolmax1 for icecube
+          //  //cout<<"tau left before decaying "<<endl;
+          //}
           // Calculate the traversed grammage
-          traversed_grammage+=dL*dens;
+          //traversed_grammage+=dL*dens;
           
           // Calculate the probability that the tau lepton will decay along the step dL.
-          dPdes=1.-exp(-dL*dPdesdx(part_energy,part_type));
+          //dPdes=1.-exp(-dL*dPdesdx(part_energy,part_type));
           
-          rndm=((double) rand() / (double)(RAND_MAX));
+          //rndm=((double) rand() / (double)(RAND_MAX));
           
           //update particle position
           //if(rndm<dPdes)cout<<"tau to decay here "<<part_pos<<endl;
           //cout<<part_energy<<","<<frac_loss<<","<<part_energy*frac_loss*pow(10,9)<<","<<config.energy_threshold<<endl;
           //cout<<frac_loss<<endl;
           
-          //add in config.save_sto
           if(config.save_sto_events&&in_volume(pos[0],pos[1],pos[2])&&frac_loss*part_energy>Elim)//save the deposition
-          {//output this
-          //cout<<"stuff here"<<endl;
-          int temp_show=0;
-	  if(sto.sto_type==0)temp_show=1;
-          if(sto.sto_type==1)temp_show=1;//sto_type==0 brem, sto_type==1 pp, sto_type==2 pn
-          if(sto.sto_type==2)temp_show=0; 
-          outEvents<<pos[0]<<","<<pos[1]<<","<<pos[2]<<","<<x_step<<","<<y_step<<","<<z_step<<","<<part_energy<<","<<frac_loss<<","
+          {
+            //output this
+            //cout<<"stuff here"<<endl;
+            int temp_show=0;
+            if(sto.sto_type==0)temp_show=1;
+            if(sto.sto_type==1)temp_show=1;//sto_type==0 brem, sto_type==1 pp, sto_type==2 pn
+            if(sto.sto_type==2)temp_show=0; 
+            outEvents<<pos[0]<<","<<pos[1]<<","<<pos[2]<<","<<x_step<<","<<y_step<<","<<z_step<<","<<part_energy<<","<<frac_loss<<","
               <<part_type*anti<<","<<sto.sto_type+4<<","<<temp_show<<","<<NC_num<<","<<dc_num<<","<<GR_num<<","<<i<<","<<num_count<<","<<sto_num<<endl;
-          //outLep<<log10(part_energy)<<","<<frac_loss<<","<<log10(part_energy*frac_loss)<<","<<pos[0]<<","<<pos[1]<<","<<pos[2]<<","<<x_step<<","<<y_step<<","<<z_step<<","<<sto.sto_type<<","<<i<<","<<num_count<<","<<part_type<<","<<sto_num<<endl;
-          sto_num++;
+            //outLep<<log10(part_energy)<<","<<frac_loss<<","<<log10(part_energy*frac_loss)<<","<<pos[0]<<","<<pos[1]<<","<<pos[2]<<","<<x_step<<","<<y_step<<","<<z_step<<","<<sto.sto_type<<","<<i<<","<<num_count<<","<<part_type<<","<<sto_num<<endl;
+            sto_num++;
             //log_initial_energy,frac_loss,log_dep_energy,x,y,z,vx,vy,vz,int type, traj id, part type
           }
+          //dont flatly update. instead depends on decay length
+          //part_pos=part_pos+dL;
+          //pos[0]=pos[0]+dL*x_step;
+          //pos[1]=pos[1]+dL*y_step;
+          //pos[2]=pos[2]+dL*z_step;
 
-          part_pos=part_pos+dL;
-          pos[0]=pos[0]+dL*x_step;
-          pos[1]=pos[1]+dL*y_step;
-          pos[2]=pos[2]+dL*z_step;
+          //part_energy=(1.-frac_loss)*part_energy;
+
           //if(rndm<dPdes)cout<<"tau decays here "<<part_pos<<endl;
+
           if(in_volume(pos[0],pos[1],pos[2])&&!checked_in)
           {
             taus_passed_through++;
@@ -1355,7 +1373,6 @@ int main(int argc, char **argv)
         
           // Calculate a random number used for determining whether the tau decays or not in this step.
           
-          part_energy=(1.-frac_loss)*part_energy;
 
           //part_energy = part_energy-dL*dens*elost(part_energy, dens, ELOSSmode,part_type);
           // Determine whether the lepton decays or not.
@@ -1365,13 +1382,28 @@ int main(int argc, char **argv)
           //  lep.fill_initial(pos[0],pos[1],pos[2],part_energy,anti,part_type);
 
           //}
-          if(rndm > dPdes)
+
+          if(sampled_decay_length>dL)
           {
             //==============================
             // The tau lepton does NOT decay
             //=============================
             //cout<<"no decay"<<endl;
-   
+            part_pos=part_pos+dL;
+            pos[0]=pos[0]+dL*x_step;
+            pos[1]=pos[1]+dL*y_step;
+            pos[2]=pos[2]+dL*z_step;
+
+            part_energy=(1.-frac_loss)*part_energy;
+
+            if(part_pos+dL > maxL) 
+            {
+              dL=maxL-part_pos;//change tolmax1 for icecube
+              //cout<<"tau left before decaying "<<endl;
+            }
+            // Calculate the traversed grammage
+            traversed_grammage+=dL*dens;
+            
             //cout<<"ND-";
           }
           else
@@ -1382,6 +1414,20 @@ int main(int argc, char **argv)
             {
               decay_num++;
             }
+
+            part_pos=part_pos+sampled_decay_length;
+            pos[0]=pos[0]+sampled_decay_length*x_step;
+            pos[1]=pos[1]+sampled_decay_length*y_step;
+            pos[2]=pos[2]+sampled_decay_length*z_step;
+
+            if(part_pos+sampled_decay_length > maxL) 
+            {
+              sampled_decay_length=maxL-part_pos;//change tolmax1 for icecube
+              //cout<<"tau left before decaying "<<endl;
+            }
+            // Calculate the traversed grammage
+            traversed_grammage+=sampled_decay_length*dens;
+          
             //=======================
             // The lepton decays
             //=======================
@@ -1578,7 +1624,7 @@ int main(int argc, char **argv)
           {//add &&false after testing influx and outflux files
             out_leptons++;
             //cout<<"got one!"<<endl;
-	    outEnergies <<part_type<<" "<<anti<<" "<<NC_num << " " << CC_num << " " << GR_num<<" "<<
+	          outEnergies <<part_type<<" "<<anti<<" "<<NC_num << " " << CC_num << " " << GR_num<<" "<<
             dc_num << " " <<generation <<" "<<num_count<< " " << log10(part_energy)+9 << " " << log10(Energy_GeV)+9<<" "<<part_pos<<" "<<tau_x<<" "<<tau_y<<" "<<tau_z<<"\n";
             has_been_saved=true;
             
@@ -1638,6 +1684,33 @@ int main(int argc, char **argv)
 // Several functions
 // ===================================================
 
+double decay_length(double P, double E, int particle_type)
+{
+    double mass=0;
+    double lifetime=0;
+    if(particle_type==15)
+    {
+        mass=mtau;
+        lifetime=tau_lifetime;
+    }
+    else if(particle_type==13)
+    {
+        mass=mmuon;
+        lifetime=muon_lifetime;
+    }
+    else
+    {
+        cout<<"wrong particle"<<endl;
+        exit(-1);
+    }
+    if(1-P<0)
+    {
+      cout<<"log bug"<<endl;
+    } exit(-1);
+
+    double decay_length=-log(1-P)*E*c_light*lifetime/mass*1e2;
+    return decay_length; //cm
+}
 
 
 void set_points_from_angle(input_file *input,double angle)
@@ -1905,6 +1978,7 @@ void load_config()
      else if ((int)line.find("save_sto_events")!=-1)sin>>config.save_sto_events;
      else if ((int)line.find("save_dec_events")!=-1)sin>>config.save_dec_events;
      else if ((int)line.find("save_emerging")!=-1)sin>>config.save_emerging;
+     else if ((int)line.find("use_sto_inst_of_cont")!=-1)sin>>config.use_sto_inst_of_cont;
 
   }
 }
