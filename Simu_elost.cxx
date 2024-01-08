@@ -1291,10 +1291,10 @@ int main(int argc, char **argv)
     
           //get a decay length
           random_num=(double)rand()/(double)RAND_MAX;
-          sampled_decay_length=decay_length((double)rand()/(double)RAND_MAX,energy,type); //cm
+          sampled_decay_length=decay_length((double)rand()/(double)RAND_MAX,part_energy,part_type); //cm
 
           //get the interaction info
-          if(use_sto_inst_of_cont) //true is sto
+          if(config.use_sto_inst_of_cont) //true is sto
           {
             sto.set_val(part_energy,part_type,dens);
             dL=sto.get_interaction_length();

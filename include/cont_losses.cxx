@@ -2,7 +2,7 @@
 #include<stdio.h>
 #include<iostream>
 #include<math.h>
-#include"Constantes.hh"
+//#include"Constantes.hh"
 
 
 using namespace std; 
