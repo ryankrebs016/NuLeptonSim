@@ -1706,7 +1706,8 @@ double decay_length(double P, double E, int particle_type)
     if(1-P<0)
     {
       cout<<"log bug"<<endl;
-    } exit(-1);
+      exit(-1);
+    } 
 
     double decay_length=-log(1-P)*E*c_light*lifetime/mass*1e2;
     return decay_length; //cm
