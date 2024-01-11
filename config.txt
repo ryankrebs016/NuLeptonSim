@@ -1,6 +1,6 @@
 config file for NuLeptonSim
 
-data_dir = paper_2-10/
+data_dir = testing/
 starting_type = 16
 anti = 1
 regen = 1
@@ -14,7 +14,7 @@ save_charged = 1
 save_events = 0
 save_sto = 0
 n_throws = 10000
-n_traj = 10000
+n_traj = 1
 save_nu_events = 0
 save_dec_events = 0
 save_sto_events = 0
