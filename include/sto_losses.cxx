@@ -119,7 +119,7 @@ class stochastic_lepton_prop
     void set_model(int temp_loss_mode, int temp_loss_model);
     double get_interaction_length();//uses loss_mode and loss_model and energy and density
     double get_sampled_energy();
-    void load_tables(); //load tables into memory
+    void load_tables(string muon_min, string tau_min); //load tables into memory
     double interpolate_cs(int sto);
     double interpolate_int_length();
     void save_event(ofstream * lepton_file,double dep_energy);
@@ -184,8 +184,25 @@ bool stochastic_lepton_prop::set_table_pointer(double temp_dens)
     return 0;
 }
 
-void stochastic_lepton_prop::load_tables()
-{   int time1=time(NULL);
+void stochastic_lepton_prop::load_tables(string muon_min, string tau_min)
+{   
+    int time1=time(NULL);
+    if ((strcmp(muon_min.c_str(),"1e-4") !=0 && strcmp(muon_min.c_str(),"1e-5") !=0&& strcmp(muon_min.c_str(),"1e-7") !=0&& strcmp(muon_min.c_str(),"1e-9")!=0))
+    {
+        cout<<"couldn't find "<<muon_min<<" tables - loading default 1e-4 for muon\n";
+        muon_min="1e-4";
+    } 
+
+    if ((strcmp(tau_min.c_str(),"1e-5")!=0 && strcmp(tau_min.c_str(),"1e-6")!=0 && strcmp(tau_min.c_str(),"1e-7")!=0 && strcmp(tau_min.c_str(),"1e-9")!=0))
+    {
+        cout<<"couldn't find "<<tau_min<<" tables - loading default 1e-5 for tau\n";
+        tau_min="1e-5";
+    } 
+    muon_ice_table_dir=table_dir+"muon_txt_"+muon_min+"_ice/";
+    muon_rock_table_dir=table_dir+"muon_txt_"+muon_min+"_rock/";
+    tau_ice_table_dir=table_dir+"tau_txt_"+tau_min+"_ice/";
+    tau_rock_table_dir=table_dir+"tau_txt_"+tau_min+"_rock/";
+
     cout<<"loading ice tables"<<endl;;
 
     //load both rock and ice at same time. use correct array when needed

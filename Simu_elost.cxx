@@ -249,6 +249,8 @@ typedef struct {
   bool save_dec_events;
   bool save_emerging;
   bool use_sto_inst_of_cont;
+  string min_muon_sto_loss;
+  string min_tau_sto_loss;
 }config_init;   // data struct to hold the value read from config file
 
 
@@ -360,16 +362,19 @@ Earth *terra = new Earth(0.0, 2.6);
 int main(int argc, char **argv)
 {
   double time_start=time(NULL); //set timing variable
+  load_config(); 
+  continuous_loss_prop cont;
+  stochastic_lepton_prop sto;
+  sto.load_tables(config.min_muon_sto_loss,config.min_tau_sto_loss);
+  // call function to load config
+  
+  make_dirs(config.data_dir);
+  load_geo();//might not be necessary now that points are defgined outside of sim
+
   int taus_passed_through=0;
   int decay_num=0;
   //charged_lep lep;
-  continuous_loss_prop cont;
-  stochastic_lepton_prop sto;
-  sto.load_tables();
-  // call function to load config
-  load_config(); 
-  make_dirs(config.data_dir);
-  load_geo();//might not be necessary now that points are defgined outside of sim
+
   //charged_leptons temp_lep;
   double tau_x = 1;
   double tau_y=1;
@@ -425,7 +430,6 @@ int main(int argc, char **argv)
   char  mfinalncfile[1000];
   char  mfinalccbarfile[1000];
   char  mfinalncbarfile[1000];  
-
   if(argc<=10){
     (void)strcpy(taudata, "tables/tau_decay_tauola.data");
     (void)strcpy(tfinalccfile, "tables/final_cteq5_cc_nu.data");
@@ -439,7 +443,6 @@ int main(int argc, char **argv)
     (void)strcpy(mfinalccbarfile, "tables/final_cteq5_cc_nubar.data");
     (void)strcpy(mfinalncbarfile, "tables/final_cteq5_nc_nubar.data");
   }
-  
 
   int InitTau = TauData.InitTable(taudata);
   FinalTable *tCCFinalData = new FinalTable;
@@ -452,7 +455,6 @@ int main(int argc, char **argv)
   FinalTable *mNCFinalData = new FinalTable;
   FinalTable *mCCBarFinalData = new FinalTable;
   FinalTable *mNCBarFinalData = new FinalTable;
-  
   tCCFinalData->InitTable(tfinalccfile);
   tNCFinalData->InitTable(tfinalncfile);
   tCCBarFinalData->InitTable(tfinalccbarfile);
@@ -462,13 +464,11 @@ int main(int argc, char **argv)
   mNCFinalData->InitTable(mfinalncfile);
   mCCBarFinalData->InitTable(mfinalccbarfile);
   mNCBarFinalData->InitTable(mfinalncbarfile);  
-
   //bool useEnergyDistribution = false;
-  if (atof(argv[1]) == 0) {
+  if (argc>1 && atof(argv[1]) == 0) {
     config.energy_distribution = true;
     cout << "Will throw uniformly random x neutrinos energy between log10(E_nu/eV) = 15 and  log21(E_nu/eV)" << endl;
   }
-
   
   // Initialize Random number generator.
   struct timeval time_struct;
@@ -481,7 +481,6 @@ int main(int argc, char **argv)
   //    cout << "Random Test " << ((double) rand() / (double)(RAND_MAX)) << endl;
   //}
   
- 
 
   double angle_time_start=time(NULL);
   double angle=atof(argv[2]);
@@ -534,6 +533,8 @@ int main(int argc, char **argv)
   */
 
   //for rounding energies and angle
+
+  //need to add argc check
   string e_temp=to_string(log10((double)atof(argv[1])));
   string es_temp="";
   string ang_temp=to_string(angle);
@@ -1980,6 +1981,8 @@ void load_config()
      else if ((int)line.find("save_dec_events")!=-1)sin>>config.save_dec_events;
      else if ((int)line.find("save_emerging")!=-1)sin>>config.save_emerging;
      else if ((int)line.find("use_sto_inst_of_cont")!=-1)sin>>config.use_sto_inst_of_cont;
+     else if ((int)line.find("min_muon_sto_loss")!=-1) sin>>config.min_muon_sto_loss;
+     else if ((int)line.find("min_tau_sto_loss")!=-1) sin>>config.min_tau_sto_loss;
 
   }
 }
