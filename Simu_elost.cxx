@@ -2554,7 +2554,7 @@ void initialize_reaction(int tau_type[][6], int mu_type[][6],double tau_ene[][6]
     int done;
 
     //taus
-    ifstream tau_decays("pythia_tau.txt");
+    ifstream tau_decays("tables/pythia_tau.txt");
     
     for(int count=0;count<100000;count++)
     {
@@ -2595,7 +2595,7 @@ void initialize_reaction(int tau_type[][6], int mu_type[][6],double tau_ene[][6]
     tau_decays.close();
 
     //muons
-    ifstream mu_decays("pythia_muon.txt");
+    ifstream mu_decays("tables/pythia_muon.txt");
     
     for(int count=0;count<10000;count++)
     {
