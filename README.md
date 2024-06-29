@@ -16,6 +16,8 @@ https://www.atlassian.com/git/tutorials/comparing-workflows/forking-workflow
 # HOW TO COMPILE #
 ##################
 
+If using stochastic losses, first enter the stochastic_tables dir and run setup_tables.sh to unpack all the tables
+
 Method 1.
 ----------
 In the command line run
