@@ -1,24 +1,90 @@
-config file for NuLeptonSim
-
+#config file for NuLeptonSim
+#command line supercedes all values here
+#----------------------------------------------------------------------------------------------------#
+#Where to place all the results
 data_dir = testing/
+
+#particle type to start the simulation with
 starting_type = 16
+
+#antiness of the starting neutrinos. anti=1 is normal matter
 anti = 1
+
+#do tau regneration
 regen = 1
+
+#allow conversion between flavors (ie tau decays to muons...)
 conversion = 0
+
+#should energies be pulled from a distribution (0 is monoenergetic neutrinos)
 energy_distribution = 0
+
+#what energy should particles begin to be forgotten
 energy_threshold = 1E+14
-detector = 0
-det_volume = 1
-save_neutrinos = 0
-save_charged = 1
-save_events = 0
-save_sto = 0
+
+#how many neutrinos to throw
 n_throws = 10000
+
+#haw many trajectories to use
 n_traj = 1
-save_nu_events = 0
-save_dec_events = 0
-save_sto_events = 0
+
+#should it save earth emerging particles
 save_emerging = 1
+
+#should it use stochastic losses =1 or continuous losses
 use_sto_inst_of_cont = 1
+
+#minimum energy losses a tau can experience for stochastic losses- affects minimum step size
 min_muon_sto_loss = 1e-5
+
+#minimum energy losses a muon can experience for stochastic losses- affects minimum step size
 min_tau_sto_loss = 1e-6
+
+#----------------------------------------------------------------------------------------------------#
+#detector type (0 is to run a normal earth emerging simulation, 1 for saving events for some in-ice detector)
+detector = 0
+
+#useless rn
+det_volume = 1
+
+#detector modeled as a cylindrical with depth
+ice_det_depth = 2.8
+
+#and radius
+ice_det_rad = 15
+
+#----------------------------------------------------------------------------------------------------#
+#if save_emerging it will save emerging neutrinos
+save_neutrinos = 0
+
+#if save_neutirnos should it save nue
+save_nue = 0
+
+#if save_neutirnos should it save numu
+save_numu = 0
+
+#if save_neutirnos should it save nutau
+save_nutau = 0
+
+#----------------------------------------------------------------------------------------------------#
+#if save_emerging it will save emerging charged leptons
+save_charged = 1
+
+#if save_charged it will save emerging muons
+save_mu = 1
+
+#if save_charged it will save emerging taus
+save_tau = 1
+
+#----------------------------------------------------------------------------------------------------#
+#for in-ice detectors, should events in the volume be saved
+save_events = 0
+
+#if save_events should it save primary neutrino interactions
+save_nu_events = 0
+
+#if save_events should it save tau decay events
+save_dec_events = 0
+
+#if save_events should it save stochastic depostion events
+save_sto_events = 0
