@@ -46,7 +46,16 @@ typedef struct {
   bool use_sto_inst_of_cont;
   string min_muon_sto_loss;
   string min_tau_sto_loss;
+  double default_energy;
+  double default_angle;
+  int default_cc;
+  int default_eloss;
+  double default_layer_thickness;
+  double default_layer_density;
+  bool run_throws;
   int n_throws;
+  bool run_number;
+  int num_emerging_leptons;
   int n_traj;
   bool save_emerging;
   double energy_threshold;    //Set energy threshold
@@ -73,7 +82,7 @@ typedef struct {
   bool save_nu_events;
   bool save_sto_events;
   bool save_dec_events;
-
+  bool ext_traj;
 }config_init;   // data struct to hold the value read from config file
 
 
@@ -168,7 +177,7 @@ double mean_dens_chord(double theta);
 
 //---------------------------------------------------------------
 void make_dirs(string dirs);
-void generate_trajectory(double* xi, double* xf);
+void generate_trajectory(double* xi, double* xf,double rad, double depth);
 
 /*
 class prop_particle

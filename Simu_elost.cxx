@@ -108,6 +108,7 @@ int main(int argc, char **argv)
   double tau_x = 1;
   double tau_y=1;
   double tau_z=1;
+
   string in_file="in_files/59068000000_Example_Trajectories.csv";
   int input_num = config.n_traj;
   if(config.detector==0)input_num=1;
@@ -223,12 +224,15 @@ int main(int argc, char **argv)
   
   //initialize things and pull in from command line or from config file
   double angle_time_start=time(NULL);
-  double angle;
+  double angle=config.default_angle;
   if (argc>2)angle=atof(argv[2]);
 
   if(config.detector==0)set_points_from_angle(input,angle);
-  if(config.detector==1)load_input(input,input_num,in_file);
-  
+  if(config.detector==1)
+  {
+    if(config.ext_traj)load_input(input,input_num,in_file);
+    //else gen_traj();
+  }
   int produced_muons=0;
   // Cut in energy below which particles are no longer propagated
   double Elim_eV=config.energy_threshold;       // eV
@@ -259,7 +263,7 @@ int main(int argc, char **argv)
   //cccccccccccccccccccccccccccccccccccccccccccccccccccccc
   
   // Number of neutrinos simulated at each zenith angle
-  int tot_evt=1e5;
+  int tot_evt=config.n_throws;
   if(argc>3){
     tot_evt=(int)atof(argv[3]);
   }
@@ -276,14 +280,14 @@ int main(int argc, char **argv)
   //for rounding energies and angle
 
   //need to add argc check
+  double starting_energy=config.default_energy;
+  if(argc>1)starting_energy=(double)atof(argv[1]);
+  
   string es_temp;
-  if (argc>1)
-  {
-    string e_temp=to_string(log10((double)atof(argv[1])));
-    es_temp="";
-    
-    for(int i =0;i<4;i++)es_temp+=e_temp[i];
-  }
+  string e_temp=to_string(log10(starting_energy));
+  es_temp="";
+  for(int i =0;i<4;i++)es_temp+=e_temp[i];
+  
 
 
   string ang_temp=to_string(angle);
@@ -357,14 +361,16 @@ int main(int argc, char **argv)
   //ofstream out_gram(outGrammage.c_str());
   //out_gram<<"t_num,n_num,km,grammage,event"<<endl;
   // Get cross-section mode to use
-  int CCmode = 0;
+  int CCmode = config.default_cc;
   if(argc>4) CCmode = atoi(argv[4]);
   
   // Get cross-section mode to use
-  int ELOSSmode = 0;
+  int ELOSSmode = config.default_eloss;
   if(argc>5) ELOSSmode = atoi(argv[5]);
   
   // Set water layer properties (bare rock is default)
+  terra->depth_new_layer = config.default_layer_thickness;
+  terra->dens_new_layer = config.default_layer_density;
   if(argc>6){
     terra->depth_new_layer = atof(argv[6]);
     terra->dens_new_layer = atof(argv[7]);
@@ -438,6 +444,8 @@ int main(int argc, char **argv)
 
   for( int i=0;i<input_num;i++)//loop over trajectories
   { 
+
+
     if(i%10000==0)cout<<"Did "<<i<<" trajectories..."<<endl;
     //cout<<i<<endl;
     int num_count=0;
@@ -446,20 +454,42 @@ int main(int argc, char **argv)
     
     double check_grammage=0;
     //cout<<input[i].eex<<","<<input[i].xi<<"..."<<input[i].eez<<","<<input[i].zi<<endl;
-    double maxL=sqrt((input[i].eex-input[i].xi)*(input[i].eex-input[i].xi)
-                    +(input[i].eey-input[i].yi)*(input[i].eey-input[i].yi)
-                    +(input[i].eez-input[i].zi)*(input[i].eez-input[i].zi));
+    double maxL;
+
+    double earth_entrance[3];
+    double earth_exit[3];
+    
+    if(!config.ext_traj && config.detector==1) generate_trajectory(earth_entrance, earth_exit,config.ice_det_rad,config.ice_det_depth);
+    if(config.ext_traj && config.detector==1)
+    {
+      earth_entrance[0]=input[i].xi;
+      earth_entrance[1]=input[i].yi;
+      earth_entrance[2]=input[i].zi;
+
+      earth_exit[0]=input[i].eex;
+      earth_exit[1]=input[i].eey;
+      earth_exit[2]=input[i].eez;
+    }
+
+   if (config.detector==1)maxL=sqrt((earth_exit[0]-earth_entrance[0])*(earth_exit[0]-earth_entrance[0])
+      +(earth_exit[1]-earth_entrance[1])*(earth_exit[1]-earth_entrance[1])
+      +(earth_exit[2]-earth_entrance[2])*(earth_exit[2]-earth_entrance[2]));
+    else if(config.detector==0)maxL=Lmax;
+    else maxL=0;    
+    //if (config.detector==1)maxL=sqrt((input[i].eex-input[i].xi)*(input[i].eex-input[i].xi)
+    //                +(input[i].eey-input[i].yi)*(input[i].eey-input[i].yi)
+    //                +(input[i].eez-input[i].zi)*(input[i].eez-input[i].zi));
     //cout<<maxL<<endl;
     if(maxL<10)
     {
-      cout<<"didnt load correctly";
-      return 0;
+      cout<<"max length is wrong (check trajectory and detector type) - quitting";
+      exit(1);
     }
-    double x_step=(input[i].eex-input[i].xi)/maxL;
-    double y_step=(input[i].eey-input[i].yi)/maxL;
-    double z_step=(input[i].eez-input[i].zi)/maxL;
+    double x_step=(earth_exit[0]-earth_entrance[0])/maxL;
+    double y_step=(earth_exit[1]-earth_entrance[1])/maxL;
+    double z_step=(earth_exit[2]-earth_entrance[2])/maxL;
     
-    double temp_pos[3]={input[i].xi,input[i].yi,input[i].zi};
+    double temp_pos[3]={earth_entrance[0],earth_entrance[1],earth_entrance[2]};
     
     for (int ii=1; ii<=1000000; ii++) //reduce by 10
     {
@@ -520,8 +550,8 @@ int main(int argc, char **argv)
     bool got_event=false;//!got_event && num_count<1000 line below
     int out_leptons=0;
 
-    //while(num_count<config.n_throws)//!got_event for running until getting 1 event or num_count<N for throwing N particles
-    while(out_leptons<500)
+    while((config.run_throws&&(num_count<config.n_throws))||(config.run_number&&(out_leptons<config.num_emerging_leptons)))//!got_event for running until getting 1 event or num_count<N for throwing N particles
+    //while(out_leptons<500)
     {
     //cout<<num_count<<endl;
     //if(num_count==10000)cout<<"10,000...";
@@ -533,21 +563,27 @@ int main(int argc, char **argv)
     num_count++;
     //temp_lep.Ei=0;
     //temp_lep.Ef=0;
-    double pos[3]={input[i].xi,input[i].yi,input[i].zi};
-    double en_pos[3]={input[i].xe,input[i].ye,input[i].ze};
-    double len_ent=sqrt((input[i].xe-input[i].xi)*(input[i].xe-input[i].xi)
-                    +(input[i].ye-input[i].yi)*(input[i].ye-input[i].yi)
-                    +(input[i].ze-input[i].zi)*(input[i].ze-input[i].zi));
+
+
+    double x_enter,y_enter,z_enter,x_exit,y_exit,z_exit;
+    //change these so it can be from eithr the external trajectory table or from internally generated
+
+    double pos[3]={earth_entrance[0],earth_entrance[1],earth_entrance[2]};
+    //double en_pos[3]={input[i].xe,input[i].ye,input[i].ze};
+    //double len_ent=sqrt((input[i].xe-input[i].xi)*(input[i].xe-input[i].xi)   not using this
+    //                +(input[i].ye-input[i].yi)*(input[i].ye-input[i].yi)  
+    //                +(input[i].ze-input[i].zi)*(input[i].ze-input[i].zi));
     bool has_been_saved=false;
     bool save_cond=false;
     bool exit_cond=false;
+     
     //cout<<"primary particle "<<num_count<<endl;
     //cout<< len_ent<<","<<maxL<<endl;
     //if(len_ent>maxL)cout<<endl<<endl<<endl;
     //cout<<x_step<<","<<y_step<<","<<z_step<<endl;
     //cout<<input[i].xi<<","<<input[i].yi<<","<<input[i].zi<<endl;
     //cout<<input[i].xf<<","<<input[i].yf<<","<<input[i].zf<<endl;
-    Energy_GeV = atof(argv[1])*pow(10,-9); // Get nu_tau energy from input argument
+    if (argc>1) Energy_GeV = starting_energy*pow(10,-9); // Get nu_tau energy from input argument
     if (config.energy_distribution) Energy_GeV =  pow(10,6 + (6 * (double)rand()/RAND_MAX));
     //cout<<"initial energy GeV is "<<Energy_GeV<<endl;
     //cout<<"threshold energy in GeV is "<<Elim<<endl;
@@ -791,7 +827,7 @@ int main(int argc, char **argv)
                 if(anti==1)mCCFinalData->ThrowFinal(log10(part_energy),finalstatecc);
                 if(anti==-1)mCCBarFinalData->ThrowFinal(log10(part_energy),finalstatecc);
                 if(part_type==12)broken=true;
-	      }
+	            }
               //if(part_type==12)
               //{
               //  broken=true;
@@ -811,17 +847,17 @@ int main(int argc, char **argv)
               //add config.save_nu_ev
               if(config.save_nu_events&&in_volume(pos[0],pos[1],pos[2],config.ice_det_rad,config.ice_det_depth))
               {
-              //if(config.save_sto_events&&lep.Ei==0)lep.fill_initial(pos[0],pos[1],pos[2],part_energy,anti,part_type);
-              //temp_lep.xi=pos[0];
-              //temp_lep.yi=pos[1];
-              //temp_lep.zi=pos[2];
-              //temp_lep.Ei=part_energy;
-              //if(part_type==12)Bjorken_y=1;
-              got_event=true;
-              event_count++;
-              //out_gram<<i<<","<<num_count<<","<<part_pos<<","<<traversed_grammage<<","<<1<<endl;
-              outEvents<<pos[0]<<","<<pos[1]<<","<<pos[2]<<","<<x_step<<","<<y_step<<","<<z_step<<","<< initial_energy<<","<<Bjorken_y<<","
-              <<part_type*anti<<","<<0<<","<<0<<","<<NC_num<<","<<dc_num<<","<<GR_num<<","<<i<<","<<num_count<<","<<-1<<endl;
+                //if(config.save_sto_events&&lep.Ei==0)lep.fill_initial(pos[0],pos[1],pos[2],part_energy,anti,part_type);
+                //temp_lep.xi=pos[0];
+                //temp_lep.yi=pos[1];
+                //temp_lep.zi=pos[2];
+                //temp_lep.Ei=part_energy;
+                //if(part_type==12)Bjorken_y=1;
+                got_event=true;
+                event_count++;
+                //out_gram<<i<<","<<num_count<<","<<part_pos<<","<<traversed_grammage<<","<<1<<endl;
+                outEvents<<pos[0]<<","<<pos[1]<<","<<pos[2]<<","<<x_step<<","<<y_step<<","<<z_step<<","<< initial_energy<<","<<Bjorken_y<<","
+                <<part_type*anti<<","<<0<<","<<0<<","<<NC_num<<","<<dc_num<<","<<GR_num<<","<<i<<","<<num_count<<","<<-1<<endl;
               }
               // Increment the particle counter in the event structure
               //event.npart++;
@@ -883,11 +919,11 @@ int main(int argc, char **argv)
               //add in config.save_nu_ev
               if(config.save_nu_events&&in_volume(pos[0],pos[1],pos[2],config.ice_det_rad,config.ice_det_depth))
               {
-              //out_gram<<i<<","<<num_count<<","<<part_pos<<","<<traversed_grammage<<","<<1<<endl;
-              outEvents<<pos[0]<<","<<pos[1]<<","<<pos[2]<<","<<x_step<<","<<y_step<<","<<z_step<<","<<initial_energy<<","<<Bjorken_y<<","
-                  <<part_type*anti<<","<<1<<","<<0<<","<<NC_num<<","<<dc_num<<","<<GR_num<<","<<i<<","<<num_count<<","<<-1<<endl;
-              event_count++;
-              got_event=true;
+                //out_gram<<i<<","<<num_count<<","<<part_pos<<","<<traversed_grammage<<","<<1<<endl;
+                outEvents<<pos[0]<<","<<pos[1]<<","<<pos[2]<<","<<x_step<<","<<y_step<<","<<z_step<<","<<initial_energy<<","<<Bjorken_y<<","
+                    <<part_type*anti<<","<<1<<","<<0<<","<<NC_num<<","<<dc_num<<","<<GR_num<<","<<i<<","<<num_count<<","<<-1<<endl;
+                event_count++;
+                got_event=true;
               }
               NC_num++;
 
@@ -918,14 +954,14 @@ int main(int argc, char **argv)
                 //add in config.save_nu_ev
                 if(config.save_nu_events&&in_volume(pos[0],pos[1],pos[2],config.ice_det_rad,config.ice_det_depth))
                 {
-                //out_gram<<i<<","<<num_count<<","<<part_pos<<","<<traversed_grammage<<","<<1<<endl;
-                outEvents<<pos[0]<<","<<pos[1]<<","<<pos[2]<<","<<x_step<<","<<y_step<<","<<z_step<<","<<initial_energy<<","<<1<<","
-                    <<part_type*anti<<","<<2<<","<<temp_channel<<","<<NC_num<<","<<dc_num<<","<<GR_num<<","<<i<<","<<num_count<<","<<-1<<endl;
-                
-                event_count++;
-                got_event=true;
+                  //out_gram<<i<<","<<num_count<<","<<part_pos<<","<<traversed_grammage<<","<<1<<endl;
+                  outEvents<<pos[0]<<","<<pos[1]<<","<<pos[2]<<","<<x_step<<","<<y_step<<","<<z_step<<","<<initial_energy<<","<<1<<","
+                      <<part_type*anti<<","<<2<<","<<temp_channel<<","<<NC_num<<","<<dc_num<<","<<GR_num<<","<<i<<","<<num_count<<","<<-1<<endl;
+                  
+                  event_count++;
+                  got_event=true;
                 }
-		GR_num++;
+		            GR_num++;
                 broken=true;
                 break;
               }
@@ -1124,7 +1160,7 @@ int main(int argc, char **argv)
             // The tau lepton does NOT decay
             //=============================
             //cout<<"no decay"<<endl;
-            
+
             //check to save the deposition
             if(config.save_sto_events&&in_volume(pos[0],pos[1],pos[2],config.ice_det_rad,config.ice_det_depth)&&frac_loss*part_energy>Elim)//save the deposition
             {
@@ -1313,7 +1349,7 @@ int main(int argc, char **argv)
               for( int j=1;j<6;j++)
               {
                   
-                if((reaction_energies[j]>Elim)&&(part_pos<Lmax)&&(reaction_types[j]!=0)) //particles inside earth and above threshold are stacked, change to lam2 for icecube
+                if((reaction_energies[j]>Elim)&&(part_pos<maxL)&&(reaction_types[j]!=0)) //particles inside earth and above threshold are stacked, change to lam2 for icecube
                 {
                   //cout<<"pushing new particle to stack \n";
                   //produced_muons+=1;
@@ -1449,16 +1485,56 @@ void generate_trajectory(double* xi, double* xf,double rad, double depth)
   double r =(double)rand()/(double)RAND_MAX*rad;
   double z =(double)rand()/(double)RAND_MAX*depth;
   double ang =(double)rand()/(double)RAND_MAX*360;
-
+  
   //transform to cartesian
   xv=r*sin(ang);
   yv=r*cos(ang);
   zv=R0-z;
-  
-  double exit_angle_cutoff=35;
-  double theta=(double)rand()/(double)RAND_MAX*180;
-  //double phi=(double)rand()/(double)RAND_MAX*180; //0 downgoing - 180 upgoing
-  double phi=(double)rand()/(double)RAND_MAX*(180-exit_angle_cutoff)+exit_angle_cutoff; //
+
+  if(!in_volume(xv,yv,zv,rad,depth)) //check if marginally above the sphere
+  {
+    zv=sqrt(R02-xv*xv-yv*yv); //set to top of sphere
+  }
+
+  double exit_angle_cutoff=45;
+  double phi=(double)rand()/(double)RAND_MAX*360;
+  double theta=(double)rand()/(double)RAND_MAX*(180-exit_angle_cutoff)+exit_angle_cutoff; ////0 downgoing - 180 upgoing
+
+  dx=sin(theta)*cos(phi);
+  dy=sin(theta)*sin(phi);
+  dz=sin(theta);
+
+  //find a temp point outside of the sphere in the opposite direction it's going
+  double xt= xv;
+  double yt= yv;
+  double zt= zv;
+
+  double dt=10;
+  while(sqrt(xt*xt+yt*yt+zt*zt)<R0)
+  {
+    xt=xv-dx*dt;
+    yt=yv-dy*dt;
+    zt=zv-dz*dt;
+  }
+
+  //now do ray tracing thing to find start and end points
+  double l=sqrt(xt*xt+yt*yt+zt*zt);
+  double tc=xt*dx+yt*dy+zt*dt;
+  double d=sqrt(tc*tc-l*l);
+
+  double t1c=sqrt(R02-d*2);
+
+  double t_start=tc-t1c;
+  double t_end=tc+t1c;
+
+  xi[0]=xt+dx*t_start;
+  xi[1]=yt+dy*t_start;
+  xi[2]=zt+dz*t_start;
+
+  xf[0]=xt+dx*t_end;
+  xf[1]=yt+dy*t_end;
+  xf[2]=zt+dz*t_end;
+  //done
 
 }
 
@@ -1752,7 +1828,10 @@ void load_config()
      else if ((int)line.find("save_charged")!=-1) sin >>config.save_charged;
      else if ((int)line.find("energy_threshold")!=-1) sin >>config.energy_threshold;
      else if ((int)line.find("save_events")!=-1) sin >>config.save_events;
+     else if ((int)line.find("run_throws")!=-1) sin >>config.run_throws;
      else if ((int)line.find("n_throws")!=-1) sin >>config.n_throws;
+     else if ((int)line.find("run_number")!=-1) sin >>config.run_number;
+     else if ((int)line.find("num_emerging_leptons")!=-1) sin >>config.num_emerging_leptons;
      else if ((int)line.find("n_traj")!=-1) sin >>config.n_traj;
      else if ((int)line.find("save_nu_events")!=-1)sin>>config.save_nu_events;
      else if ((int)line.find("save_sto_events")!=-1)sin>>config.save_sto_events;
@@ -1760,7 +1839,13 @@ void load_config()
      else if ((int)line.find("save_emerging")!=-1)sin>>config.save_emerging;
      else if ((int)line.find("use_sto_inst_of_cont")!=-1)sin>>config.use_sto_inst_of_cont;
      else if ((int)line.find("min_muon_sto_loss")!=-1) sin>>config.min_muon_sto_loss;
-     else if ((int)line.find("min_tau_sto_loss")!=-1) sin>>config.min_tau_sto_loss;
+     else if ((int)line.find("min_tau_sto_loss")!=-1) sin>>config.min_tau_sto_loss;     
+     else if ((int)line.find("default_energy")!=-1) sin>>config.default_energy;
+     else if ((int)line.find("default_angle")!=-1) sin>>config.default_angle;
+     else if ((int)line.find("default_cc")!=-1) sin>>config.default_cc;
+     else if ((int)line.find("default_eloss")!=-1) sin>>config.default_eloss;
+     else if ((int)line.find("default_layer_thickness")!=-1) sin>>config.default_layer_thickness;
+     else if ((int)line.find("default_layer_density")!=-1) sin>>config.default_layer_density;
      else if ((int)line.find("ice_det_depth")!=-1) sin>>config.ice_det_depth;
      else if ((int)line.find("ice_det_rad")!=-1) sin>>config.ice_det_rad;
      else if ((int)line.find("save_nue")!=-1) sin>>config.save_nue;
@@ -1768,6 +1853,9 @@ void load_config()
      else if ((int)line.find("save_nutau")!=-1) sin>>config.save_nutau;
      else if ((int)line.find("save_mu")!=-1) sin>>config.save_mu;
      else if ((int)line.find("save_tau")!=-1) sin>>config.save_tau;
+
+     else if ((int)line.find("ext_traj")!=-1) sin>>config.ext_traj;
+
 
 
   }

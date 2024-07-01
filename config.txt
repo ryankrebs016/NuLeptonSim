@@ -1,5 +1,7 @@
 #config file for NuLeptonSim
 #command line supercedes all values here
+#if the positional options aren't specified on command 
+#line it will pull from values here
 #----------------------------------------------------------------------------------------------------#
 #Where to place all the results
 data_dir = testing/
@@ -22,8 +24,17 @@ energy_distribution = 0
 #what energy should particles begin to be forgotten
 energy_threshold = 1E+14
 
+#do run over amount of n_throws
+run_throws = 1
+
 #how many neutrinos to throw
 n_throws = 10000
+
+#do run over number of emerging leptons
+run_number = 0
+
+#and how many leptons to stop running
+num_emerging_leptons = 500
 
 #haw many trajectories to use
 n_traj = 1
@@ -39,6 +50,24 @@ min_muon_sto_loss = 1e-5
 
 #minimum energy losses a muon can experience for stochastic losses- affects minimum step size
 min_tau_sto_loss = 1e-6
+
+#default neutrino energy
+default_energy=1e18
+
+#defualt angle
+default_angle = 91
+
+#default cross section model
+default_cc = 0
+
+#default eloss model
+default_eloss = 0
+
+#default layer thickness
+default_layer_thickness = 0
+
+#default layer density
+default_layer_density = 0.92
 
 #----------------------------------------------------------------------------------------------------#
 #detector type (0 is to run a normal earth emerging simulation, 1 for saving events for some in-ice detector)
@@ -88,3 +117,6 @@ save_dec_events = 0
 
 #if save_events should it save stochastic depostion events
 save_sto_events = 0
+
+#should trajectories be grabbed from an external file
+ext_traj = 1
