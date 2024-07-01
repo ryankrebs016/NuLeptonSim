@@ -1484,7 +1484,7 @@ void generate_trajectory(double* xi, double* xf,double rad, double depth)
   //get rand r, z, and ang
   double r =(double)rand()/(double)RAND_MAX*rad;
   double z =(double)rand()/(double)RAND_MAX*depth;
-  double ang =(double)rand()/(double)RAND_MAX*360;
+  double ang =(double)rand()/(double)RAND_MAX*360*PI/180;
   
   //transform to cartesian
   xv=r*sin(ang);
@@ -1497,8 +1497,8 @@ void generate_trajectory(double* xi, double* xf,double rad, double depth)
   }
 
   double exit_angle_cutoff=45;
-  double phi=(double)rand()/(double)RAND_MAX*360;
-  double theta=(double)rand()/(double)RAND_MAX*(180-exit_angle_cutoff)+exit_angle_cutoff; ////0 downgoing - 180 upgoing
+  double phi=(double)rand()/(double)RAND_MAX*360*PI/180;
+  double theta=((double)rand()/(double)RAND_MAX*(180-exit_angle_cutoff)+exit_angle_cutoff)*PI/180; ////0 downgoing - 180 upgoing
 
   dx=sin(theta)*cos(phi);
   dy=sin(theta)*sin(phi);
