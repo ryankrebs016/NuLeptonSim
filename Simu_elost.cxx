@@ -42,7 +42,7 @@
 // +=Particle, -=Anti Particle. 15=tau, 16=nutau, 13=muons, 14=numus, 12=nue,11=e
 
 
-//updated on 1/8/24 by Ryan Krebs
+//updated on 7/2/24 by Ryan Krebs
 
 #include <sys/stat.h>
 #include <vector>
@@ -143,7 +143,9 @@ int main(int argc, char **argv)
     if(config.save_nutau)type_to_save[4]=16;
   }
   
-  //for(int i=0;i<5;i++) cout<<type_to_save[i]<<" "; //print which particles will be saved
+  #ifdef DBG
+    for(int i=0;i<5;i++) cout<<type_to_save[i]<<" "; //print which particles will be saved
+  #endif
   //cout<<endl;
 
   cout << "Lepton Propagation code" << endl;
@@ -268,7 +270,9 @@ int main(int argc, char **argv)
   if(argc>3){
     tot_evt=(int)atof(argv[3]);
   }
-  printf("num neu throws %i\n",tot_evt);
+  #ifdef DBG
+    printf("Throwing %i neutrinos\n",tot_evt);
+  #endif
   /*
   //cccccccccccccccccccccccccccccccccccccccccccccccccccccc
   cout << "======================================" << endl;
@@ -284,8 +288,10 @@ int main(int argc, char **argv)
   //need to add argc check
   double starting_energy=config.default_energy;
   if(argc>1)starting_energy=(double)atof(argv[1]);
-  printf("starting energy 10^%f\n",log10(starting_energy));
-  
+  #ifdef DBG
+    printf("starting energy 10^%0.2f\n",log10(starting_energy));
+  #endif
+
   string es_temp;
   string e_temp=to_string(log10(starting_energy));
   es_temp="";
@@ -350,10 +356,13 @@ int main(int argc, char **argv)
   
   ofstream outEnergies(nameEnergies.c_str());
   outEnergies << "type, anti, NC, CC, GR, DC, Gen, InitNuNum, InitNeutrinoType, OutEnergy, InitEnergy, Part_Pos.\n";
-  //cout<<nameEnergies<<endl;
+
   ofstream outEvents(nameEvents.c_str());
   outEvents<<"vert_x,vert_y,vert_z,tra_x,tra_y,tra_z,E_nu,inel,part_type,i_type,had_or_em,nc_num,dc_num,gr_num,traj_num,p_thrown,sto_index"<< setprecision(9)<<endl;
-
+  #ifdef DBG
+    printf("saving emerging particles to %s\n",nameEnergies);
+    printf("saving events to %s\n",nameEvents);
+  #endif
   
 
   //ofstream outLep(nameOutLep.c_str());
@@ -449,7 +458,7 @@ int main(int argc, char **argv)
   { 
 
 
-    if(i%10000==0)cout<<"Did "<<i<<" trajectories..."<<endl;
+    //if(i%10000==0)cout<<"Did "<<i<<" trajectories..."<<endl;
     //cout<<i<<endl;
     int num_count=0;
     //---------------------------------
@@ -462,7 +471,7 @@ int main(int argc, char **argv)
     double earth_entrance[3];
     double earth_exit[3];
     
-    if(!config.ext_traj && config.detector==1) generate_trajectory(earth_entrance, earth_exit,config.ice_det_rad,config.ice_det_depth);
+    if(!config.ext_traj && config.detector==1) generate_trajectory(earth_entrance, earth_exit,config.ice_det_rad,config.ice_det_depth,config.ang_cutoff);
     //cout<<"gen points "<<earth_entrance[0]<<" "<<earth_entrance[1]<<" "<<earth_entrance[2]<<" "<<earth_exit[0]<<" "<<earth_exit[1]<<" "<<earth_exit[2]<<endl;
     if(config.ext_traj && config.detector==1)
     {
@@ -508,6 +517,8 @@ int main(int argc, char **argv)
     
     double temp_pos[3]={earth_entrance[0],earth_entrance[1],earth_entrance[2]};
     
+    /*
+    
     for (int ii=1; ii<=1000000; ii++) //reduce by 10
     {
     double dl = maxL/1000000; //change to Lmax2 for icecube
@@ -520,6 +531,7 @@ int main(int argc, char **argv)
     //sum_grammage +=  dx*earthdens(&x_val, &Lmax);//change to lamx2 for icecube
     
     }
+    */
     /*
     for (int ii=1; ii<=1000000; ii++)
     {
@@ -543,10 +555,14 @@ int main(int argc, char **argv)
     temp_pos[1]=earth_entrance[1];
     temp_pos[2]=earth_entrance[2];
 
-
+    /* try newnu
     for (int ii=1; ii<=1000000; ii++)
     {
-    
+    //okay so if I want to speed up one neutrino per traj I have to do this on the fly
+    //so that means getting the density at the starting point as the input to the calculatio
+    //to get the neutrino path length... which I think is ok? I just need to record position and density
+    //before moving to calculate... obv incur errors but oh well.
+
     double dl = d_grammage/get_dens_from_coords(temp_pos);//chnage to lmax2 for icecube
     double l_val = grammage_distance[ii-1];
     cumulative_grammage[ii] = cumulative_grammage[ii-1] + dl*get_dens_from_coords(temp_pos);//change to lamx2 for icecube
@@ -557,6 +573,7 @@ int main(int argc, char **argv)
     //printf("*** ii %d %1.5f %1.5f\n",ii, grammage_distance[ii], cumulative_grammage[ii]);
     //if(ii%100000 ==0) printf("ii %d %1.2e %1.5f\n",ii, grammage_distance[ii], cumulative_grammage[ii]);
     }
+    */
 
 
     //save charged leptons entering the volume!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -573,7 +590,7 @@ int main(int argc, char **argv)
     //cout<<num_count<<endl;
     //if(num_count==10000)cout<<"10,000...";
     //if(num_count==100000)cout<<"100,000..."<<endl;
-    if(num_count%1000==0)cout<<"did "<<num_count<<" thrown particles"<<endl;
+    //if(num_count%10000==0)cout<<"did "<<num_count<<" thrown particles"<<endl;
     //if(out_leptons%100==0)cout<<"caught "<<out_leptons<<" taus"<<endl;
     //cout<<num_count<<endl;
     //if(config.save_sto_events)lep.empty_class();
@@ -641,6 +658,7 @@ int main(int argc, char **argv)
     traversed_grammage = 0.; //initialize traversed grammage for each event
     double traversed_path=0.;
 
+    //printf("after loading traJ pos %i, maxl %f, pos: %f %f %f\n",part_pos,maxL,pos[0],pos[1],pos[2]);
     
     
     //======================= Loop over stacks until empty
@@ -716,10 +734,14 @@ int main(int argc, char **argv)
       bool left_volume=false;
       bool entered_volume=false;
       int sto_index=0;
+      //printf("before looping pos %i, maxl %f, pos: %f %f %f\n",part_pos,maxL,pos[0],pos[1],pos[2]);
+
       //while(part_pos<maxL &&  !left_volume) 
       //while(pos[0]*pos[0]+pos[1]*pos[1]+pos[2]*pos[2]<R02) //+for weird comp math thing
-      while(part_pos<maxL || sqrt(pos[0]*pos[0]+pos[1]*pos[1]+pos[2]*pos[2])<R0)
+      while(part_pos<maxL && sqrt(pos[0]*pos[0]+pos[1]*pos[1]+pos[2]*pos[2])<R0)
       {
+        //printf("pos %i, maxl %f, pos: %f %f %f\n",part_pos,maxL,pos[0],pos[1],pos[2]);
+
         //printf("pos %f %f %f\n",pos[0],pos[1],pos[2]);
         bool in_vol=in_volume(pos[0],pos[1],pos[2],config.ice_det_rad,config.ice_det_depth);
         //create holding arrays for reactions
@@ -756,10 +778,35 @@ int main(int argc, char **argv)
           
           // Initialize the interaction length distance for this step to zero.
           //double Lint = 0.;
-        
+          //printf("part pos before %f\n",part_pos);
+          double distance0=X_int*dens;
+          double test_pos[3];
+          test_pos[0]=pos[0]+distance0*x_step;
+          test_pos[1]=pos[1]+distance0*y_step;
+          test_pos[2]=pos[2]+distance0*z_step;
+
+          double test_dens=get_dens_from_coords(test_pos);
+          double distance1=X_int*test_dens;
+
+          double mid_dist=(distance0+distance1)/2;
+          test_pos[0]=pos[0]+mid_dist*x_step;
+          test_pos[1]=pos[1]+mid_dist*y_step;
+          test_pos[2]=pos[2]+mid_dist*z_step;
+          
+
+          //if I think this works, update the positions like so
+          pos[0]=test_pos[0];
+          pos[1]=test_pos[1];
+          pos[2]=test_pos[2];
+          part_pos+=mid_dist;
+          //printf("part pos after %f\n\n",part_pos);
+
+          bool try_new_nu=false;
+
+
           // If too large, make sure it exits the volume.
           // NOTE: use floats for this condition. Using ints is bad if float > 2^32, then you get negative int.
-          if( traversed_grammage/d_grammage + 1. > 1000000.){
+          if(try_new_nu && traversed_grammage/d_grammage + 1. > 1000000.){
             part_pos = maxL; // chnage to lamx2 for icecube NOTE: 1000000. is the size of the look-up table.
             traversed_grammage = sum_grammage;
             pos[0]=earth_exit[0];
@@ -769,7 +816,7 @@ int main(int argc, char **argv)
           }
           // If contained within the trajectory, linearly interpolate its interaction distance.
       
-          if ( floor(traversed_grammage/d_grammage) + 1. < 1000000.) // NOTE: 1000000. is the size of the look-up table.
+          if (try_new_nu && floor(traversed_grammage/d_grammage) + 1. < 1000000.) // NOTE: 1000000. is the size of the look-up table.
           {
             double before_step=part_pos;
             // Get the entry in the look-up table corresponding to the traversed grammage
@@ -1088,8 +1135,9 @@ int main(int argc, char **argv)
           sampled_decay_length=decay_length((double)rand()/(double)RAND_MAX,part_energy,part_type); //cm
 
           //get the interaction info
-          if(config.use_sto_inst_of_cont) //true is sto
+          if((config.detector==1 && (pos[0]*pos[0]+pos[1]*pos[1]+(R0-pos[2])*(R0-pos[2]))<config.sto_force_distance*config.sto_force_distance)||config.use_sto_inst_of_cont)
           {
+            //use stochastic if told to or within some distance to the detector volume
             sto.set_val(part_energy,part_type,dens);
             dL=sto.get_interaction_length();
             frac_loss=sto.get_sampled_energy();
@@ -1172,7 +1220,7 @@ int main(int argc, char **argv)
             //cout<<"no decay"<<endl;
 
             //check to save the deposition
-            if(config.save_events&&config.save_sto_events&&in_volume(pos[0],pos[1],pos[2],config.ice_det_rad,config.ice_det_depth)&&frac_loss*part_energy>Elim)//save the deposition
+            if(config.save_events&&config.save_sto_events&&config.use_sto_inst_of_cont&&in_volume(pos[0],pos[1],pos[2],config.ice_det_rad,config.ice_det_depth)&&frac_loss*part_energy>Elim)//save the deposition
             {
               //output this
               //cout<<"stuff here"<<endl;
@@ -1484,16 +1532,19 @@ int main(int argc, char **argv)
 // ===================================================
 
 
-void generate_trajectory(double* xi, double* xf,double rad, double depth)
+void generate_trajectory(double* xi, double* xf,double rad, double depth, double exit_angle_cutoff)
 {
+
+  //STILL NOT WORKING
+
   //xi starting point on the earth
   //xf ending point on the earth
   //printf("rad: %f, depth: %f\n",rad,depth);
   double xv,yv,zv; //vertex location
   double dx,dy,dz;
   //get rand r, z, and ang
-  double r =(double)rand()/(double)RAND_MAX*rad*100000;
-  double z =(double)rand()/(double)RAND_MAX*depth*100000;
+  double r =(double)rand()/(double)RAND_MAX*rad;
+  double z =(double)rand()/(double)RAND_MAX*depth;
   double ang =(double)rand()/(double)RAND_MAX*360*PI/180;
   //printf("r: %f, z: %f, ang: %f\n",r,z,ang);
   //transform to cartesian
@@ -1507,7 +1558,6 @@ void generate_trajectory(double* xi, double* xf,double rad, double depth)
     zv=sqrt(R02-xv*xv-yv*yv); //set to top of sphere
   }
 
-  double exit_angle_cutoff=45;
   double phi=(double)rand()/(double)RAND_MAX*360*PI/180;
   double theta=(180-(double)rand()/(double)RAND_MAX*(180-exit_angle_cutoff))*PI/180; ////0 downgoing - 180 upgoing
   //printf("phi: %f, theta: %f\n",phi,theta);
@@ -1870,8 +1920,9 @@ void load_config()
      else if ((int)line.find("save_nutau")!=-1) sin>>config.save_nutau;
      else if ((int)line.find("save_mu")!=-1) sin>>config.save_mu;
      else if ((int)line.find("save_tau")!=-1) sin>>config.save_tau;
-
+     else if ((int)line.find("sto_force_distance")!=-1) sin>>config.sto_force_distance;
      else if ((int)line.find("ext_traj")!=-1) sin>>config.ext_traj;
+     else if ((int)line.find("ang_cutoff")!=-1) sin>>config.ang_cutoff;
 
 
 

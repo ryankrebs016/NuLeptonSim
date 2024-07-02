@@ -83,6 +83,8 @@ typedef struct {
   bool save_sto_events;
   bool save_dec_events;
   bool ext_traj;
+  double ang_cutoff;
+  double sto_force_distance;
 }config_init;   // data struct to hold the value read from config file
 
 
@@ -177,7 +179,7 @@ double mean_dens_chord(double theta);
 
 //---------------------------------------------------------------
 void make_dirs(string dirs);
-void generate_trajectory(double* xi, double* xf,double rad, double depth);
+void generate_trajectory(double* xi, double* xf,double rad, double depth, double exit_ang_cutoff);
 
 /*
 class prop_particle
