@@ -779,6 +779,29 @@ int main(int argc, char **argv)
           // Initialize the interaction length distance for this step to zero.
           //double Lint = 0.;
           //printf("part pos before %f\n",part_pos);
+
+          //okay make this like an RK4 integration step...
+          
+          double tp0[3]={pos[0],pos[1],pos[2]};
+          double k1=get_dens_from_coords(tp0);
+          double tp1[3]={pos[0]+k1*X_int*x_step/2,pos[1]+k1*X_int*y_step/2,pos[2]+k1*X_int*z_step/2};
+          double k2=get_dens_from_coords(tp1);
+          double tp2[3]={pos[0]+k2*X_int*x_step/2,pos[1]+k2*X_int*y_step/2,pos[2]+k2*X_int*z_step/2};
+          double k3=get_dens_from_coords(tp2);
+          double tp3[3]={pos[0]+k3*X_int*x_step,pos[1]+k3*X_int*y_step,pos[2]+k3*X_int*z_step};
+          double k4=get_dens_from_coords(tp3);
+          
+          double nu_step_length=X_int/6*(k1+2*k2+2*k3+k4);
+          part_pos+=nu_step_length;
+          pos[0]=pos[0]+nu_step_length*x_step;
+          pos[1]=pos[1]+nu_step_length*x_step;
+          pos[2]=pos[2]+nu_step_length*x_step;
+
+          
+
+          /*
+          
+             //weird mid point type thing for step length
           double distance0=X_int*dens;
           double test_pos[3];
           test_pos[0]=pos[0]+distance0*x_step;
@@ -793,7 +816,6 @@ int main(int argc, char **argv)
           test_pos[1]=pos[1]+mid_dist*y_step;
           test_pos[2]=pos[2]+mid_dist*z_step;
           
-
           //if I think this works, update the positions like so
           pos[0]=test_pos[0];
           pos[1]=test_pos[1];
@@ -801,6 +823,8 @@ int main(int argc, char **argv)
           part_pos+=mid_dist;
           //printf("part pos after %f\n\n",part_pos);
 
+          */
+       
           bool try_new_nu=false;
 
 
