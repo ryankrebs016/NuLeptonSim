@@ -7,7 +7,7 @@
 data_dir = testing/
 
 #particle type to start the simulation with
-starting_type = 16
+starting_type = 0
 
 #antiness of the starting neutrinos. anti=1 is normal matter
 anti = 1
@@ -19,15 +19,15 @@ regen = 1
 conversion = 1
 
 #should energies be pulled from a distribution (0 is monoenergetic neutrinos)
-energy_distribution = 0
+energy_distribution = 1
 
 #what energy should particles begin to be forgotten
-energy_threshold = 1E+14
+energy_threshold = 1E+15
 
 #do run over amount of n_throws
 run_throws = 1
 
-#how many neutrinos to throw
+#how many neutrinos per trajectory to throw
 n_throws = 1
 
 #do run over number of emerging leptons
@@ -36,8 +36,8 @@ run_number = 0
 #and how many leptons to stop running
 num_emerging_leptons = 500
 
-#haw many trajectories to use
-n_traj = 10000
+#haw many trajectories to run
+n_traj = 100000
 
 #should it save earth emerging particles
 save_emerging = 0
@@ -52,7 +52,7 @@ min_muon_sto_loss = 1e-7
 min_tau_sto_loss = 1e-7
 
 #default neutrino energy
-default_energy=1e20
+default_energy=0
 
 #defualt angle
 default_angle = 91
@@ -64,7 +64,7 @@ default_cc = 0
 default_eloss = 0
 
 #default layer thickness
-default_layer_thickness = 2.8
+default_layer_thickness = 3.2
 
 #default layer density
 default_layer_density = 0.92
@@ -76,11 +76,11 @@ detector = 1
 #useless rn
 det_volume = 1
 
-#detector modeled as a cylindrical with depth in cm
-ice_det_depth = 280000
+#detector modeled as a cylindrical with depth in km
+ice_det_depth = 3.2
 
-#and radius in cm
-ice_det_rad = 1500000
+#and radius in km
+ice_det_rad = 15
 
 #----------------------------------------------------------------------------------------------------#
 #if save_emerging it will save emerging neutrinos
@@ -122,7 +122,7 @@ save_sto_events = 1
 ext_traj = 0
 
 #cutoff angle for upgoing neutrinos
-ang_cutoff = 45
+ang_cutoff = 180
 
 #distance to force the use of stochastic losses for events in cm
-sto_force_distance=3000000
+sto_force_distance=4000000

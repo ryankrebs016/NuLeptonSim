@@ -130,7 +130,7 @@ bool in_volume(double x,double y,double z,double det_rad, double det_depth);
 //void generate_events(det* detec);
 
 string make_particle_dir(int argc, char **argv,string out_dir,string es_temp,string angs_temp);
-string make_event_dir(int argc, char **argv,string out_dir,string es_temp,string angs_temp, int p_type);
+string make_event_dir(int argc, char **argv,string out_dir,string es_temp,string angs_temp, int p_type, string label);
 string make_lepton_dir(int argc, char **argv,string out_dir,string es_temp,string angs_temp, int p_type);
 // initialize reaction from pythia table and convert pythia type to tag code used in code
 void initialize_reaction(int tau_type[][6], int mu_type[][6],double tau_ene[][6],double mu_ene[][6]);

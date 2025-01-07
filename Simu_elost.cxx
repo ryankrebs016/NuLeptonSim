@@ -148,7 +148,7 @@ int main(int argc, char **argv)
   #endif
   //cout<<endl;
 
-  cout << "Lepton Propagation code" << endl;
+  printf("Lepton Propagation code\n");
 
   
   //-------------------------------------------------
@@ -210,7 +210,7 @@ int main(int argc, char **argv)
   //bool useEnergyDistribution = false;
   if (argc>1 && atof(argv[1]) == 0) {
     config.energy_distribution = true;
-    cout << "Will throw uniformly random x neutrinos energy between log10(E_nu/eV) = 15 and  log21(E_nu/eV)" << endl;
+    printf("Will throw uniformly random x neutrinos energy between log10(E_nu/eV) = 15 and  log21(E_nu/eV)\n");
   }
   
   // Initialize Random number generator.
@@ -230,10 +230,10 @@ int main(int argc, char **argv)
   if (argc>2)angle=atof(argv[2]);
   if(config.detector==0) printf("angle %f\n",angle);
 
-  if(config.detector==0)set_points_from_angle(input,angle);
+  if(config.detector==0) set_points_from_angle(input,angle);
   if(config.detector==1)
   {
-    if(config.ext_traj)load_input(input,input_num,in_file);
+    if(config.ext_traj) load_input(input,input_num,in_file);
     //else gen_traj();
   }
   int produced_muons=0;
@@ -288,16 +288,27 @@ int main(int argc, char **argv)
   //need to add argc check
   double starting_energy=config.default_energy;
   if(argc>1)starting_energy=(double)atof(argv[1]);
+  if (config.energy_distribution) starting_energy=0;
+
   #ifdef DBG
     printf("starting energy 10^%0.2f\n",log10(starting_energy));
   #endif
 
   string es_temp;
-  string e_temp=to_string(log10(starting_energy));
-  es_temp="";
-  for(int i =0;i<4;i++)es_temp+=e_temp[i];
-  
-
+  string e_temp="";
+  if ((int)starting_energy==0)
+  {
+    e_temp="spectrum";
+    es_temp=e_temp;
+  }
+  else
+  {
+    e_temp=to_string(log10(starting_energy));
+    es_temp="";
+    for(int i =0;i<4;i++)es_temp+=e_temp[i];
+    
+  }
+    
 
   string ang_temp=to_string(angle);
   string angs_temp="";
@@ -307,25 +318,23 @@ int main(int argc, char **argv)
   for(int i=0;i<count;i++) angs_temp+=ang_temp[i];
     
   //cout<<config.starting_type<<","<<atoi(argv[8])<<endl;
-  if(argc>8) config.starting_type=atoi(argv[8]);
-  cout<<config.starting_type<<endl;
+  if(argc>9) config.starting_type=atoi(argv[9]);
+  printf("overriding starting type as %i\n",config.starting_type);
   //cout<<angs_temp<<endl;
   //-------------------------------------------------
+  string tag = "";
+  if(argc>8){
+    tag=argv[8];
+  }
+
   // Output file names using input arguments
   string nameEnergies="";
   string nameEvents="";
   string nameOutLep="";
   nameEnergies=make_particle_dir(argc,argv,config.data_dir,es_temp,angs_temp); 
-  nameEvents=make_event_dir(argc,argv,config.data_dir,es_temp,angs_temp,config.starting_type); 
+  nameEvents=make_event_dir(argc,argv,config.data_dir,es_temp,angs_temp,config.starting_type, tag); 
   //nameOutLep=make_lepton_dir(argc,argv,config.data_dir,es_temp,angs_temp,config.starting_type);
   
-
-
-  /*
-  if(argc>=9){
-    nameEnergies+=argv[9];
-  }
-  */
   //name output file for particles
   
   
@@ -358,7 +367,7 @@ int main(int argc, char **argv)
   outEnergies << "type, anti, NC, CC, GR, DC, Gen, InitNuNum, InitNeutrinoType, OutEnergy, InitEnergy, Part_Pos.\n";
 
   ofstream outEvents(nameEvents.c_str());
-  outEvents<<"vert_x,vert_y,vert_z,tra_x,tra_y,tra_z,E_nu,inel,part_type,i_type,had_or_em,nc_num,dc_num,gr_num,traj_num,p_thrown,sto_index"<< setprecision(9)<<endl;
+  outEvents<<"vert_x,vert_y,vert_z,tra_x,tra_y,tra_z,E_nu_prim,E_part,inel,part_type,i_type,had_or_em,nc_num,dc_num,gr_num,traj_num,p_thrown,sto_index"<< setprecision(9)<<endl;
   #ifdef DBG
     printf("saving emerging particles to %s\n",nameEnergies);
     printf("saving events to %s\n",nameEvents);
@@ -457,8 +466,7 @@ int main(int argc, char **argv)
   for( int i=0;i<input_num;i++)//loop over trajectories
   { 
 
-
-    //if(i%10000==0)cout<<"Did "<<i<<" trajectories..."<<endl;
+    if((i+1)%((int)(.1*input_num))==0) printf("ran %i trajectories for %i events\n",i+1,event_count);
     //cout<<i<<endl;
     int num_count=0;
     //---------------------------------
@@ -514,7 +522,7 @@ int main(int argc, char **argv)
     double x_step=(earth_exit[0]-earth_entrance[0])/maxL;
     double y_step=(earth_exit[1]-earth_entrance[1])/maxL;
     double z_step=(earth_exit[2]-earth_entrance[2])/maxL;
-    
+    //printf("sim_dir: %f, %f, %f\n",x_step,y_step,z_step);
     double temp_pos[3]={earth_entrance[0],earth_entrance[1],earth_entrance[2]};
     
     /*
@@ -615,21 +623,46 @@ int main(int argc, char **argv)
     //cout<<input[i].xf<<","<<input[i].yf<<","<<input[i].zf<<endl;
     Energy_GeV = starting_energy*pow(10,-9); // Get nu_tau energy from input argument
     if (config.energy_distribution) Energy_GeV =  pow(10,6 + (6 * (double)rand()/RAND_MAX));
+    //printf("%f\n",Energy_GeV);
     //cout<<"initial energy GeV is "<<Energy_GeV<<endl;
     //cout<<"threshold energy in GeV is "<<Elim<<endl;
     int part_type=0;
     int anti=1;
     anti=config.anti;
+    //printf("%i\n",config.starting_type);
     if(config.starting_type==16) {part_type=16; anti=1;}
-    if(config.starting_type==14) {part_type=14; anti=1;}
-    if(config.starting_type==12) {part_type=12; anti=1;}
-    if(config.starting_type==-12) {part_type=12; anti=-1;}
-    if(config.starting_type==-14) {part_type=14; anti=-1;}
-    if(config.starting_type==-16) {part_type=16; anti=-1;}
+    else if(config.starting_type==-16) {part_type=16; anti=-1;}
+    else if(config.starting_type==14) {part_type=14; anti=1;}
+    else if(config.starting_type==-14) {part_type=14; anti=-1;}
+    else if(config.starting_type==12) {part_type=12; anti=1;}
+    else if(config.starting_type==-12) {part_type=12; anti=-1;}
+    else if(config.starting_type==0) {part_type=0; anti=1;}
+    else
+    {
+      printf("use primary neutrino types (12,-12,14,-14,16,-16,0)\n");
+      exit(1);
+    }
 
-    if(split_type==true && part_count<tot_evt/3) part_type=12;
-    if(split_type==true && part_count>=tot_evt/3 && part_count<=2*tot_evt/3 ) part_type=14;
-    if(split_type==true && part_count>2*tot_evt/3) part_type=16;
+    if(split_type==true)
+    {
+      
+      double rand_type = (double)rand()/RAND_MAX;
+      if(rand_type<(1./3.)) {part_type=12;}
+      else if(rand_type>=(1./3.) && rand_type<(2./3.)) {part_type=14;}
+      else {part_type=16;}
+      
+
+      double rand_antiness = (double)rand()/RAND_MAX;
+      if(rand_antiness<=(1./2.)) {anti=1;}
+      else {anti=-1;}
+
+      #ifdef DBG
+        printf("override starting type to use equal distribution of primary flavors and anti-ness\n");
+        printf("rand num for type %f\n",rand_type);
+        printf("rand num for antiness %f\n",rand_antiness);
+        printf("type: %i, antiness: %i\n\n",part_type,anti);
+      #endif
+    }
  
     if(part_type==0)
     {
@@ -738,7 +771,7 @@ int main(int argc, char **argv)
 
       //while(part_pos<maxL &&  !left_volume) 
       //while(pos[0]*pos[0]+pos[1]*pos[1]+pos[2]*pos[2]<R02) //+for weird comp math thing
-      while(part_pos<maxL && sqrt(pos[0]*pos[0]+pos[1]*pos[1]+pos[2]*pos[2])<R0)
+      while(part_pos<maxL && (pos[0]*pos[0]+pos[1]*pos[1]+pos[2]*pos[2])<R02)
       {
         //printf("pos %i, maxl %f, pos: %f %f %f\n",part_pos,maxL,pos[0],pos[1],pos[2]);
 
@@ -794,14 +827,14 @@ int main(int argc, char **argv)
           double nu_step_length=X_int/6*(k1+2*k2+2*k3+k4);
           part_pos+=nu_step_length;
           pos[0]=pos[0]+nu_step_length*x_step;
-          pos[1]=pos[1]+nu_step_length*x_step;
-          pos[2]=pos[2]+nu_step_length*x_step;
+          pos[1]=pos[1]+nu_step_length*y_step;
+          pos[2]=pos[2]+nu_step_length*z_step;
 
           
 
           /*
           
-             //weird mid point type thing for step length
+          //weird mid point type thing for step length
           double distance0=X_int*dens;
           double test_pos[3];
           test_pos[0]=pos[0]+distance0*x_step;
@@ -916,7 +949,7 @@ int main(int argc, char **argv)
                 //particle becomes e so save in event and break
               //}
 
-              Bjorken_y=finalstatecc[1];//INEASTIVITY?
+              Bjorken_y=finalstatecc[1];
             
               // Set the tau lepton energy from the sampled Bjorken y.
               double initial_energy=part_energy;
@@ -926,19 +959,27 @@ int main(int argc, char **argv)
               // Increment the cc interaction counter in the event structure.
               //event.ncc++;
               //add config.save_nu_ev
-              if(config.save_events&&config.save_nu_events&&in_volume(pos[0],pos[1],pos[2],config.ice_det_rad,config.ice_det_depth))
+              if(shower_energy>Elim && config.save_events && config.save_nu_events && in_volume(pos[0],pos[1],pos[2],config.ice_det_rad,config.ice_det_depth))
               {
+
                 //if(config.save_sto_events&&lep.Ei==0)lep.fill_initial(pos[0],pos[1],pos[2],part_energy,anti,part_type);
                 //temp_lep.xi=pos[0];
                 //temp_lep.yi=pos[1];
                 //temp_lep.zi=pos[2];
                 //temp_lep.Ei=part_energy;
-                //if(part_type==12)Bjorken_y=1;
+                
+                int shower_code=0;
+                if(part_type==12)
+                {
+                  Bjorken_y=1;
+                  shower_code=2;
+                }
                 got_event=true;
                 event_count++;
                 //out_gram<<i<<","<<num_count<<","<<part_pos<<","<<traversed_grammage<<","<<1<<endl;
-                outEvents<<pos[0]<<","<<pos[1]<<","<<pos[2]<<","<<x_step<<","<<y_step<<","<<z_step<<","<< initial_energy<<","<<Bjorken_y<<","
-                <<part_type*anti<<","<<0<<","<<0<<","<<NC_num<<","<<dc_num<<","<<GR_num<<","<<i<<","<<num_count<<","<<-1<<endl;
+                outEvents<<pos[0]<<","<<pos[1]<<","<<pos[2]<<","<<x_step<<","<<y_step<<","<<z_step<<","<< Energy_GeV << ","<< initial_energy<<","<<Bjorken_y<<","
+                <<part_type*anti<<","<<0<<","<<shower_code<<","<<NC_num<<","<<dc_num<<","<<GR_num<<","<<i<<","<<num_count<<","<<-1<<"\n";
+
               }
               // Increment the particle counter in the event structure
               //event.npart++;
@@ -993,16 +1034,13 @@ int main(int argc, char **argv)
               part_energy=(1.-Bjorken_y)*part_energy;
               double shower_energy=initial_energy-part_energy;
 
-
-              
-
               generation++;
               //add in config.save_nu_ev
-              if(config.save_events&&config.save_nu_events&&in_volume(pos[0],pos[1],pos[2],config.ice_det_rad,config.ice_det_depth))
+              if(shower_energy>Elim && config.save_events && config.save_nu_events && in_volume(pos[0],pos[1],pos[2],config.ice_det_rad,config.ice_det_depth))
               {
                 //out_gram<<i<<","<<num_count<<","<<part_pos<<","<<traversed_grammage<<","<<1<<endl;
-                outEvents<<pos[0]<<","<<pos[1]<<","<<pos[2]<<","<<x_step<<","<<y_step<<","<<z_step<<","<<initial_energy<<","<<Bjorken_y<<","
-                    <<part_type*anti<<","<<1<<","<<0<<","<<NC_num<<","<<dc_num<<","<<GR_num<<","<<i<<","<<num_count<<","<<-1<<endl;
+                outEvents<<pos[0]<<","<<pos[1]<<","<<pos[2]<<","<<x_step<<","<<y_step<<","<<z_step<<","<<Energy_GeV << ","<<initial_energy<<","<<Bjorken_y<<","
+                    <<part_type*anti<<","<<1<<","<<0<<","<<NC_num<<","<<dc_num<<","<<GR_num<<","<<i<<","<<num_count<<","<<-1<<"\n";
                 event_count++;
                 got_event=true;
               }
@@ -1033,11 +1071,11 @@ int main(int argc, char **argv)
                 temp_channel=0;
                 //cout<<"W+ decayed to quarks"<<endl;
                 //add in config.save_nu_ev
-                if(config.save_events&&config.save_nu_events&&in_volume(pos[0],pos[1],pos[2],config.ice_det_rad,config.ice_det_depth))
+                if(initial_energy>Elim && config.save_events&&config.save_nu_events&&in_volume(pos[0],pos[1],pos[2],config.ice_det_rad,config.ice_det_depth))
                 {
                   //out_gram<<i<<","<<num_count<<","<<part_pos<<","<<traversed_grammage<<","<<1<<endl;
-                  outEvents<<pos[0]<<","<<pos[1]<<","<<pos[2]<<","<<x_step<<","<<y_step<<","<<z_step<<","<<initial_energy<<","<<1<<","
-                      <<part_type*anti<<","<<2<<","<<temp_channel<<","<<NC_num<<","<<dc_num<<","<<GR_num<<","<<i<<","<<num_count<<","<<-1<<endl;
+                  outEvents<<pos[0]<<","<<pos[1]<<","<<pos[2]<<","<<x_step<<","<<y_step<<","<<z_step<<","<<Energy_GeV << ","<<initial_energy<<","<<1<<","
+                      <<part_type*anti<<","<<2<<","<<temp_channel<<","<<NC_num<<","<<dc_num<<","<<GR_num<<","<<i<<","<<num_count<<","<<-1<<"\n";
                   
                   event_count++;
                   got_event=true;
@@ -1055,14 +1093,14 @@ int main(int argc, char **argv)
                 double lepton_mass=0;
                 double lepton_type=0;
                 int lepton_anti=1;
-                
+                bool has_shower=false;
                 if(lep_rand<(1./3.))    //change particle types
                 {//e made
                   part_type=12;
                   lepton_mass=me;
                   lepton_type=11;
                   temp_channel=1;
-                  
+                  has_shower=true;
                 }
                 else if(lep_rand<(2./3.) &&lep_rand>=(1./3.))
                 {//mu made
@@ -1070,6 +1108,7 @@ int main(int argc, char **argv)
                   lepton_mass=mmuon;
                   lepton_type=13;
                   temp_channel=2;
+                  has_shower=false;
                   
                 }
                 else if(lep_rand>=(2./3.))
@@ -1078,7 +1117,8 @@ int main(int argc, char **argv)
                   lepton_mass=mtau;
                   lepton_type=15;
                   temp_channel=3;
-                  
+                  has_shower=false;
+
                 }
                 //cout<<"GR happened at "<<pos[0]<<" "<<pos[1]<<" and decayed to "<<part_type<<" and "<<lepton_type<<endl;
                 //cout<<part_type<<","<<lepton_type<<endl;
@@ -1090,11 +1130,12 @@ int main(int argc, char **argv)
                 part_energy=initial_E-lepton_energy;
                 double gr_inel=0;
                 if(part_type*anti==12) gr_inel=(initial_E-part_energy)/initial_E;
+                double shower_energy = initial_E*gr_inel;
                 //add in config.save_nu_ev
-                if(config.save_events&&config.save_nu_events&&in_volume(pos[0],pos[1],pos[2],config.ice_det_rad,config.ice_det_depth))
+                if(has_shower && shower_energy>Elim && config.save_events&&config.save_nu_events&&in_volume(pos[0],pos[1],pos[2],config.ice_det_rad,config.ice_det_depth))
                 {
-                outEvents<<pos[0]<<","<<pos[1]<<","<<pos[2]<<","<<x_step<<","<<y_step<<","<<z_step<<","<<initial_E<<","<<gr_inel<<","
-                    <<part_type*anti<<","<<2<<","<<temp_channel<<","<<NC_num<<","<<dc_num<<","<<GR_num<<","<<i<<","<<num_count<<","<<-1<<endl;
+                outEvents<<pos[0]<<","<<pos[1]<<","<<pos[2]<<","<<x_step<<","<<y_step<<","<<z_step<<","<<Energy_GeV << ","<<initial_E<<","<<gr_inel<<","
+                    <<part_type*anti<<","<<2<<","<<temp_channel<<","<<NC_num<<","<<dc_num<<","<<GR_num<<","<<i<<","<<num_count<<","<<-1<<"\n";
                 event_count++;
                 //out_gram<<i<<","<<num_count<<","<<part_pos<<","<<traversed_grammage<<","<<1<<endl;
                 got_event=true;
@@ -1244,7 +1285,8 @@ int main(int argc, char **argv)
             //cout<<"no decay"<<endl;
 
             //check to save the deposition
-            if(config.save_events&&config.save_sto_events&&config.use_sto_inst_of_cont&&in_volume(pos[0],pos[1],pos[2],config.ice_det_rad,config.ice_det_depth)&&frac_loss*part_energy>Elim)//save the deposition
+            double shower_energy = part_energy*frac_loss;
+            if(shower_energy>Elim && config.save_events&&config.save_sto_events&&config.use_sto_inst_of_cont&&in_volume(pos[0],pos[1],pos[2],config.ice_det_rad,config.ice_det_depth)&&frac_loss*part_energy>Elim)//save the deposition
             {
               //output this
               //cout<<"stuff here"<<endl;
@@ -1252,8 +1294,8 @@ int main(int argc, char **argv)
               if(sto.sto_type==0)temp_show=1;
               if(sto.sto_type==1)temp_show=1;//sto_type==0 brem, sto_type==1 pp, sto_type==2 pn
               if(sto.sto_type==2)temp_show=0; 
-              outEvents<<pos[0]<<","<<pos[1]<<","<<pos[2]<<","<<x_step<<","<<y_step<<","<<z_step<<","<<part_energy<<","<<frac_loss<<","
-                <<part_type*anti<<","<<sto.sto_type+4<<","<<temp_show<<","<<NC_num<<","<<dc_num<<","<<GR_num<<","<<i<<","<<num_count<<","<<sto_num<<endl;
+              outEvents<<pos[0]<<","<<pos[1]<<","<<pos[2]<<","<<x_step<<","<<y_step<<","<<z_step<<","<<Energy_GeV << ","<<part_energy<<","<<frac_loss<<","
+                <<part_type*anti<<","<<sto.sto_type+4<<","<<temp_show<<","<<NC_num<<","<<dc_num<<","<<GR_num<<","<<i<<","<<num_count<<","<<sto_num<<"\n";
               //outLep<<log10(part_energy)<<","<<frac_loss<<","<<log10(part_energy*frac_loss)<<","<<pos[0]<<","<<pos[1]<<","<<pos[2]<<","<<x_step<<","<<y_step<<","<<z_step<<","<<sto.sto_type<<","<<i<<","<<num_count<<","<<part_type<<","<<sto_num<<endl;
               sto_num++;
               //log_initial_energy,frac_loss,log_dep_energy,x,y,z,vx,vy,vz,int type, traj id, part type
@@ -1361,11 +1403,10 @@ int main(int argc, char **argv)
                     //cout<<reaction_index<<endl;
                     //cout<<"tau decay with type  "<<reaction_types[j]<< "has anti ness of "<<anti_type[j]<<" and reaction energy is "<<reaction_energies[j]<<endl;
                   }
-                  if(is_had_or_em==-1 && reaction_types[j]==0) is_had_or_em=0;//for EM
+                  if(is_had_or_em==-1 && reaction_types[j]==0) is_had_or_em=0;//for HAD
                   if(is_had_or_em==-1 && reaction_types[j]==11) is_had_or_em=1;//for EM
-                  if(is_had_or_em==-1 && reaction_types[j]==13) is_had_or_em=2;//for EM
+                  if(is_had_or_em==-1 && reaction_types[j]==13) is_had_or_em=2;//for HAD+EM
                 }
-              //ADD IF HAD OR EM CHANNEL, EITHER 12,13,14,15 or 0
               }
               part_energy*=reaction_data.tau_energy[reaction_index][0];
               //cout<<part_energy<<endl;
@@ -1416,10 +1457,10 @@ int main(int argc, char **argv)
             //}
             //double shower_energy=initial_energy-part_energy-lost_energy;
             //add in config.save_dec
-            if(config.save_events&&config.save_dec_events&&in_volume(pos[0],pos[1],pos[2],config.ice_det_rad,config.ice_det_depth))
+            if((initial_energy*frac_energy_dumped>Elim) && config.save_events&&config.save_dec_events&&in_volume(pos[0],pos[1],pos[2],config.ice_det_rad,config.ice_det_depth))
             {
-            outEvents<<pos[0]<<","<<pos[1]<<","<<pos[2]<<","<<x_step<<","<<y_step<<","<<z_step<<","<<initial_energy<<","<<frac_energy_dumped<<","
-                <<initial_particle*anti<<","<<3<<","<<is_had_or_em<<","<<NC_num<<","<<dc_num<<","<<GR_num<<","<<i<<","<<num_count<<","<<-1<<endl;
+            outEvents<<pos[0]<<","<<pos[1]<<","<<pos[2]<<","<<x_step<<","<<y_step<<","<<z_step<<","<<Energy_GeV << ","<<initial_energy<<","<<frac_energy_dumped<<","
+                <<initial_particle*anti<<","<<3<<","<<is_had_or_em<<","<<NC_num<<","<<dc_num<<","<<GR_num<<","<<i<<","<<num_count<<","<<-1<<"\n";
             event_count++;
             //out_gram<<i<<","<<num_count<<","<<part_pos<<","<<traversed_grammage<<","<<1<<endl;
             got_event=true;
@@ -1485,7 +1526,6 @@ int main(int argc, char **argv)
       // Write energy of emerging tau to output text file
       //=================================================
       //cout<<"save- type: "<<part_type<<" .energy: "<<part_energy<<".pos: "<<part_pos<<". gen: "<< generation<<endl;
-    
 
       for(int j=0; j<5;j++)
       {
@@ -1513,9 +1553,9 @@ int main(int argc, char **argv)
   
 
   printf("taus decayed: %i, taus passing through (could have decayed): %i",decay_num,taus_passed_through);
-  outEnergies << "END" << endl; // write END in the last line of the text output file. 
+  //outEnergies << "END" << endl; // write END in the last line of the text output file. 
   outEnergies.flush();
-  outEvents <<"END"<<endl;
+  //outEvents <<"END"<<endl;
   outEvents.flush();
   //out_gram<<"END"<<endl;
   //out_gram.flush();
@@ -1556,77 +1596,72 @@ int main(int argc, char **argv)
 // ===================================================
 
 
-void generate_trajectory(double* xi, double* xf,double rad, double depth, double exit_angle_cutoff)
+void generate_trajectory(double* xi, double* xf, double rad, double depth, double exit_angle_cutoff)
 {
-
-  //STILL NOT WORKING
-
   //xi starting point on the earth
   //xf ending point on the earth
   //printf("rad: %f, depth: %f\n",rad,depth);
-  double xv,yv,zv; //vertex location
+
+  //vertex location in volume and cart directions
+  double xv,yv,zv; 
   double dx,dy,dz;
+
   //get rand r, z, and ang
-  double r =(double)rand()/(double)RAND_MAX*rad;
-  double z =(double)rand()/(double)RAND_MAX*depth;
+  double r = sqrt((double)rand()/(double)RAND_MAX)*rad*1e5;
+  double z =(double)rand()/(double)RAND_MAX*depth*1e5;
   double ang =(double)rand()/(double)RAND_MAX*360*PI/180;
   //printf("r: %f, z: %f, ang: %f\n",r,z,ang);
+
   //transform to cartesian
   xv=r*sin(ang);
   yv=r*cos(ang);
   zv=R0-z;
   //printf("vert: %f,  %f,  %f\n",xv,yv,zv);
 
-  if(!in_volume(xv,yv,zv,rad,depth)) //check if marginally above the sphere
+  //check if marginally above the sphere
+  if(!in_volume(xv,yv,zv,rad,depth)) 
   {
-    zv=sqrt(R02-xv*xv-yv*yv); //set to top of sphere
+    //set to top of sphere
+    zv=sqrt(R02-xv*xv-yv*yv); 
   }
 
   double phi=(double)rand()/(double)RAND_MAX*360*PI/180;
-  double theta=(180-(double)rand()/(double)RAND_MAX*(180-exit_angle_cutoff))*PI/180; ////0 downgoing - 180 upgoing
+
+  //convert exit angle to an elevation angle and take cos
+  double cos_cutoff = sin((exit_angle_cutoff-90)*PI/180);
+
+  double theta=(double)rand()/(double)RAND_MAX*(cos_cutoff+1)-1;
+
+  theta=asin(theta);
   //printf("phi: %f, theta: %f\n",phi,theta);
 
-  dx=sin(theta)*cos(phi);
-  dy=sin(theta)*sin(phi);
-  dz=cos(theta);
+  dx=cos(theta)*cos(phi);
+  dy=cos(theta)*sin(phi);
+  dz=sin(theta);
+  //printf("%f,%f,%f\n",theta*180/PI,exit_angle_cutoff-90,dz);
+  //printf("%f,%f,%f,%f,%f,%f,%f,%f\n",r,z,ang,dx,dy,dz,theta,phi);
   //printf("dir: %f,  %f, %f\n",dx,dy,dz);
 
-  //find a temp point outside of the sphere in the opposite direction it's going
-  double xt= xv;
-  double yt= yv;
-  double zt= zv;
-
-  double dt=1e9;
-  while(xt*xt+yt*yt+zt*zt<R02)
-  {
-    xt=xv-dx*dt;
-    yt=yv-dy*dt;
-    zt=zv-dz*dt;
-    dt=dt+1e9;
-  }
-
-  //printf("temp: %f,  %f,  %f\n",xt,yt,zt);
-
+  //find intersection of neutrino line segment to earth surface
   double t_start;
   double t_end;
 
-  double udoto=(xt*dx+yt*dy+zt*dz);
+  double a = (dx*dx+dy*dy+dz*dz);
+  double b = 2*(dx*xv+dy*yv+dz*zv);
+  double c = xv*xv+yv*yv+zv*zv-R02;
 
-  t_start=(-2*udoto-sqrt((4*udoto*udoto)-4*(xt*xt+yt*yt+zt*zt-R02)))/2;
-  t_end=(-2*udoto+sqrt((4*udoto*udoto)-4*(xt*xt+yt*yt+zt*zt-R02)))/2;
+  t_start = (-b - sqrt(b*b-4*a*c))/(2*a);
+  t_end = (-b + sqrt(b*b-4*a*c))/(2*a);
 
+  //set entrance and exit points
+  xi[0]=(xv+dx*t_start);
+  xi[1]=(yv+dy*t_start);
+  xi[2]=(zv+dz*t_start);
+
+  xf[0]=(xv+dx*t_end);
+  xf[1]=(yv+dy*t_end);
+  xf[2]=(zv+dz*t_end);
   
-  xi[0]=xt+dx*t_start;
-  xi[1]=yt+dy*t_start;
-  xi[2]=zt+dz*t_start;
-
-  xf[0]=xt+dx*t_end;
-  xf[1]=yt+dy*t_end;
-  xf[2]=zt+dz*t_end;
-  //done
-
-
-
 }
 
 
@@ -1646,12 +1681,12 @@ double decay_length(double P, double E, int particle_type)
     }
     else
     {
-        cout<<"wrong particle"<<endl;
+        printf("wrong particle\n");
         exit(-1);
     }
     if(1-P<0)
     {
-      cout<<"log bug"<<endl;
+      printf("log bug\n");
       exit(-1);
     } 
 
@@ -1720,29 +1755,23 @@ void set_points_from_angle(input_file *input,double angle)
   input[0].yf=0;
   input[0].zf=R0;
   }
+
 bool in_volume(double x,double y,double z,double det_rad, double det_depth) //(det* detec, double x,double y,double z)
 {
+  //cylinder
   double rad=sqrt(x*x+y*y);
-  if(rad<=det_rad*pow(10,5)&&(z<R0)&&(z>R0-det_depth*pow(10,5)))
+  if(rad<=det_rad*1e5 && (z<R0) && (z>R0-det_depth*1e5))
   {
     return true;
   }
   else return false;
-  /* for when transitioning to detec config file
+
+  /* sphere
   if(detec.inner_rad==0)
   {
    double sp_R=sqrt(x*x+y*y+z*z);
    if(sp_R<detec.inner_sphere) return true;
    else return false;
-  }
-  if(detec.inner_phere==0)
-  {
-     double rad=sqrt(x*x+y*y);
-    if(rad<=15*pow(10,5)&&(z<R0)&&(z>R0-2.8*pow(10,5)))
-    {
-      return true;
-    }
-    else return false;
   }
   */
 }
@@ -1836,7 +1865,7 @@ string make_particle_dir(int argc, char **argv,string out_dir,string es_temp,str
   
   return nameEnergies;
 }
-string make_event_dir(int argc, char **argv,string out_dir,string es_temp,string angs_temp, int p_type)
+string make_event_dir(int argc, char **argv,string out_dir,string es_temp,string angs_temp, int p_type, string label)
 {
   string type_temp="";
   switch (p_type){
@@ -1846,6 +1875,7 @@ string make_event_dir(int argc, char **argv,string out_dir,string es_temp,string
     case -12: type_temp="anti_nue"; break;
     case -14: type_temp="anti_numu"; break;
     case -16: type_temp="anti_nutau"; break;
+    case 0: type_temp="mixed"; break;
   }
   string nameEvents="";
   nameEvents+=config.data_dir;
@@ -1854,6 +1884,12 @@ string make_event_dir(int argc, char **argv,string out_dir,string es_temp,string
 
   nameEvents+="_events_";
   nameEvents+=es_temp;
+  if (label!="")
+  {
+    nameEvents+="_";
+    nameEvents+=label;
+  }
+
   //nameEvents+="_";
   //nameEvents+=angs_temp;
   nameEvents+=".dat";
@@ -1872,6 +1908,7 @@ string make_lepton_dir(int argc, char **argv,string out_dir,string es_temp,strin
     case -12: type_temp="anti_nue"; break;
     case -14: type_temp="anti_numu"; break;
     case -16: type_temp="anti_nutau"; break;
+    case 0: type_temp="mixed"; break;
   }
   string nameLeptons="";
   nameLeptons+=config.data_dir;
@@ -1880,8 +1917,8 @@ string make_lepton_dir(int argc, char **argv,string out_dir,string es_temp,strin
 
   nameLeptons+="_leptons_";
   nameLeptons+=es_temp;
-  //nameLeptons+="_";
-  //nameLeptons+=angs_temp;
+  nameLeptons+="_";
+  nameLeptons+=angs_temp;
   nameLeptons+=".dat";
 
   return nameLeptons;
@@ -1947,8 +1984,6 @@ void load_config()
      else if ((int)line.find("sto_force_distance")!=-1) sin>>config.sto_force_distance;
      else if ((int)line.find("ext_traj")!=-1) sin>>config.ext_traj;
      else if ((int)line.find("ang_cutoff")!=-1) sin>>config.ang_cutoff;
-
-
 
   }
 }
@@ -2239,41 +2274,7 @@ double funcalph(double *x, int *par, int type)
   
 }
 */
-/*
-void generate_events(det * detec,int num_traj)
-{
-  string output_file="in_files/sim_generated_traj.csv";
-  ofstream out_traj(output_file.c_str());
-  double x,y,z,u,v,w;
 
-  if(detec.outer_rad==0)
-  {
-
-  }
-  if(detec.outer_sphere==0)
-  {
-    for (int di=0;di<num_traj;di++)
-    {
-        z=(double)rand()/(double)RAND_MAX*detec.inner_depth;
-        x=(double)rand()/(double)RAND_MAX*detec.inner_rad;
-        y=(double)rand()/(double)RAND_MAX*sqrt(detec.inner_rad*detec.inner_rad-x*x);
-        u=(double)rand()/(double)RAND_MAX*1;
-        v=(double)rand()/(double)RAND_MAX*sqrt(1-u*u);
-        w=(double)rand()/(double)RAND_MAX*sqrt(1-u*u-v*v);
-
-        //step forward to find earth entrance and stepo backward to find earthexit
-    }
-
-  
-  }
-
-
-  out_traj.flush();
-  out_traj.close();
-
-
-}
-*/
 // ###################################################
 // ###################################################
 double delta(double X)
@@ -2656,49 +2657,6 @@ int convert_types(int pythia_type)
             type=0;   
     }
 
-    /*
-    switch (pythia_type){
-
-        case -15:
-            type=-6;
-            break;
-        case 15:
-            type=6;
-            break;
-        case -16:
-            type=-3;
-            break;
-        case 16:
-            type=3;
-            break;
-        case 13:
-            type=5;
-            break;
-        case -13:
-            type=-5;
-            break;
-        case 14:
-            type=2;
-            break;
-        case -14:
-            type=-2;
-            break;
-        case 12:
-            type=1;
-            break;
-        case -12:
-            type=-1;
-            break;
-        case 11:
-            type=4;
-            break;
-        case -11:
-            type=-4;
-            break;    
-        default:
-            type=0;   
-    }
-    */
     return type;
 }
 

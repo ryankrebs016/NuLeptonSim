@@ -49,7 +49,7 @@ class stochastic_lepton_prop
    
     //pointers to be used in the code
     //assign the loaded tables to these pointers
-    //keep same name so Idon;t have to change code
+    //keep same name so I don't have to change code
     //muon tables
     double *cs_brem_muon;
     double *cs_pp_muon;
@@ -874,12 +874,6 @@ double stochastic_lepton_prop::get_sampled_energy()
                     //sampled_energy=(index2+1 - rand_index)/1.*f_bot+(rand_index-index2)/1.*f_top;
                     sampled_energy=(cdf_val_muon[index2+1] - rando)/d_val*f_bot+(rando-cdf_val_muon[index2])/d_val*f_top;
 
-                    
-                   
-                
-
-                   
-
                     //f_bot=(f01-f00)/10. * log_energy_MeV+f00;
                     //f_top=(f11-f10)/10. * log_energy_MeV+f10;
                     //sampled_energy=(f_top-f_bot)/ts2*rand_index+f_bot;
@@ -1048,12 +1042,6 @@ double stochastic_lepton_prop::get_sampled_energy()
                     //cout<<"f_bot,f_top: "<<f_bot<<","<<f_top<<endl;
                     //sampled_energy=(index2+1 - rand_index)/1.*f_bot+(rand_index-index2)/1.*f_top;
                     sampled_energy=(cdf_val_tau[index2+1] - rando)/d_val*f_bot+(rando-cdf_val_tau[index2])/d_val*f_top;
-
-                    
-                   
-                
-
-                   
 
                     //f_bot=(f01-f00)/10. * log_energy_MeV+f00;
                     //f_top=(f11-f10)/10. * log_energy_MeV+f10;
