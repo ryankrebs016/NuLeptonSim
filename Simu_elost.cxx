@@ -367,11 +367,12 @@ int main(int argc, char **argv)
   outEnergies << "type, anti, NC, CC, GR, DC, Gen, InitNuNum, InitNeutrinoType, OutEnergy, InitEnergy, Part_Pos.\n";
 
   ofstream outEvents(nameEvents.c_str());
-  outEvents<<"vert_x,vert_y,vert_z,tra_x,tra_y,tra_z,E_nu_prim,E_part,inel,part_type,i_type,had_or_em,nc_num,dc_num,gr_num,traj_num,p_thrown,sto_index"<< setprecision(9)<<endl;
+  outEvents<<"vert_x,vert_y,vert_z,tra_x,tra_y,tra_z,nu_prim_flavor,E_nu_prim,E_part,inel,part_type,i_type,had_or_em,nc_num,dc_num,gr_num,traj_num,p_thrown,sto_index"<< setprecision(9)<<endl;
   #ifdef DBG
     printf("saving emerging particles to %s\n",nameEnergies);
     printf("saving events to %s\n",nameEvents);
   #endif
+  outEvents<<"rad [km]: "<<config.ice_det_rad<<", depth [km]: "<<config.ice_det_depth<<", n_nu_throws per file: "<<input_num<<endl;
   
 
   //ofstream outLep(nameOutLep.c_str());
@@ -455,6 +456,7 @@ int main(int argc, char **argv)
   int taus_below=0;
   bool split_type=false;
   int part_count=0;
+  int initial_flavor=0;
   if(config.starting_type==0) split_type=true;
   //cout<<"help"<<endl;
   //cout<<small_r<<", "<<Lmax<<endl;
@@ -643,6 +645,8 @@ int main(int argc, char **argv)
       exit(1);
     }
 
+    
+
     if(split_type==true)
     {
       
@@ -669,7 +673,8 @@ int main(int argc, char **argv)
       cout<<"Particle type failed to intialize...breaking code\n";
       exit(1);
     }
-    
+
+    initial_flavor=part_type*anti;
     part_count++;
     double part_energy=Energy_GeV;
     double part_pos=0;
@@ -977,7 +982,7 @@ int main(int argc, char **argv)
                 got_event=true;
                 event_count++;
                 //out_gram<<i<<","<<num_count<<","<<part_pos<<","<<traversed_grammage<<","<<1<<endl;
-                outEvents<<pos[0]<<","<<pos[1]<<","<<pos[2]<<","<<x_step<<","<<y_step<<","<<z_step<<","<< Energy_GeV << ","<< initial_energy<<","<<Bjorken_y<<","
+                outEvents<<pos[0]<<","<<pos[1]<<","<<pos[2]<<","<<x_step<<","<<y_step<<","<<z_step<<","<<initial_flavor<<","<< Energy_GeV << ","<< initial_energy<<","<<Bjorken_y<<","
                 <<part_type*anti<<","<<0<<","<<shower_code<<","<<NC_num<<","<<dc_num<<","<<GR_num<<","<<i<<","<<num_count<<","<<-1<<"\n";
 
               }
@@ -1039,7 +1044,7 @@ int main(int argc, char **argv)
               if(shower_energy>Elim && config.save_events && config.save_nu_events && in_volume(pos[0],pos[1],pos[2],config.ice_det_rad,config.ice_det_depth))
               {
                 //out_gram<<i<<","<<num_count<<","<<part_pos<<","<<traversed_grammage<<","<<1<<endl;
-                outEvents<<pos[0]<<","<<pos[1]<<","<<pos[2]<<","<<x_step<<","<<y_step<<","<<z_step<<","<<Energy_GeV << ","<<initial_energy<<","<<Bjorken_y<<","
+                outEvents<<pos[0]<<","<<pos[1]<<","<<pos[2]<<","<<x_step<<","<<y_step<<","<<z_step<<","<<initial_flavor<<","<<Energy_GeV << ","<<initial_energy<<","<<Bjorken_y<<","
                     <<part_type*anti<<","<<1<<","<<0<<","<<NC_num<<","<<dc_num<<","<<GR_num<<","<<i<<","<<num_count<<","<<-1<<"\n";
                 event_count++;
                 got_event=true;
@@ -1074,7 +1079,7 @@ int main(int argc, char **argv)
                 if(initial_energy>Elim && config.save_events&&config.save_nu_events&&in_volume(pos[0],pos[1],pos[2],config.ice_det_rad,config.ice_det_depth))
                 {
                   //out_gram<<i<<","<<num_count<<","<<part_pos<<","<<traversed_grammage<<","<<1<<endl;
-                  outEvents<<pos[0]<<","<<pos[1]<<","<<pos[2]<<","<<x_step<<","<<y_step<<","<<z_step<<","<<Energy_GeV << ","<<initial_energy<<","<<1<<","
+                  outEvents<<pos[0]<<","<<pos[1]<<","<<pos[2]<<","<<x_step<<","<<y_step<<","<<z_step<<","<<initial_flavor<<","<<Energy_GeV << ","<<initial_energy<<","<<1<<","
                       <<part_type*anti<<","<<2<<","<<temp_channel<<","<<NC_num<<","<<dc_num<<","<<GR_num<<","<<i<<","<<num_count<<","<<-1<<"\n";
                   
                   event_count++;
@@ -1134,7 +1139,7 @@ int main(int argc, char **argv)
                 //add in config.save_nu_ev
                 if(has_shower && shower_energy>Elim && config.save_events&&config.save_nu_events&&in_volume(pos[0],pos[1],pos[2],config.ice_det_rad,config.ice_det_depth))
                 {
-                outEvents<<pos[0]<<","<<pos[1]<<","<<pos[2]<<","<<x_step<<","<<y_step<<","<<z_step<<","<<Energy_GeV << ","<<initial_E<<","<<gr_inel<<","
+                outEvents<<pos[0]<<","<<pos[1]<<","<<pos[2]<<","<<x_step<<","<<y_step<<","<<z_step<<","<<initial_flavor<<","<<Energy_GeV << ","<<initial_E<<","<<gr_inel<<","
                     <<part_type*anti<<","<<2<<","<<temp_channel<<","<<NC_num<<","<<dc_num<<","<<GR_num<<","<<i<<","<<num_count<<","<<-1<<"\n";
                 event_count++;
                 //out_gram<<i<<","<<num_count<<","<<part_pos<<","<<traversed_grammage<<","<<1<<endl;
@@ -1285,8 +1290,7 @@ int main(int argc, char **argv)
             //cout<<"no decay"<<endl;
 
             //check to save the deposition
-            double shower_energy = part_energy*frac_loss;
-            if(shower_energy>Elim && config.save_events&&config.save_sto_events&&config.use_sto_inst_of_cont&&in_volume(pos[0],pos[1],pos[2],config.ice_det_rad,config.ice_det_depth)&&frac_loss*part_energy>Elim)//save the deposition
+            if(config.save_events&&config.save_sto_events&&in_volume(pos[0],pos[1],pos[2],config.ice_det_rad,config.ice_det_depth)&&((frac_loss*part_energy)>Elim))//save the deposition
             {
               //output this
               //cout<<"stuff here"<<endl;
@@ -1294,7 +1298,7 @@ int main(int argc, char **argv)
               if(sto.sto_type==0)temp_show=1;
               if(sto.sto_type==1)temp_show=1;//sto_type==0 brem, sto_type==1 pp, sto_type==2 pn
               if(sto.sto_type==2)temp_show=0; 
-              outEvents<<pos[0]<<","<<pos[1]<<","<<pos[2]<<","<<x_step<<","<<y_step<<","<<z_step<<","<<Energy_GeV << ","<<part_energy<<","<<frac_loss<<","
+              outEvents<<pos[0]<<","<<pos[1]<<","<<pos[2]<<","<<x_step<<","<<y_step<<","<<z_step<<","<<initial_flavor<<","<<Energy_GeV << ","<<part_energy<<","<<frac_loss<<","
                 <<part_type*anti<<","<<sto.sto_type+4<<","<<temp_show<<","<<NC_num<<","<<dc_num<<","<<GR_num<<","<<i<<","<<num_count<<","<<sto_num<<"\n";
               //outLep<<log10(part_energy)<<","<<frac_loss<<","<<log10(part_energy*frac_loss)<<","<<pos[0]<<","<<pos[1]<<","<<pos[2]<<","<<x_step<<","<<y_step<<","<<z_step<<","<<sto.sto_type<<","<<i<<","<<num_count<<","<<part_type<<","<<sto_num<<endl;
               sto_num++;
@@ -1459,7 +1463,7 @@ int main(int argc, char **argv)
             //add in config.save_dec
             if((initial_energy*frac_energy_dumped>Elim) && config.save_events&&config.save_dec_events&&in_volume(pos[0],pos[1],pos[2],config.ice_det_rad,config.ice_det_depth))
             {
-            outEvents<<pos[0]<<","<<pos[1]<<","<<pos[2]<<","<<x_step<<","<<y_step<<","<<z_step<<","<<Energy_GeV << ","<<initial_energy<<","<<frac_energy_dumped<<","
+            outEvents<<pos[0]<<","<<pos[1]<<","<<pos[2]<<","<<x_step<<","<<y_step<<","<<z_step<<","<<initial_flavor<<","<<Energy_GeV << ","<<initial_energy<<","<<frac_energy_dumped<<","
                 <<initial_particle*anti<<","<<3<<","<<is_had_or_em<<","<<NC_num<<","<<dc_num<<","<<GR_num<<","<<i<<","<<num_count<<","<<-1<<"\n";
             event_count++;
             //out_gram<<i<<","<<num_count<<","<<part_pos<<","<<traversed_grammage<<","<<1<<endl;

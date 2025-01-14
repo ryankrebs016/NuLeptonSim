@@ -1,0 +1,1 @@
+parallel --eta -j6 ./Simu_elost 0 90 1 0 0 3.2 0.92 {0} :::: index.txt

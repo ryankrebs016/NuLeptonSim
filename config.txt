@@ -22,7 +22,7 @@ conversion = 1
 energy_distribution = 1
 
 #what energy should particles begin to be forgotten
-energy_threshold = 1E+15
+energy_threshold = 1E+16
 
 #do run over amount of n_throws
 run_throws = 1
