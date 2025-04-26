@@ -70,6 +70,8 @@
 #include "cont_losses.h"
 #include "Simu_elost.h"
 
+//#define LUT
+
 using namespace std;
 
 //MYEVT_DEF event;
@@ -504,7 +506,7 @@ int main(int argc, char **argv)
       earth_exit[2]=input[0].eez;
     }  
 
-    if (config.detector==1)maxL=sqrt((earth_exit[0]-earth_entrance[0])*(earth_exit[0]-earth_entrance[0])
+    if (config.detector==1) maxL=sqrt((earth_exit[0]-earth_entrance[0])*(earth_exit[0]-earth_entrance[0])
       +(earth_exit[1]-earth_entrance[1])*(earth_exit[1]-earth_entrance[1])
       +(earth_exit[2]-earth_entrance[2])*(earth_exit[2]-earth_entrance[2]));
     else if(config.detector==0)maxL=Lmax;
@@ -527,21 +529,11 @@ int main(int argc, char **argv)
     //printf("sim_dir: %f, %f, %f\n",x_step,y_step,z_step);
     double temp_pos[3]={earth_entrance[0],earth_entrance[1],earth_entrance[2]};
     
-    /*
     
-    for (int ii=1; ii<=1000000; ii++) //reduce by 10
-    {
-    double dl = maxL/1000000; //change to Lmax2 for icecube
-    double x_val = maxL * double(ii) / 1000000.;//change to lamx2 for icecube
     
-    temp_pos[0]=temp_pos[0]+dl*x_step;
-    temp_pos[1]=temp_pos[1]+dl*y_step;
-    temp_pos[2]=temp_pos[2]+dl*z_step;
-    sum_grammage +=dl*get_dens_from_coords(temp_pos);
-    //sum_grammage +=  dx*earthdens(&x_val, &Lmax);//change to lamx2 for icecube
+   
+ 
     
-    }
-    */
     /*
     for (int ii=1; ii<=1000000; ii++)
     {
@@ -556,34 +548,50 @@ int main(int argc, char **argv)
     */
     double* cumulative_grammage = new double[1000000];
     double* grammage_distance = new double[1000000]; // in cm
+    double d_grammage=0;
     
-    double d_grammage = sum_grammage/1000000.; // g/cm^2
-    
-    cumulative_grammage[0] = 0.;
-    grammage_distance[0]   = 0.;
-    temp_pos[0]=earth_entrance[0];
-    temp_pos[1]=earth_entrance[1];
-    temp_pos[2]=earth_entrance[2];
 
-    /* try newnu
-    for (int ii=1; ii<=1000000; ii++)
-    {
-    //okay so if I want to speed up one neutrino per traj I have to do this on the fly
-    //so that means getting the density at the starting point as the input to the calculatio
-    //to get the neutrino path length... which I think is ok? I just need to record position and density
-    //before moving to calculate... obv incur errors but oh well.
 
-    double dl = d_grammage/get_dens_from_coords(temp_pos);//chnage to lmax2 for icecube
-    double l_val = grammage_distance[ii-1];
-    cumulative_grammage[ii] = cumulative_grammage[ii-1] + dl*get_dens_from_coords(temp_pos);//change to lamx2 for icecube
-    grammage_distance[ii] = l_val + dl;  
-    temp_pos[0]=temp_pos[0]+dl*x_step;
-    temp_pos[1]=temp_pos[1]+dl*y_step;
-    temp_pos[2]=temp_pos[2]+dl*z_step;
-    //printf("*** ii %d %1.5f %1.5f\n",ii, grammage_distance[ii], cumulative_grammage[ii]);
-    //if(ii%100000 ==0) printf("ii %d %1.2e %1.5f\n",ii, grammage_distance[ii], cumulative_grammage[ii]);
-    }
-    */
+
+    #ifdef LUT
+      //printf("using grammage lut\n");
+      for (int ii=1; ii<=1000000; ii++) //reduce by 10
+      {
+      double dl = maxL/1000000; //change to Lmax2 for icecube
+      double x_val = maxL * double(ii) / 1000000.;//change to lamx2 for icecube
+      
+      temp_pos[0]=temp_pos[0]+dl*x_step;
+      temp_pos[1]=temp_pos[1]+dl*y_step;
+      temp_pos[2]=temp_pos[2]+dl*z_step;
+      sum_grammage +=dl*get_dens_from_coords(temp_pos);
+      //sum_grammage +=  dx*earthdens(&x_val, &Lmax);//change to lamx2 for icecube
+      
+      }
+      d_grammage = sum_grammage/1000000.; // g/cm^2
+
+      cumulative_grammage[0] = 0.;
+      grammage_distance[0]   = 0.;
+      temp_pos[0]=earth_entrance[0];
+      temp_pos[1]=earth_entrance[1];
+      temp_pos[2]=earth_entrance[2];
+      for (int ii=1; ii<=1000000; ii++)
+      {
+        //okay so if I want to speed up one neutrino per traj I have to do this on the fly
+        //so that means getting the density at the starting point as the input to the calculatio
+        //to get the neutrino path length... which I think is ok? I just need to record position and density
+        //before moving to calculate... obv incur errors but oh well.
+
+        double dl = d_grammage/get_dens_from_coords(temp_pos);//chnage to lmax2 for icecube
+        double l_val = grammage_distance[ii-1];
+        cumulative_grammage[ii] = cumulative_grammage[ii-1] + dl*get_dens_from_coords(temp_pos);//change to lamx2 for icecube
+        grammage_distance[ii] = l_val + dl;  
+        temp_pos[0]=temp_pos[0]+dl*x_step;
+        temp_pos[1]=temp_pos[1]+dl*y_step;
+        temp_pos[2]=temp_pos[2]+dl*z_step;
+        //printf("*** ii %d %1.5f %1.5f\n",ii, grammage_distance[ii], cumulative_grammage[ii]);
+        //if(ii%100000 ==0) printf("ii %d %1.2e %1.5f\n",ii, grammage_distance[ii], cumulative_grammage[ii]);
+      }
+    #endif
 
 
     //save charged leptons entering the volume!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -773,7 +781,6 @@ int main(int argc, char **argv)
       bool entered_volume=false;
       int sto_index=0;
       //printf("before looping pos %i, maxl %f, pos: %f %f %f\n",part_pos,maxL,pos[0],pos[1],pos[2]);
-
       //while(part_pos<maxL &&  !left_volume) 
       //while(pos[0]*pos[0]+pos[1]*pos[1]+pos[2]*pos[2]<R02) //+for weird comp math thing
       while(part_pos<maxL && (pos[0]*pos[0]+pos[1]*pos[1]+pos[2]*pos[2])<R02)
@@ -813,89 +820,51 @@ int main(int argc, char **argv)
           
           // Add X_int to the total grammage traversed by the particle
           traversed_grammage += X_int;
-          
+          double nu_step_length=0;
           // Initialize the interaction length distance for this step to zero.
           //double Lint = 0.;
           //printf("part pos before %f\n",part_pos);
-
-          //okay make this like an RK4 integration step...
-          
-          double tp0[3]={pos[0],pos[1],pos[2]};
-          double k1=get_dens_from_coords(tp0);
-          double tp1[3]={pos[0]+k1*X_int*x_step/2,pos[1]+k1*X_int*y_step/2,pos[2]+k1*X_int*z_step/2};
-          double k2=get_dens_from_coords(tp1);
-          double tp2[3]={pos[0]+k2*X_int*x_step/2,pos[1]+k2*X_int*y_step/2,pos[2]+k2*X_int*z_step/2};
-          double k3=get_dens_from_coords(tp2);
-          double tp3[3]={pos[0]+k3*X_int*x_step,pos[1]+k3*X_int*y_step,pos[2]+k3*X_int*z_step};
-          double k4=get_dens_from_coords(tp3);
-          
-          double nu_step_length=X_int/6*(k1+2*k2+2*k3+k4);
-          part_pos+=nu_step_length;
-          pos[0]=pos[0]+nu_step_length*x_step;
-          pos[1]=pos[1]+nu_step_length*y_step;
-          pos[2]=pos[2]+nu_step_length*z_step;
-
-          
-
-          /*
-          
-          //weird mid point type thing for step length
-          double distance0=X_int*dens;
-          double test_pos[3];
-          test_pos[0]=pos[0]+distance0*x_step;
-          test_pos[1]=pos[1]+distance0*y_step;
-          test_pos[2]=pos[2]+distance0*z_step;
-
-          double test_dens=get_dens_from_coords(test_pos);
-          double distance1=X_int*test_dens;
-
-          double mid_dist=(distance0+distance1)/2;
-          test_pos[0]=pos[0]+mid_dist*x_step;
-          test_pos[1]=pos[1]+mid_dist*y_step;
-          test_pos[2]=pos[2]+mid_dist*z_step;
-          
-          //if I think this works, update the positions like so
-          pos[0]=test_pos[0];
-          pos[1]=test_pos[1];
-          pos[2]=test_pos[2];
-          part_pos+=mid_dist;
-          //printf("part pos after %f\n\n",part_pos);
-
-          */
-       
-          bool try_new_nu=false;
-
-
-          // If too large, make sure it exits the volume.
-          // NOTE: use floats for this condition. Using ints is bad if float > 2^32, then you get negative int.
-          if(try_new_nu && traversed_grammage/d_grammage + 1. > 1000000.){
-            part_pos = maxL; // chnage to lamx2 for icecube NOTE: 1000000. is the size of the look-up table.
-            traversed_grammage = sum_grammage;
-            pos[0]=earth_exit[0];
-            pos[1]=earth_exit[1];
-            pos[2]=earth_exit[2];
+          #ifndef LUT
+            double step_dir[3]={x_step,y_step,z_step};
+            nu_step_length=analytic_distance_from_grammage(pos,step_dir,X_int,terra->depth_new_layer,terra->dens_new_layer);
             
-          }
-          // If contained within the trajectory, linearly interpolate its interaction distance.
-      
-          if (try_new_nu && floor(traversed_grammage/d_grammage) + 1. < 1000000.) // NOTE: 1000000. is the size of the look-up table.
-          {
-            double before_step=part_pos;
-            // Get the entry in the look-up table corresponding to the traversed grammage
-            int ii_grammage = int(traversed_grammage/d_grammage) + 1;
-      
-            // Linearly interpolate to estimate the distance propagated
-            double slope = (grammage_distance[ii_grammage] - grammage_distance[ii_grammage-1])/d_grammage;
-          
-            double intercept = grammage_distance[ii_grammage] - slope*cumulative_grammage[ii_grammage];
-            //Lint = slope*traversed_grammage + intercept - part_pos; // keep track of this step's interaction length.
-            part_pos = slope*traversed_grammage + intercept ;
-            double after_step=part_pos;
-            pos[0]=pos[0]+(after_step-before_step)*x_step;
-            pos[1]=pos[1]+(after_step-before_step)*y_step;
-            pos[2]=pos[2]+(after_step-before_step)*z_step;
-          }
+            //printf("%f\n",nu_step_length);
+            part_pos+=nu_step_length;
+            pos[0]=pos[0]+nu_step_length*x_step;
+            pos[1]=pos[1]+nu_step_length*y_step;
+            pos[2]=pos[2]+nu_step_length*z_step;
+          #endif
 
+          #ifdef LUT
+            //grammage look up table
+            if(traversed_grammage/d_grammage + 1. > 1000000.){
+              part_pos = maxL+1;
+              traversed_grammage = sum_grammage;
+              pos[0]=earth_exit[0];
+              pos[1]=earth_exit[1];
+              pos[2]=earth_exit[2];
+              
+            }
+            // If contained within the trajectory, linearly interpolate its interaction distance.
+            
+            if ( floor(traversed_grammage/d_grammage) + 1. < 1000000.) // NOTE: 1000000. is the size of the look-up table.
+            {
+              double before_step=part_pos;
+              // Get the entry in the look-up table corresponding to the traversed grammage
+              int ii_grammage = int(traversed_grammage/d_grammage) + 1;
+        
+              // Linearly interpolate to estimate the distance propagated
+              double slope = (grammage_distance[ii_grammage] - grammage_distance[ii_grammage-1])/d_grammage;
+            
+              double intercept = grammage_distance[ii_grammage] - slope*cumulative_grammage[ii_grammage];
+              //Lint = slope*traversed_grammage + intercept - part_pos; // keep track of this step's interaction length.
+              part_pos = slope*traversed_grammage + intercept ;
+              double after_step=part_pos;
+              pos[0]=pos[0]+(after_step-before_step)*x_step;
+              pos[1]=pos[1]+(after_step-before_step)*y_step;
+              pos[2]=pos[2]+(after_step-before_step)*z_step;
+            }
+          #endif
           
           if(in_volume(pos[0],pos[1],pos[2],config.ice_det_rad,config.ice_det_depth)&& !in_vol)
           {
@@ -1666,6 +1635,211 @@ void generate_trajectory(double* xi, double* xf, double rad, double depth, doubl
   xf[1]=(yv+dy*t_end);
   xf[2]=(zv+dz*t_end);
   
+}
+
+int get_intersections(double *pos, double * dir, double radius, double * int_dists)
+{
+  //math math
+
+  double d_start;
+  double d_end;
+
+  double a = (dir[0]*dir[0]+dir[1]*dir[1]+dir[2]*dir[2]);
+  double b = 2*(dir[0]*pos[0]+dir[1]*pos[1]+dir[2]*pos[2]);
+  double c = pos[0]*pos[0]+pos[1]*pos[1]+pos[2]*pos[2]-radius*radius;
+  double desc = b*b-4*a*c;
+
+  if (desc>=0)
+  {
+    d_start = (-b - sqrt(desc))/(2*a);
+    d_end = (-b + sqrt(desc))/(2*a);
+
+    //two solutions
+    int_dists[0]=d_start;
+    int_dists[1]=d_end;
+    
+    if (desc<1e-9) return 1;
+    else return 2;
+
+  }
+  else
+  {
+    //no solutions
+    int_dists[0]=0;
+    int_dists[1]=0;
+    return 0;
+  }
+}
+double analytic_distance_from_grammage(double *pos, double *dir, double grammage, double new_depth, double new_dens)
+{
+
+  //initialize layers (for now 8 layers but could be increased to n)
+  int num_layers=10;
+  double layer_radii[10]={122150000,348000000,570100000,577100000,597100000,615100000,634660000,635600000,637800000,637800001}; //cm
+  double layer_mean_density[10]={12.884,10.898,4.904,3.958,3.837,3.490,3.351,2.9,2.6,new_dens};
+
+  //assign new layer vals
+  if(new_depth){layer_radii[8]=637800000-new_depth*1e5;}
+  if(new_dens){layer_mean_density[9]=new_dens;}
+
+  //intialize vars
+  double temp_pos[3]={pos[0],pos[1],pos[2]};
+  double next_pos[3]={0.};
+  double traversed_length=0;
+  double radius = sqrt(temp_pos[0]*temp_pos[0]+temp_pos[1]*temp_pos[1]+temp_pos[2]*temp_pos[2]);
+  double current_grammage = 0;
+  float dir_dot_r = 0;
+  bool going_up = false;
+  bool left_earth = false;
+  int current_layer = 9;
+  double layer_grammage = 0;
+  double lengths[2]={0.};
+  int num_sols=0;
+  double min_bump=1; //cm... really just a safety thing
+  int search_layer=0;
+  int which_distance=0;
+  
+  //search inside out since the depths aren't nicely spaced
+  for (int i=0;i<10;i++)
+  {
+    if(radius<layer_radii[i])
+    {
+      current_layer=i;
+      break;
+    }
+
+  }
+  //printf("%f,%i\n",radius,current_layer);
+  //loop until grammage distance found or left earth (should only happen at most 2*n-1 times)
+  while(current_grammage<grammage || left_earth)
+  {
+    radius = sqrt(temp_pos[0]*temp_pos[0]+temp_pos[1]*temp_pos[1]+temp_pos[2]*temp_pos[2]);
+    
+    //check if dir is currently pointed towards center of earth or away
+    dir_dot_r = -temp_pos[0]*dir[0]-temp_pos[1]*dir[1]-temp_pos[2]*dir[2];
+    if (dir_dot_r<0) going_up=true; 
+    else going_up = false;
+
+    //in layer and points up so going to intersect its own surface only
+    if(going_up)
+    {
+      //get path length and add grammage
+      num_sols=get_intersections(temp_pos, dir, layer_radii[current_layer], lengths);
+      layer_grammage=layer_mean_density[current_layer]*lengths[1];
+
+      //hits grammage before leaving
+      if(current_grammage+layer_grammage>grammage)
+      {
+        //maybe update position if doing inside func
+        return traversed_length+(grammage-current_grammage)/layer_mean_density[current_layer]; 
+      }
+
+      //leaves earth
+      else
+      {
+
+        current_grammage+=layer_grammage;
+        traversed_length+=layer_grammage/layer_mean_density[current_layer];
+        lengths[1]+=min_bump;
+        temp_pos[0]=temp_pos[0]+dir[0]*lengths[1];
+        temp_pos[1]=temp_pos[1]+dir[1]*lengths[1];
+        temp_pos[2]=temp_pos[2]+dir[2]*lengths[1];
+
+        if(current_layer==num_layers-1)
+        {
+          left_earth=true;
+          current_layer+=1;
+          return traversed_length+1e9;
+          
+        }
+        current_layer+=1;
+        continue;
+      }
+    }
+
+    // path points down so maybe lower layer or maybe skimming
+    else
+    {
+      //determine if in core and adjust indexes
+      if(current_layer==0) 
+      {
+        search_layer=current_layer;
+        which_distance=1;
+      }
+      else 
+      {
+        search_layer=current_layer-1;
+        which_distance=0;
+      }
+
+      num_sols=get_intersections(temp_pos, dir, layer_radii[search_layer], lengths);
+
+      //travels to lower layer or exits core
+      if(num_sols>0)
+      {
+        //going down so going to have two valid solutions ahead of it. take "behind" as first point
+        layer_grammage=layer_mean_density[current_layer]*lengths[which_distance];
+
+        //hits grammage target
+        if(current_grammage+layer_grammage>grammage)
+        {
+          //maybe update position if doing inside func
+          return traversed_length+(grammage-current_grammage)/layer_mean_density[current_layer]; 
+        }
+        //goes down a layer
+        else
+        {
+          current_grammage+=layer_grammage;
+          traversed_length+=layer_grammage/layer_mean_density[current_layer];
+          lengths[which_distance]+=min_bump;
+  
+          temp_pos[0]=temp_pos[0]+dir[0]*lengths[which_distance];
+          temp_pos[1]=temp_pos[1]+dir[1]*lengths[which_distance];
+          temp_pos[2]=temp_pos[2]+dir[2]*lengths[which_distance];
+
+          current_layer-=1;
+          continue;
+        }
+      }
+
+      //skims through layer and goes up a layer or exit earth
+      else
+      {
+        //passes through layer without going down so use current layer radius
+        num_sols=get_intersections(temp_pos, dir, layer_radii[current_layer], lengths);
+
+
+        //get distance to current layer intersection
+        layer_grammage=layer_mean_density[current_layer]*lengths[1];
+
+        //hits grammage before leaving
+        if(current_grammage+layer_grammage>grammage)
+        {
+          //maybe update position if doing inside func
+          return traversed_length+(grammage-current_grammage)/layer_mean_density[current_layer]; 
+        }
+        //leaves earth
+        else
+        {
+          current_grammage+=layer_grammage;
+          traversed_length+=layer_grammage/layer_mean_density[current_layer];
+          lengths[1]+=min_bump;
+  
+          temp_pos[0]=temp_pos[0]+dir[0]*lengths[1];
+          temp_pos[1]=temp_pos[1]+dir[1]*lengths[1];
+          temp_pos[2]=temp_pos[2]+dir[2]*lengths[1];
+
+          if(current_layer==num_layers-1)
+          {
+            left_earth=true;
+            return traversed_length+1e9;
+          }
+          current_layer+=1;
+          continue;
+        }
+      }
+    }
+  }
 }
 
 

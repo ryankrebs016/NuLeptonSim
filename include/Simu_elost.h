@@ -180,6 +180,9 @@ double mean_dens_chord(double theta);
 //---------------------------------------------------------------
 void make_dirs(string dirs);
 void generate_trajectory(double* xi, double* xf,double rad, double depth, double exit_ang_cutoff);
+double analytic_distance_from_grammage(double *pos, double *dir, double grammage, double new_depth, double new_dens);
+int get_intersections(double *pos, double * dir, double radius, double * int_dists);
+
 
 /*
 class prop_particle
