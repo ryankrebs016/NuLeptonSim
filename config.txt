@@ -4,7 +4,7 @@
 #line it will pull from values here
 #----------------------------------------------------------------------------------------------------#
 #Where to place all the results
-data_dir = testing/
+data_dir = new_testing/
 
 #particle type to start the simulation with
 starting_type = 0
@@ -19,7 +19,7 @@ regen = 1
 conversion = 1
 
 #should energies be pulled from a distribution (0 is monoenergetic neutrinos)
-energy_distribution = 1
+energy_distribution = 0
 
 #what energy should particles begin to be forgotten
 energy_threshold = 1E+16
@@ -37,7 +37,7 @@ run_number = 0
 num_emerging_leptons = 500
 
 #haw many trajectories to run
-n_traj = 100000
+n_traj = 10000000
 
 #should it save earth emerging particles
 save_emerging = 0
@@ -64,7 +64,7 @@ default_cc = 0
 default_eloss = 0
 
 #default layer thickness
-default_layer_thickness = 3.2
+default_layer_thickness = 3
 
 #default layer density
 default_layer_density = 0.92
@@ -77,7 +77,7 @@ detector = 1
 det_volume = 1
 
 #detector modeled as a cylindrical with depth in km
-ice_det_depth = 3.2
+ice_det_depth = 3
 
 #and radius in km
 ice_det_rad = 15
@@ -107,7 +107,7 @@ save_tau = 1
 
 #----------------------------------------------------------------------------------------------------#
 #for in-ice detectors, should events in the volume be saved
-save_events = 1
+save_events = 0
 
 #if save_events should it save primary neutrino interactions
 save_nu_events = 1
@@ -117,6 +117,10 @@ save_dec_events = 1
 
 #if save_events should it save stochastic depostion events
 save_sto_events = 1
+
+#should it generate a seperate file to save final particle states and determine P_survival. xorr with
+#save_events as the statistics for each run may differ
+save_final_part_state = 1
 
 #should trajectories be grabbed from an external file
 ext_traj = 0

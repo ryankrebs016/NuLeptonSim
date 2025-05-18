@@ -82,6 +82,7 @@ typedef struct {
   bool save_nu_events;
   bool save_sto_events;
   bool save_dec_events;
+  bool save_final_part_state;
   bool ext_traj;
   double ang_cutoff;
   double sto_force_distance;
@@ -124,6 +125,9 @@ typedef struct
   double traj_weights;
 
 }det_geom;
+
+
+int still_going_towards_det(double * pos, double * traj_vec, double det_rad, double det_depth);
 
 double decay_length(double P, double E, int particle_type);
 bool in_volume(double x,double y,double z,double det_rad, double det_depth);
