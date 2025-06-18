@@ -16,6 +16,7 @@ typedef struct {
   stack<int> start_in_volume;
 
 } particle_info_def;
+
 typedef struct 
 {
   double xi,yi,zi;
@@ -24,7 +25,6 @@ typedef struct
   int p_type;
 
 } charged_leptons;
-
 
 typedef struct {
 
@@ -92,6 +92,7 @@ typedef struct {
 
 typedef struct
 {
+  //input file parameters setting startpoint, end point, and etrance point to the volume
   //last 6 are on the surface. first 6 are on a set interface --not used
   double xi;
   double yi;
@@ -107,7 +108,7 @@ typedef struct
   double eez;   // z coord of exit earth point
   //int input_types;
   //double input_e;
-}input_file;//input file parameters setting startpoint, end point, and etrance point to the volume
+}input_file;
 
 
 typedef struct 
@@ -117,6 +118,7 @@ typedef struct
   double outer_rad;
   double inner_depth;
   double outer_depth;
+
   //spherical
   double inner_sphere;
   double outer_sphere;
@@ -128,18 +130,16 @@ typedef struct
 
 
 int still_going_towards_det(double * pos, double * traj_vec, double det_rad, double det_depth);
+bool in_volume(double x,double y,double z,double det_rad, double det_depth);
 
 double decay_length(double P, double E, int particle_type);
-bool in_volume(double x,double y,double z,double det_rad, double det_depth);
-//void generate_events(det* detec);
 
 string make_particle_dir(int argc, char **argv,string out_dir,string es_temp,string angs_temp);
 string make_event_dir(int argc, char **argv,string out_dir,string es_temp,string angs_temp, int p_type, string label);
 string make_lepton_dir(int argc, char **argv,string out_dir,string es_temp,string angs_temp, int p_type);
+
 // initialize reaction from pythia table and convert pythia type to tag code used in code
 void initialize_reaction(int tau_type[][6], int mu_type[][6],double tau_ene[][6],double mu_ene[][6]);
-
-// converts pythia tags to tags in this code. converts anti particles to normal matter
 int convert_types(int pythia_type);
 
 //load values from config file
@@ -147,18 +147,7 @@ void load_config();
 void load_geo();
 int load_input(input_file *in,int length, string filename);
 
-void set_points_from_angle(input_file *input,double angle);
-// -------------------------------------------------
-// For lepton energy loss: dE/dX = -alpha + beta(E)*E 
-//double funcalph(double *x, int *par, int type);
-
 double delta(double X);
-
-// Parameterisations for beta 
-//double beta9fit(double *x, int *par, int ELOSSmode, int type);	
-
-// Elost by tau and muon dE/dX in GeV/(g/cm^2)
-//double elost(double E, double dens, int ELOSSmode, int type);
 
 // -------------------------------------------------
 // Probability of tau and muon lepton decay
@@ -173,7 +162,7 @@ double dsigGR(double E, int type, int AntiNu);
 // -------------------------------------------------
 // Local density as a function of zenith angle
 double earthdens( double *x, double *par); 
-//Local density as a function of x,y coordinates
+// Local density as a function of x,y,z coordinates
 double get_dens_from_coords(double *coords);
 
 // -------------------------------------------------
@@ -184,128 +173,6 @@ double mean_dens_chord(double theta);
 //---------------------------------------------------------------
 void make_dirs(string dirs);
 void generate_trajectory(double* xi, double* xf,double rad, double depth, double exit_ang_cutoff);
+void set_points_from_angle(input_file *input,double angle);
 double analytic_distance_from_grammage(double *pos, double *dir, double grammage, double new_depth, double new_dens);
 int get_intersections(double *pos, double * dir, double radius, double * int_dists);
-
-
-/*
-class prop_particle
-{
-  public:  
-    int ID;
-    double energy;
-    double position,x,y,z,u,v,w;
-    double type;
-    int NC,DC,CC,GR;
-
-    void set_pos(double temp_x, double temp_y, double temp_z);
-    void set_traj(double temp_u, double temp_v, double temp_w);
-    void step_pos(double length);
-    void reset_class();
-
-};  
-void prop_particle::set_pos(double temp_x, double temp_y, double temp_z)
-{
-  x=temp_x;
-  y=temp_y;
-  z=temp_z;
-}
-void prop_particle::set_traj(double temp_u, double temp_v, double temp_w)
-{
-  u=temp_u;
-  v=temp_v;
-  w=temp_w;
-}
-void prop_particle::step_pos(double length)
-{
-  x=length*u+x;
-  y=length*v+y;
-  z=length*w+z;
-}
-*/
-/*
-typedef struct {
-  int	 nevt; 	      // Event number
-  int  ncc; 	      // number of CC interaction suffered ?
-  int  nnc;	        // number of NC interaction suffered ?
-  int  ndk;	        // number of tau decays
-  int  npart;       // Number of particles created (tau or nu_tau only)
-  int  trig;        // trigger = 1 if tau finally emerges from Earth
-  int  id[40];      // id of produced particle: id=0 if tau neutrino, id=1 if tau
-  double theta;     // zenithal angle of initial nu_tau
-  double Lmax1;     // Earth thickness crossed
-  double Lmax2;     // Earth thickness crossed
-  double L0[40];    // Point of interaction of initial neutrino ??
-  double Estart;    // Neutrino energy at start point of propagation
-  double Eend;      // Particle energy (neutrino or tau) that emerges from Earth
-  double E1[40];    // For each particle created: energy at creation
-  double E2[40];    // For each particle created: energy of decay (if tau), energy at interaction (if nu)
-  double v1[40];    // For each particle created: depth of creation
-  double v2[40];    // For each particle created: depth of disappearance
-                    // Note: a tau neutrino created in a NC interaction is regarded as a new particle
-  double Shheight;  // For a tau emerging, distance traveled before decaying
-  double Shlong;
-} MYEVT_DEF;
-*/
-/*
-class charged_lep
-{
-  public:
-    double xi,xf,yi,yf,zi,zf,Ei,Ef;
-    int p_type,anti;
-  
-
-    void fill_initial(double x,double y,double z, double E,int antiness, int p);
-    void fill_end(double x,double y,double z, double E);
-    void empty_class();
-    void save_lep(ofstream *output_file,int code,int t_num,int n_num);
-    void print_values();
-};
-void charged_lep::print_values()
-{
-  printf("p_type: %i, anti: %i,\nxi: %f, yi: %f, zi: %f, Ei: %f,\nxf: %f, yf: %f, zf:%f, Ef: %f \n "
-  ,p_type,anti,xi,yi,zi,Ei,xf,yf,zf,Ef);
-}
-void charged_lep::fill_initial(double x,double y,double z, double E, int antiness,int p)
-{
-  xi=x;
-  yi=y;
-  zi=z;
-  Ei=E;
-  p_type=p;
-  anti=antiness;
-}
-void charged_lep::fill_end(double x,double y,double z, double E)
-{
-  xf=x;
-  yf=y;
-  zf=z;
-  Ef=E;
-}
-void charged_lep::empty_class()
-{
-  //printf("emptying charged lepton\n");
-  xi=0;
-  yi=0;
-  zi=0;
-  xf=0;
-  yf=0;
-  zf=0;
-  Ei=0;
-  Ef=0;
-  p_type=0;
-}
-void charged_lep::save_lep(ofstream *output_file,int code,int t_num,int n_num)
-{
-  if(Ei!=0&&Ef!=0)
-  {
-    *output_file<<xi<<","<<yi<<","<<zi
-  <<","<<xf<<","<<yf<<","<<zf
-  <<","<<Ei<<","<<Ef<<","<<p_type*anti
-  <<","<<code<<","<<t_num<<","<<n_num<<endl;
-  
-  //printf("saving");
-  }
-
-}
-*/
