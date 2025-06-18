@@ -147,8 +147,6 @@ void load_config();
 void load_geo();
 int load_input(input_file *in,int length, string filename);
 
-double delta(double X);
-
 // -------------------------------------------------
 // Probability of tau and muon lepton decay
 double dPdesdx(double E,int type);	
