@@ -94,6 +94,7 @@ Earth *terra = new Earth(0.0, 2.6);
 //#############################################################
 int main(int argc, char **argv)
 {
+ 
   double time_start=time(NULL); //set timing variable
   load_config(); 
   continuous_loss_prop cont;
@@ -2325,7 +2326,7 @@ double dsigCC(double E, int CCmode, int type,int AntiNu )
           C4 = -17.72;
       }
       
-      return pow(10, C1 + C2*log(E-C0) + pow(C3*log(E-C0), 2) + C4/log(E-C0));
+      return pow(10, C1 + C2*log(log10_E_GeV-C0) + C3*pow(log(log10_E_GeV-C0), 2) + C4/log(log10_E_GeV-C0));
   }
   
   else{
@@ -2346,6 +2347,7 @@ double dsigNC(double E, int CCmode, int type,int AntiNu )
   double C4;
   if(CCmode == 0){
       double log10_E_GeV = log10(E);
+      std::cout<<log10_E_GeV<<std::endl;
       if(!AntiNu){
           C0 = -1.826;
           C1 = -17.31;
@@ -2361,8 +2363,8 @@ double dsigNC(double E, int CCmode, int type,int AntiNu )
           C3 = 1.569;
           C4 = -18.30;
       }
-      
-      return pow(10, C1 + C2*log(E-C0) + pow(C3*log(E-C0), 2) + C4/log(E-C0));
+
+      return pow(10, C1 + C2*log(log10_E_GeV-C0) + C3*pow(log(log10_E_GeV-C0), 2) + C4/log(log10_E_GeV-C0));
   }
   
   else{
