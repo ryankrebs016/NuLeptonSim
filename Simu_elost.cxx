@@ -2347,7 +2347,7 @@ double dsigNC(double E, int CCmode, int type,int AntiNu )
   double C4;
   if(CCmode == 0){
       double log10_E_GeV = log10(E);
-      std::cout<<log10_E_GeV<<std::endl;
+      //std::cout<<log10_E_GeV<<std::endl;
       if(!AntiNu){
           C0 = -1.826;
           C1 = -17.31;
