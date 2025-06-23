@@ -193,13 +193,13 @@ void stochastic_lepton_prop::load_tables(string muon_min, string tau_min)
     int time1 = time(NULL);
     if ((strcmp(muon_min.c_str(),"1e-4") !=0 && strcmp(muon_min.c_str(),"1e-5") !=0 && strcmp(muon_min.c_str(),"1e-7") !=0 && strcmp(muon_min.c_str(),"1e-9")!=0))
     {
-        printf("couldn't find %s tables - loading default 1e-4 for muon\n",muon_min);
+        printf("couldn't find %s tables - loading default 1e-4 for muon\n",muon_min.c_str());
         muon_min="1e-4";
     } 
 
     if ((strcmp(tau_min.c_str(),"1e-5")!=0 && strcmp(tau_min.c_str(),"1e-6")!=0 && strcmp(tau_min.c_str(),"1e-7")!=0 && strcmp(tau_min.c_str(),"1e-9")!=0))
     {
-        printf("couldn't find %s tables - loading default 1e-5 for tau\n",tau_min);
+        printf("couldn't find %s tables - loading default 1e-5 for tau\n",tau_min.c_str());
         tau_min="1e-5";
     } 
 
