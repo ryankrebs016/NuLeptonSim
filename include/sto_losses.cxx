@@ -15,8 +15,9 @@
 #include "math.h"
 #include <cstring>
 #include <iomanip>
-#include<cmath>
-#include<time.h>
+#include <cmath>
+#include <time.h>
+#include <chrono>
 
 
 
@@ -190,7 +191,7 @@ bool stochastic_lepton_prop::set_table_pointer(double temp_dens)
 
 void stochastic_lepton_prop::load_tables(string muon_min, string tau_min)
 {   
-    int time1 = time(NULL);
+    auto time1 = chrono::high_resolution_clock::now();
     if ((strcmp(muon_min.c_str(),"1e-4") !=0 && strcmp(muon_min.c_str(),"1e-5") !=0 && strcmp(muon_min.c_str(),"1e-7") !=0 && strcmp(muon_min.c_str(),"1e-9")!=0))
     {
         printf("couldn't find %s tables - loading default 1e-4 for muon\n",muon_min);
@@ -510,7 +511,8 @@ void stochastic_lepton_prop::load_tables(string muon_min, string tau_min)
     tau_cdf_xs_pp2.close();
     tau_cdf_xs_pn2.close();
 
-    printf("Finished loading stachastic tables. Took %f s to load.",time(NULL)-time1);
+    auto end = chrono::high_resolution_clock::now();
+    printf("Finished loading stachastic tables. Took %i ms to load.\n",chrono::duration_cast<chrono::milliseconds>(end-time1).count());
 
     //setting to ice to start
     //set tables to ice

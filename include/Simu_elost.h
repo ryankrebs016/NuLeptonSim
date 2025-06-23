@@ -15,7 +15,7 @@ typedef struct {
   stack<double> traversed_gram; // traversed grammage up until particle is created 
   stack<int> start_in_volume;
 
-} particle_info_def;
+} particle_info_t;
 
 typedef struct 
 {
@@ -33,7 +33,7 @@ typedef struct {
   int mu_type[100000][6];        // hold particle types created in muon decay
   double mu_energy[100000][6];   // hold energy of created particles in muon decay
     
-} reaction_tables_def;
+} reaction_tables_t;
 
 typedef struct {
   //full sim things
@@ -86,7 +86,7 @@ typedef struct {
   bool ext_traj;
   double ang_cutoff;
   double sto_force_distance;
-}config_init;   // data struct to hold the value read from config file
+}config_t;   // data struct to hold the value read from config file
 
 
 
@@ -126,7 +126,7 @@ typedef struct
   //gen
   double traj_weights;
 
-}det_geom;
+}det_t;
 
 
 int still_going_towards_det(double * pos, double * traj_vec, double det_rad, double det_depth);
@@ -134,16 +134,16 @@ bool in_volume(double x,double y,double z,double det_rad, double det_depth);
 
 double decay_length(double P, double E, int particle_type);
 
-string make_particle_dir(int argc, char **argv,string out_dir,string es_temp,string angs_temp);
-string make_event_dir(int argc, char **argv,string out_dir,string es_temp,string angs_temp, int p_type, string label);
-string make_lepton_dir(int argc, char **argv,string out_dir,string es_temp,string angs_temp, int p_type);
+string make_particle_dir(int argc, char **argv, string out_dir, string es_temp, string angs_temp, config_t * config);
+string make_event_dir(int argc, char **argv,string out_dir,string es_temp,string angs_temp, int p_type, string label, config_t * config);
+string make_lepton_dir(int argc, char **argv,string out_dir,string es_temp,string angs_temp, int p_type, config_t * config);
 
 // initialize reaction from pythia table and convert pythia type to tag code used in code
 void initialize_reaction(int tau_type[][6], int mu_type[][6],double tau_ene[][6],double mu_ene[][6]);
 int convert_types(int pythia_type);
 
 //load values from config file
-void load_config();
+void load_config(config_t * config);
 void load_geo();
 int load_input(input_file *in,int length, string filename);
 
@@ -159,14 +159,14 @@ double dsigGR(double E, int type, int AntiNu);
 
 // -------------------------------------------------
 // Local density as a function of zenith angle
-double earthdens( double *x, double *par); 
+double earthdens(double *x, double *par, Earth * terra); 
 // Local density as a function of x,y,z coordinates
-double get_dens_from_coords(double *coords);
+double get_dens_from_coords(double *coords, Earth * terra);
 
 // -------------------------------------------------
 // Average density as a function of zenith angle
-double mean( double *x, double *par);
-double mean_dens_chord(double theta);
+double mean( double *x, double *par, Earth * terra);
+double mean_dens_chord(double theta, Earth * terra);
 
 //---------------------------------------------------------------
 void make_dirs(string dirs);
