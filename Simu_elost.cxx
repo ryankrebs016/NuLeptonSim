@@ -387,8 +387,8 @@ int main(int argc, char **argv)
   ofstream out_trajs(out_trajectories_name.c_str());
 
   #ifdef DBG
-    printf("saving emerging particles to %s\n",nameEnergies);
-    printf("saving events to %s\n",nameEvents);
+    printf("saving emerging particles to %s\n",nameEnergies.c_str());
+    printf("saving events to %s\n",nameEvents.c_str());
   #endif
   outEvents<<"rad [km]: "<<config.ice_det_rad<<", depth [km]: "<<config.ice_det_depth<<", n_nu_throws per file: "<<input_num<<endl;
   
