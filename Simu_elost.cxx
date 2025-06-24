@@ -1634,7 +1634,7 @@ int main(int argc, char **argv)
 int still_going_towards_det(double * pos, double * traj_vec, double det_rad, double det_depth)
 {
   //check if in volume
-  bool in_vol = in_volume(pos[0],pos[1],pos[2],det_rad,det_depth);
+  bool in_vol = in_volume(pos[0], pos[1], pos[2], det_rad,det_depth);
 
   if (in_vol) return 1;
   else
@@ -1644,18 +1644,17 @@ int still_going_towards_det(double * pos, double * traj_vec, double det_rad, dou
     //double elevation_angle = tan2(pos[2],r);
 
     //above going up
-    if(pos[2]>R0 && traj_vec[2]>0) return 2;
+    if(pos[2] > R0 && traj_vec[2] > 0) return 2;
 
     //below going down
-    if(pos[2]<R0-det_depth*1e5 && traj_vec[2]<0) return 2;
+    if(pos[2] < R0-det_depth*1e5 && traj_vec[2] < 0) return 3;
 
     //outside going away from center
-    double r_dot_traj = pos[0]*traj_vec[0]+pos[1]*traj_vec[1]+pos[2]*traj_vec[2];
-    if(r_dot_traj>0) return 2;
+    double r_dot_traj = pos[0]*traj_vec[0]+pos[1]*traj_vec[1]; //bad bug -> +pos[2]*traj_vec[2];
+    if(r_dot_traj > 1e-9) return 4;
 
     //made it here is is still heading to the det
     return 0;
-    
   }
 }
 
