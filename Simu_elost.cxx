@@ -717,6 +717,7 @@ int main(int argc, char **argv)
         bool left_volume=false;
         bool entered_volume=false;
         int sto_index=0;
+        int last_going_still = -1;
 
         // core propagation loop
         while(part_pos < maxL && (pos[0]*pos[0]+pos[1]*pos[1]+pos[2]*pos[2]) < R02)
@@ -1299,14 +1300,17 @@ int main(int argc, char **argv)
 
           // double check if it's still traveling towards the in-ice det
           double going_still = still_going_towards_det(pos, step_dir, config.ice_det_rad,config.ice_det_depth);
-          if(going_still==2) 
+          if(going_still != last_going_still)
           {
+            last_going_still = going_still;
             if (config.save_final_part_state) out_counts << i <<","<< starting_type << "," << part_type*anti<<","<< Energy_GeV <<","<< part_energy<<","<<x_step<<","<<y_step<<","<<z_step<<","<<going_still<<"\n";
+          }
+          if(going_still>1) 
+          {
             if (config.detector==1) break;
           }
           if((part_type!=12 && part_type!=13 && part_type!=14 && part_type!=15 && part_type!=16) || part_energy<Elim || broken || (pos[0]*pos[0]+pos[1]*pos[1]+pos[2]*pos[2])>R02)
           {
-            if(config.save_final_part_state) out_counts << i <<"," << starting_type << "," << part_type*anti<<","<< Energy_GeV <<","<< part_energy<<","<<x_step<<","<<y_step<<","<<z_step<<","<<going_still<<"\n";
             break;
           }
         } // ends core propagation loop
@@ -1381,24 +1385,24 @@ int still_going_towards_det(double * pos, double * traj_vec, double det_rad, dou
 {
   //check if in volume
   bool in_vol = in_volume(pos[0], pos[1], pos[2], det_rad,det_depth);
-
+  
   if (in_vol) return 1;
   else
   {
     //check if above top and if going up
     double r = sqrt(pos[0]*pos[0]+pos[1]*pos[1]);
     //double elevation_angle = tan2(pos[2],r);
-
+  
     //above going up
     if(pos[2] > R0 && traj_vec[2] > 0) return 2;
-
+  
     //below going down
-    if(pos[2] < R0-det_depth*1e5 && traj_vec[2] < 0) return 2;
-
+    if(pos[2] < R0-det_depth*1e5 && traj_vec[2] < 0) return 3;
+  
     //outside going away from center
-    double r_dot_traj = pos[0]*traj_vec[0]+pos[1]*traj_vec[1]+pos[2]*traj_vec[2];
-    if(r_dot_traj > 0) return 2;
-
+    double r_dot_traj = pos[0]*traj_vec[0]+pos[1]*traj_vec[1]; //bad bug -> +pos[2]*traj_vec[2];
+    if(r_dot_traj > 1e-9) return 4;
+  
     //made it here is is still heading to the det
     return 0;
   }
