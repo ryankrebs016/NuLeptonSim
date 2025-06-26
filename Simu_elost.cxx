@@ -2055,14 +2055,15 @@ double dsigCC(double E, int CCmode, int type,int AntiNu )
 {
   AntiNu=int(abs(AntiNu-1)/2);//return AntiNu to be like a bool
   
-  double C0;
-  double C1;
-  double C2;
-  double C3;
-  double C4;
-  
-  if(CCmode == 0){
+  if(CCmode == 0){ // CTW model using equation 7 and Table 3 from arXiv:1102.0691
       double log10_E_GeV = log10(E);
+  
+      double C0;
+      double C1;
+      double C2;
+      double C3;
+      double C4;
+  
       if(!AntiNu){
           C0 = -1.826;
           C1 = -17.31;
@@ -2081,11 +2082,97 @@ double dsigCC(double E, int CCmode, int type,int AntiNu )
       
       return pow(10, C1 + C2*log(log10_E_GeV-C0) + C3*pow(log(log10_E_GeV-C0), 2) + C4/log(log10_E_GeV-C0));
   }
-  
-  else{
-      std::cout << "No Parameterization Selected!" << std::endl;
-      return 0;
-  }   
+  else if(CCmode < 6) {
+
+      // The value below determines when we switch from the parameterizations 
+      // of the neutrino cross sections at ultra-high energis (e.g. CTTW standard values) 
+      // to the cross sections to the Ghandi parameterization. These transitions were determined
+      // using the parameterization made for this code. They are likely a bit different if the user 
+      // switches the cross section to the upper or lower cross section models. 
+
+      double E_switch = 2.00e6;  // GeV
+
+      // If the energy is below E_sigma_switch, set CCmode to the Ghandi cross-section.
+      // If the particle is a neutrino, AntiNu = 0 and the cross-section is set to the
+      // the Ghandi model for neutrinos. If it is an anti-neutrino, AntiNu=1 and the
+      // cross-section is set to the Ghdni model for anti-neutrinos.
+
+      if( E < E_switch )
+      {
+        CCmode = 4 + AntiNu;
+      }
+
+      vector<double> p(4); 
+      if(CCmode==1) { // Connolly+, 2011 middle model (ARW's parametrization)
+          p = { -5.35400180e+01,   2.65901551e+00, -1.14017685e-01,   1.82495442e-03};
+      }
+      else if(CCmode==2) { // Connolly+, 2011 lower model (ARW's parametrization)
+          p = {-4.26355014e+01,   4.89151126e-01,   2.94975025e-02,  -1.32969832e-03};
+      }
+      else if(CCmode==3) { // Connolly+, 2011 upper model (ARW's parametrization)
+          p = {-5.31078363e+01,   2.72995742e+00,  -1.28808188e-01,   2.36800261e-03};
+      }
+      else if(CCmode==4) { // Gandhi, Quigg, Reno 1995 Neutrino cross section
+          p = { -6.24043607e+01,   4.21769574e+00, -2.06814586e-01,   3.70730061e-03};
+      }
+      else { // Gandhi, Quigg, Reno 1995 Anti-Neutrino cross section
+          p = { -6.43574494e+01,   4.41740442e+00, -2.10856220-01,   3.65724741e-03};
+      }
+
+      double log10_E_eV = log10(E)+9.;
+      double f=0.;
+      for (int ii = 0 ; ii<4; ii++)
+      {
+        f += p[ii]*pow(log10_E_eV,ii);
+      }
+
+      f = pow(10,f);
+      return f;
+
+        
+      // Unused parameterizations
+
+      //  double l1=log10(E);
+      //  double l2=l1*l1;
+      //  double l3=l2*l1;
+      //  double l4=l3*l1;
+      //  double l5=l4*l1;
+      //  double l6=l5*l1;
+      //  double l7=l6*l1;
+      //  f=pCC0+pCC1*l1+pCC2*l2+pCC3*l3+pCC4*l4+pCC5*l5+pCC6*l6+pCC7*l7;
+      
+      //      f = 6.37994*pow(E,0.355991)*1e-36;
+      
+      /* CKMT */
+      //      f = (-36.3345965603+7.14693605311*pow(E,0.293313250614))*1.e-36;
+      
+      /* ALLM */
+      // H. Abramowicz et al., Phys. Lett. B 269, 465 (1991);
+      // H. Abramowicz and A. Levy, hep-ph/9712415.
+      //  f = (-280.544665122+10.3452620208*pow(E,0.317119535055))*1.e-36;
+      
+      /* ASW */   // Saturation of pdfs
+                  // N. Armesto et al., Phys. Rev. D 77, 013001 (2008).
+                  // N. Armesto et al., Phys. Rev. Lett. 94, 022002 (2005).
+                  //      f = (-799.252409182+52.4932827684*pow(E,0.244551044541))*1.e-36;
+      
+      /* Sarkar */  // Default model used in Auger
+                      // A. Cooper-Sarkar and S. Sarkar, JHEP 0801, 075 (2008).
+                      // Amanda Cooper-Sarkar, Philipp Mertsch, Subir Sarkar. JHEP 08, 042 (2011).
+                      //      f = (-649.265343982+26.4437052803*pow(E,0.296160447336))*1.e-36;
+      
+      // Sarkar model (Yann's parametrization)
+      //    double AS=-0.391641;
+      //    double BS=0.635232;
+      //    double CS=-0.0158144;
+      //    f= (pow(10,AS+BS*log10(E)+CS*pow(log10(E),2)))*1.e-36;
+            
+          
+ 
+  }
+ 
+  std::cout << "No Parameterization Selected!" << std::endl;
+  return 0;
 }
 
 
@@ -2093,14 +2180,15 @@ double dsigNC(double E, int CCmode, int type,int AntiNu )
 {
   AntiNu=int(abs(AntiNu-1)/2);//return AntiNu to be like a bool
   
-  double C0;
-  double C1;
-  double C2;
-  double C3;
-  double C4;
-  if(CCmode == 0){
+  if(CCmode == 0){ // CTW model using equation 7 and Table 3 from arXiv:1102.0691
       double log10_E_GeV = log10(E);
-      //std::cout<<log10_E_GeV<<std::endl;
+  
+      double C0;
+      double C1;
+      double C2;
+      double C3;
+      double C4;
+      
       if(!AntiNu){
           C0 = -1.826;
           C1 = -17.31;
@@ -2119,11 +2207,56 @@ double dsigNC(double E, int CCmode, int type,int AntiNu )
 
       return pow(10, C1 + C2*log(log10_E_GeV-C0) + C3*pow(log(log10_E_GeV-C0), 2) + C4/log(log10_E_GeV-C0));
   }
+  else if(CCmode < 6) {
+
+      // The value below determines when we switch from the parameterizations 
+      // of the neutrino cross sections at ultra-high energis (e.g. CTTW standard values) 
+      // to the cross sections to the Ghandi parameterization. These transitions were determined
+      // using the parameterization made for this code. They are likely a bit different if the user 
+      // switches the cross section to the upper or lower cross section models. 
+      double E_switch = 2.00e6;  // GeV
+
+      // If the energy is below E_sigma_switch, set CCmode to the Ghandi cross-section.
+      // If the particle is a neutrino, AntiNu = 0 and the cross-section is set to the
+      // the Ghandi model for neutrinos. If it is an anti-neutrino, AntiNu=1 and the
+      // cross-section is set to the Ghdni model for anti-neutrinos.
+
+      if( E < E_switch )
+      {
+        CCmode = 4 + AntiNu;
+      }
+
+      vector<double> p(4);
+      if(CCmode==1) { // Connolly+, 2011 middle model (ARW's parametrization)
+        p = { -5.41463399e+01,   2.65465169e+00,  -1.11848922e-01,   1.75469643e-03};
+      }
+      else if(CCmode==2) { // Connolly+, 2011 lower model (ARW's parametrization)
+        p = {-4.42377028e+01, 7.07758518e-01, 1.55925146e-02, -1.02484763e-03};
+      }
+      else if(CCmode = 3) { // Connolly+, 2011 upper model (ARW's parametrization)
+        p = {-5.36713302e+01,   2.72528813e+00,  -1.27067769e-01,   2.31235293e-03};
+      } 
+      else if(CCmode==4) { // Gandhi, Quigg, Reno 1995 Neutrino cross section
+        p = { -6.33753554e+01,   4.26790713e+00,  -2.07426844e-01,   3.68501726e-03};
+      }
+      else { // Gandhi, Quigg, Reno 1995 Anti-Neutrino cross section
+        p = { -6.33697437e+01,   4.11592385e+00,  -1.90600183e-01,   3.22478095e-03};
+      }
+
+      double log10_E_eV = log10(E)+9.;
+      double f=0.; 
+      for (int ii = 0 ; ii<4; ii++){
+        f += p[ii]*pow(log10_E_eV,ii);
+      }
+
+      f = pow(10,f);
+      
+      return f;
+  }  
   
-  else{
-      std::cout << "No Parameterization Selected!" << std::endl;
-      return 0;
-  }   
+  std::cout << "No Parameterization Selected!" << std::endl;
+  return 0;
+
 }
 
 // ###################################################
