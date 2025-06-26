@@ -1299,7 +1299,7 @@ int main(int argc, char **argv)
           if(part_energy<Elim) broken=true;
 
           // double check if it's still traveling towards the in-ice det
-          double going_still = still_going_towards_det(pos, step_dir, config.ice_det_rad,config.ice_det_depth);
+          int going_still = still_going_towards_det(pos, step_dir, config.ice_det_rad,config.ice_det_depth);
           if(going_still != last_going_still)
           {
             last_going_still = going_still;
