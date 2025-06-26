@@ -24,7 +24,6 @@ const double muon_lifetime=2.917e-6; //rest frame mean lifetime of muon in s
 
 
 // Constantes secondaires
-
 const double M2=M*M;
 const double mtau2=mtau*mtau;
 const double mmuon2=mmuon*mmuon;
@@ -33,6 +32,9 @@ const double a2=alpha*alpha;
 const double a3=alpha*alpha*alpha;
 const double me2=me*me;
 const double R02=R0*R0;
+const double e_rest=(mW*mW+me2)/(2*mW);
+const double m_rest=(mW*mW+mmuon2)/(2*mW);
+const double t_rest=(mW*mW+mtau2)/(2*mW);
 
 // Param�tres Standard rock
 
