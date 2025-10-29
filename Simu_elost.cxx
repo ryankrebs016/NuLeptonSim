@@ -338,7 +338,7 @@ int main(int argc, char **argv)
   
   // Open outfiles and place headers
   ofstream out_counts(name_out_counts.c_str());
-  out_counts << "nu_id, intial type, ending type, energy_i [GeV], energy_f [GeV], vx, vy, vz, where it stopped {0=b4, 1=in, 2=after}\n";
+  out_counts << "nu_id, initial type, ending type, energy_i [GeV], energy_f [GeV], vx, vy, vz, vert_x, vert_y, vert_z, where_it_stopped{0=b4;1=in;>1=after}\n" << setprecision(9);
   
   ofstream outEnergies(nameEnergies.c_str());
   outEnergies << "type, anti, NC, CC, GR, DC, Gen, InitNuNum, InitNeutrinoType, OutEnergy, InitEnergy, Part_Pos.\n";
@@ -1304,7 +1304,11 @@ int main(int argc, char **argv)
           if(going_still != last_going_still)
           {
             last_going_still = going_still;
-            if (config.save_final_part_state) out_counts << i <<","<< starting_type << "," << part_type*anti<<","<< Energy_GeV <<","<< part_energy<<","<<x_step<<","<<y_step<<","<<z_step<<","<<going_still<<"\n";
+            if (config.save_final_part_state)
+            {
+              out_counts << i <<","<< starting_type << "," << part_type*anti<<","<< Energy_GeV <<","<< part_energy<<","
+                         << x_step << "," << y_step << "," << z_step << "," << pos[0] << "," << pos[1] << "," << pos[2] <<","<<going_still<<"\n";
+            }
           }
           if(going_still>1) 
           {
@@ -1404,7 +1408,7 @@ int still_going_towards_det(double * pos, double * traj_vec, double det_rad, dou
     double r_dot_traj = pos[0]*traj_vec[0]+pos[1]*traj_vec[1]; //bad bug -> +pos[2]*traj_vec[2];
     if(r_dot_traj > 1e-9) return 4;
 
-    //made it here is is still heading to the det
+    //made it here it is still heading to the det
     return 0;
   }
 }
