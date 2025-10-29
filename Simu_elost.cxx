@@ -338,7 +338,7 @@ int main(int argc, char **argv)
   
   // Open outfiles and place headers
   ofstream out_counts(name_out_counts.c_str());
-  out_counts << "nu_id, initial type, ending type, energy_i [GeV], energy_f [GeV], vx, vy, vz, vert_x, vert_y, vert_z, where_it_stopped{0=b4;1=in;>1=after}\n" << setprecision(9);
+  out_counts << "nu_id,initial type,ending type,energy_i [GeV],energy_f [GeV],vx,vy,vz,vert_x,vert_y,vert_z,where_it_stopped{0=b4;1=in;>1=after}\n" << setprecision(9);
   
   ofstream outEnergies(nameEnergies.c_str());
   outEnergies << "type, anti, NC, CC, GR, DC, Gen, InitNuNum, InitNeutrinoType, OutEnergy, InitEnergy, Part_Pos.\n";
