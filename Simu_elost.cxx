@@ -338,7 +338,7 @@ int main(int argc, char **argv)
   
   // Open outfiles and place headers
   ofstream out_counts(name_out_counts.c_str());
-  out_counts << "nu_id,initial type,ending type,energy_i [GeV],energy_f [GeV],vx,vy,vz,vert_x,vert_y,vert_z,where_it_stopped{0=b4;1=in;>1=after}\n" << setprecision(9);
+  out_counts << "nu_id,is_primary,initial type,ending type,energy_i [GeV],energy_f [GeV],vx,vy,vz,vert_x,vert_y,vert_z,where_it_stopped{0=b4;1=in;>1=after}\n" << setprecision(9);
   
   ofstream outEnergies(nameEnergies.c_str());
   outEnergies << "type, anti, NC, CC, GR, DC, Gen, InitNuNum, InitNeutrinoType, OutEnergy, InitEnergy, Part_Pos.\n";
@@ -1306,7 +1306,8 @@ int main(int argc, char **argv)
             last_going_still = going_still;
             if (config.save_final_part_state)
             {
-              out_counts << i <<","<< starting_type << "," << part_type*anti<<","<< Energy_GeV <<","<< part_energy<<","
+              int isPrimary = (part_type%2==0) && (NC_num<=0) && (dc_num<=0) && (sto_num<=0) && (GR_num <= 0);
+              out_counts << i <<","<< isPrimary << "," << starting_type << "," << part_type*anti<<","<< Energy_GeV <<","<< part_energy<<","
                          << x_step << "," << y_step << "," << z_step << "," << pos[0] << "," << pos[1] << "," << pos[2] <<","<<going_still<<"\n";
             }
           }
