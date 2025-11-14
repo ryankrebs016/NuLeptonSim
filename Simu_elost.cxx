@@ -646,7 +646,9 @@ int main(int argc, char **argv)
       int CC_num = 0;
       int GR_num = 0;
       int dc_num = 0;
-      
+      int parent_type = part_type;     
+      double parent_energy = part_energy;     
+ 
       if(part_pos > maxL || (pos[0]*pos[0]+pos[1]*pos[1]+pos[2]*pos[2]) > R02)
       {
         // bug catching
@@ -723,6 +725,9 @@ int main(int argc, char **argv)
         // core propagation loop
         while(part_pos < maxL && (pos[0]*pos[0]+pos[1]*pos[1]+pos[2]*pos[2]) < R02)
         {
+          parent_type = part_type;
+          parent_energy = part_energy;
+
           bool in_vol = in_volume(pos[0],pos[1],pos[2],config.ice_det_rad,config.ice_det_depth);
           
           //create holding arrays for reactions
@@ -1306,7 +1311,7 @@ int main(int argc, char **argv)
             last_going_still = going_still;
             if (config.save_final_part_state)
             {
-              int isPrimary = (part_type%2==0) && (NC_num<=0) && (dc_num<=0) && (sto_num<=0) && (GR_num <= 0);
+              int isPrimary = (parent_type%2==0) && (parent_energy==Energy_GeV);
               out_counts << i <<","<< isPrimary << "," << starting_type << "," << part_type*anti<<","<< Energy_GeV <<","<< part_energy<<","
                          << x_step << "," << y_step << "," << z_step << "," << pos[0] << "," << pos[1] << "," << pos[2] <<","<<going_still<<"\n";
             }
