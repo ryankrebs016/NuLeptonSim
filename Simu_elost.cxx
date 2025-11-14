@@ -646,6 +646,7 @@ int main(int argc, char **argv)
       int CC_num = 0;
       int GR_num = 0;
       int dc_num = 0;
+      int evt_num = 0;
       int parent_type = part_type;     
       double parent_energy = part_energy;     
  
@@ -862,7 +863,7 @@ int main(int argc, char **argv)
                   // save the event if in volume, part of the events to save, and above threshold
                   got_event = true;
                   event_count++;
-
+                  evt_num++;
                   int shower_code=0;
                   if(part_type == 12)
                   {
@@ -927,6 +928,7 @@ int main(int argc, char **argv)
                       <<part_type*anti<<","<<1<<","<<0<<","<<NC_num<<","<<dc_num<<","<<GR_num<<","<<i<<","<<num_count<<","<<-1<<"\n";
                   event_count++;
                   got_event=true;
+                  evt_num++;
                 }
                 NC_num++;
                 change=false;
@@ -964,6 +966,7 @@ int main(int argc, char **argv)
                     
                     event_count++;
                     got_event=true;
+                    evt_num++;
                   }
 
                   GR_num++;
@@ -1025,6 +1028,7 @@ int main(int argc, char **argv)
                     event_count++;
                     //out_gram<<i<<","<<num_count<<","<<part_pos<<","<<traversed_grammage<<","<<1<<endl;
                     got_event=true;
+                    evt_num++;
                   }
 
                   if(lepton_type!=11) 
@@ -1136,6 +1140,7 @@ int main(int argc, char **argv)
                   <<part_type*anti<<","<<sto.sto_type+4<<","<<temp_show<<","<<NC_num<<","<<dc_num<<","<<GR_num<<","<<i<<","<<num_count<<","<<sto_num<<"\n";
                 //outLep<<log10(part_energy)<<","<<frac_loss<<","<<log10(part_energy*frac_loss)<<","<<pos[0]<<","<<pos[1]<<","<<pos[2]<<","<<x_step<<","<<y_step<<","<<z_step<<","<<sto.sto_type<<","<<i<<","<<num_count<<","<<part_type<<","<<sto_num<<endl;
                 sto_num++;
+                evt_num++;
               }
 
               // update position and energy
@@ -1172,9 +1177,9 @@ int main(int argc, char **argv)
 
               if(part_pos+sampled_decay_length > maxL) 
               {
-                sampled_decay_length = maxL-part_pos;//change tolmax1 for icecube
-
+                sampled_decay_length = maxL-part_pos;
               }
+
               // Calculate the traversed grammage
               traversed_grammage+=sampled_decay_length*dens;
             
@@ -1268,6 +1273,7 @@ int main(int argc, char **argv)
                 event_count++;
                 //out_gram<<i<<","<<num_count<<","<<part_pos<<","<<traversed_grammage<<","<<1<<endl;
                 got_event=true;
+                evt_num++;
               }
               dc_num++;
               
@@ -1306,22 +1312,27 @@ int main(int argc, char **argv)
 
           // double check if it's still traveling towards the in-ice det
           int going_still = still_going_towards_det(pos, step_dir, config.ice_det_rad,config.ice_det_depth);
+
           if(going_still != last_going_still)
           {
             last_going_still = going_still;
+          }
+
+          // is the particle traveling away from the volume
+          if(going_still>1) 
+          {
+            if (config.detector==1) broken = true;
+          }
+
+          // any conditions that break the propagation loop for this particle
+          if((part_type!=12 && part_type!=13 && part_type!=14 && part_type!=15 && part_type!=16) || part_energy<Elim || broken || (pos[0]*pos[0]+pos[1]*pos[1]+pos[2]*pos[2])>R02)
+          {
             if (config.save_final_part_state)
             {
               int isPrimary = (parent_type%2==0) && (parent_energy==Energy_GeV);
               out_counts << i <<","<< isPrimary << "," << starting_type << "," << part_type*anti<<","<< Energy_GeV <<","<< part_energy<<","
-                         << x_step << "," << y_step << "," << z_step << "," << pos[0] << "," << pos[1] << "," << pos[2] <<","<<going_still<<"\n";
+                         << x_step << "," << y_step << "," << z_step << "," << pos[0] << "," << pos[1] << "," << pos[2] <<","<<going_still<<","<<evt_num<<"\n";
             }
-          }
-          if(going_still>1) 
-          {
-            if (config.detector==1) break;
-          }
-          if((part_type!=12 && part_type!=13 && part_type!=14 && part_type!=15 && part_type!=16) || part_energy<Elim || broken || (pos[0]*pos[0]+pos[1]*pos[1]+pos[2]*pos[2])>R02)
-          {
             break;
           }
         } // ends core propagation loop
