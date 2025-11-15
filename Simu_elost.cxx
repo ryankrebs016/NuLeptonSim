@@ -338,7 +338,7 @@ int main(int argc, char **argv)
   
   // Open outfiles and place headers
   ofstream out_counts(name_out_counts.c_str());
-  out_counts << "nu_id,is_primary,initial type,ending type,energy_i [GeV],energy_f [GeV],vx,vy,vz,vert_x,vert_y,vert_z,where_stopped,nu_in,nu_evt,lep_in,lep_evt\n" << setprecision(9);
+  out_counts << "nu_id, is_primary, initial type, ending type, energy_i[GeV], energy_f[GeV], vx,vy,vz, vert_x,vert_y,vert_z, where_stopped, pure_nu_in,pure_nu_evt, nu_in,nu_evt, lep_in,lep_evt\n" << setprecision(9);
   
   ofstream outEnergies(nameEnergies.c_str());
   outEnergies << "type, anti, NC, CC, GR, DC, Gen, InitNuNum, InitNeutrinoType, OutEnergy, InitEnergy, Part_Pos.\n";
@@ -653,7 +653,8 @@ int main(int argc, char **argv)
       int nu_event_in_volume = 0;
       int lep_in_volume = 0;  
       int lep_event_in_volume = 0;
-
+      int prim_nu_in_volume = 0;
+      int prim_nu_event_in_volume = 0;
  
       if(part_pos > maxL || (pos[0]*pos[0]+pos[1]*pos[1]+pos[2]*pos[2]) > R02)
       {
@@ -862,16 +863,33 @@ int main(int argc, char **argv)
                 double initial_energy = part_energy;
                 part_energy = (1.-Bjorken_y)*part_energy;
                 double shower_energy = initial_energy-part_energy;
-
-                if(shower_energy>Elim && config.save_events && config.save_nu_events && in_volume(pos[0],pos[1],pos[2],config.ice_det_rad,config.ice_det_depth))
+                bool is_in_vol = in_volume(pos[0],pos[1],pos[2],config.ice_det_rad,config.ice_det_depth);
+                if(config.save_final_part_state && is_in_vol)
+                {
+                  if(parent_energy==Energy_GeV) 
+                  {
+                    prim_nu_in_volume++;
+                  }
+                  else
+                  {
+                    nu_in_volume++;
+                  }
+                }
+                if(shower_energy>Elim && config.save_events && config.save_nu_events && is_in_vol)
                 {
                   // save the event if in volume, part of the events to save, and above threshold
                   got_event = true;
                   event_count++;
                   evt_num++;
-                  nu_event_in_volume++;
-                  nu_in_volume++;
                   int shower_code=0;
+                  if(parent_energy==Energy_GeV) 
+                  {
+                    prim_nu_event_in_volume++;
+                  }
+                  else
+                  {
+                    nu_event_in_volume++;
+                  }
                   if(part_type == 12)
                   {
                     Bjorken_y = 1;
@@ -926,8 +944,19 @@ int main(int argc, char **argv)
                 double shower_energy = initial_energy-part_energy;
 
                 generation++;
-
-                if(shower_energy>Elim && config.save_events && config.save_nu_events && in_volume(pos[0],pos[1],pos[2],config.ice_det_rad,config.ice_det_depth))
+                bool is_in_vol = in_volume(pos[0],pos[1],pos[2],config.ice_det_rad,config.ice_det_depth);
+                if(config.save_final_part_state && is_in_vol)
+                {
+                  if(parent_energy==Energy_GeV) 
+                  {
+                    prim_nu_in_volume++;
+                  }
+                  else
+                  {
+                    nu_in_volume++;
+                  }
+                }
+                if(shower_energy>Elim && config.save_events && config.save_nu_events && is_in_vol)
                 {
                   //out_gram<<i<<","<<num_count<<","<<part_pos<<","<<traversed_grammage<<","<<1<<endl;
                   outEvents<<pos[0]<<","<<pos[1]<<","<<pos[2]<<","<<x_step<<","<<y_step<<","<<z_step<<","<<initial_flavor<<","<<Energy_GeV << ","<<initial_energy<<","<<Bjorken_y<<","
@@ -935,8 +964,15 @@ int main(int argc, char **argv)
                   event_count++;
                   got_event=true;
                   evt_num++;
-                  nu_event_in_volume++;
-                  nu_in_volume++;
+                  if(parent_energy==Energy_GeV) 
+                  {
+                    prim_nu_event_in_volume++;
+                  }                    
+                  else
+                  {
+                    nu_event_in_volume++;
+                  }
+                  
 
                 }
                 NC_num++;
@@ -966,7 +1002,19 @@ int main(int argc, char **argv)
                   temp_channel = 0;
                   //cout<<"W+ decayed to quarks"<<endl;
                   //add in config.save_nu_ev
-                  if(initial_energy>Elim && config.save_events && config.save_nu_events && in_volume(pos[0],pos[1],pos[2],config.ice_det_rad,config.ice_det_depth))
+                  bool is_in_vol = in_volume(pos[0],pos[1],pos[2],config.ice_det_rad,config.ice_det_depth);
+                  if(config.save_final_part_state && is_in_vol)
+                  {
+                    if(parent_energy==Energy_GeV) 
+                    {
+                      prim_nu_in_volume++;
+                    }
+                    else
+                    {
+                      nu_in_volume++;
+                    }
+                  }
+                  if(initial_energy>Elim && config.save_events && config.save_nu_events && is_in_vol)
                   {
                     // save hadronic shower
                     //out_gram<<i<<","<<num_count<<","<<part_pos<<","<<traversed_grammage<<","<<1<<endl;
@@ -976,9 +1024,14 @@ int main(int argc, char **argv)
                     event_count++;
                     got_event=true;
                     evt_num++;
-                    nu_event_in_volume++;
-                    nu_in_volume++;
-
+                    if(parent_energy==Energy_GeV) 
+                    {
+                      prim_nu_event_in_volume++;
+                    }                    
+                    else
+                    {
+                      nu_event_in_volume++;
+                    }
                   }
 
                   GR_num++;
@@ -1031,8 +1084,19 @@ int main(int argc, char **argv)
                   double gr_inel = 0;
                   if(part_type*anti == 12) gr_inel = (initial_E-part_energy)/initial_E;
                   double shower_energy = initial_E*gr_inel;
-
-                  if(has_shower && shower_energy>Elim && config.save_events && config.save_nu_events && in_volume(pos[0],pos[1],pos[2],config.ice_det_rad,config.ice_det_depth))
+                  bool is_in_vol = in_volume(pos[0],pos[1],pos[2],config.ice_det_rad,config.ice_det_depth);
+                  if(config.save_final_part_state && is_in_vol)
+                  {
+                    if(parent_energy==Energy_GeV) 
+                    {
+                      prim_nu_in_volume++;
+                    }
+                    else
+                    {
+                      nu_in_volume++;
+                    }
+                  }
+                  if(has_shower && shower_energy>Elim && config.save_events && config.save_nu_events && is_in_vol)
                   {
                     //save shower
                     outEvents<<pos[0]<<","<<pos[1]<<","<<pos[2]<<","<<x_step<<","<<y_step<<","<<z_step<<","<<initial_flavor<<","<<Energy_GeV << ","<<initial_E<<","<<gr_inel<<","
@@ -1041,9 +1105,15 @@ int main(int argc, char **argv)
                     //out_gram<<i<<","<<num_count<<","<<part_pos<<","<<traversed_grammage<<","<<1<<endl;
                     got_event=true;
                     evt_num++;
-                    nu_in_volume++;
-                    nu_event_in_volume++;
 
+                    if(parent_energy==Energy_GeV) 
+                    {
+                      prim_nu_event_in_volume++;
+                    }
+                    else
+                    {
+                      nu_event_in_volume++;
+                    }
                   }
 
                   if(lepton_type!=11) 
@@ -1145,7 +1215,9 @@ int main(int argc, char **argv)
               // cout<<"no decay"<<endl;
 
               // check to save the deposition
-              if(config.save_events && config.save_sto_events && in_volume(pos[0],pos[1],pos[2],config.ice_det_rad,config.ice_det_depth) && ((frac_loss*part_energy)>Elim))
+              bool is_in_vol = in_volume(pos[0],pos[1],pos[2],config.ice_det_rad,config.ice_det_depth);
+              if(config.save_final_part_state && is_in_vol) lep_in_volume++;
+              if(config.save_events && config.save_sto_events && is_in_vol && ((frac_loss*part_energy)>Elim))
               {
                 int temp_show = 0;
                 if(sto.sto_type == 0) temp_show=1;
@@ -1157,7 +1229,6 @@ int main(int argc, char **argv)
                 sto_num++;
                 evt_num++;
                 lep_event_in_volume++;
-                lep_in_volume++;
 
               }
 
@@ -1283,7 +1354,9 @@ int main(int argc, char **argv)
               //}
               //double shower_energy=initial_energy-part_energy-lost_energy;
               //add in config.save_dec
-              if((initial_energy*frac_energy_dumped>Elim) && config.save_events&&config.save_dec_events && in_volume(pos[0],pos[1],pos[2],config.ice_det_rad,config.ice_det_depth))
+              bool is_in_vol = in_volume(pos[0],pos[1],pos[2],config.ice_det_rad,config.ice_det_depth);
+              if(config.save_final_part_state && is_in_vol) lep_in_volume++;
+              if((initial_energy*frac_energy_dumped>Elim) && config.save_events&&config.save_dec_events && is_in_vol)
               {
                 // save the decay event
                 outEvents<<pos[0]<<","<<pos[1]<<","<<pos[2]<<","<<x_step<<","<<y_step<<","<<z_step<<","<<initial_flavor<<","<<Energy_GeV << ","<<initial_energy<<","<<frac_energy_dumped<<","
@@ -1293,7 +1366,6 @@ int main(int argc, char **argv)
                 got_event=true;
                 evt_num++;
                 lep_event_in_volume++;
-                lep_in_volume++;
               }
               dc_num++;
               
@@ -1351,8 +1423,13 @@ int main(int argc, char **argv)
             {
               if(going_still>0)
               {
-                if(part_type%2==0) 
-                  nu_in_volume++;
+                if(parent_type%2==0) 
+                {
+                  if(parent_energy==Energy_GeV) 
+                    prim_nu_in_volume++;
+                  else
+                    nu_in_volume++;
+                }
                 else
                   lep_in_volume++;
               }
@@ -1361,7 +1438,8 @@ int main(int argc, char **argv)
               //out_counts << i <<","<< isPrimary << "," << starting_type << "," << part_type*anti<<","<< Energy_GeV <<","<< part_energy<<","
               //           << x_step << "," << y_step << "," << z_step << "," << pos[0] << "," << pos[1] << "," << pos[2] <<","<<going_still<<","<<evt_num<<"\n";
               out_counts << i <<","<< isPrimary << "," << starting_type << "," << part_type*anti<<","<< Energy_GeV <<","<< part_energy<<","
-                         << x_step << "," << y_step << "," << z_step << "," << pos[0] << "," << pos[1] << "," << pos[2] <<","<<going_still<<","<<(nu_in_volume>0)<<","
+                         << x_step << "," << y_step << "," << z_step << "," << pos[0] << "," << pos[1] << "," << pos[2] <<","<<going_still<<","
+                         <<(prim_nu_in_volume>0)<<","<<(prim_nu_event_in_volume>0)<<","<<(nu_in_volume>0)<<","
                          <<(nu_event_in_volume>0)<<","<<(lep_in_volume>0)<<","<<(lep_event_in_volume>0)<<"\n";
             }
             break;
