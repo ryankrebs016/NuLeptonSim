@@ -338,7 +338,7 @@ int main(int argc, char **argv)
   
   // Open outfiles and place headers
   ofstream out_counts(name_out_counts.c_str());
-  out_counts << "nu_id,is_primary,initial type,ending type,energy_i [GeV],energy_f [GeV],vx,vy,vz,vert_x,vert_y,vert_z,where_it_stopped{0=b4;1=in;>1=after}\n" << setprecision(9);
+  out_counts << "nu_id,is_primary,initial type,ending type,energy_i [GeV],energy_f [GeV],vx,vy,vz,vert_x,vert_y,vert_z,where_stopped,nu_in,nu_evt,lep_in,lep_evt\n" << setprecision(9);
   
   ofstream outEnergies(nameEnergies.c_str());
   outEnergies << "type, anti, NC, CC, GR, DC, Gen, InitNuNum, InitNeutrinoType, OutEnergy, InitEnergy, Part_Pos.\n";
@@ -648,7 +648,12 @@ int main(int argc, char **argv)
       int dc_num = 0;
       int evt_num = 0;
       int parent_type = part_type;     
-      double parent_energy = part_energy;     
+      double parent_energy = part_energy;   
+      int nu_in_volume = 0;
+      int nu_event_in_volume = 0;
+      int lep_in_volume = 0;  
+      int lep_event_in_volume = 0;
+
  
       if(part_pos > maxL || (pos[0]*pos[0]+pos[1]*pos[1]+pos[2]*pos[2]) > R02)
       {
@@ -864,13 +869,14 @@ int main(int argc, char **argv)
                   got_event = true;
                   event_count++;
                   evt_num++;
+                  nu_event_in_volume++;
+                  nu_in_volume++;
                   int shower_code=0;
                   if(part_type == 12)
                   {
                     Bjorken_y = 1;
                     shower_code = 2;
                   }
-
                   //out_gram<<i<<","<<num_count<<","<<part_pos<<","<<traversed_grammage<<","<<1<<endl;
                   outEvents<<pos[0]<<","<<pos[1]<<","<<pos[2]<<","<<x_step<<","<<y_step<<","<<z_step<<","<<initial_flavor<<","<< Energy_GeV << ","<< initial_energy<<","<<Bjorken_y<<","
                   <<part_type*anti<<","<<0<<","<<shower_code<<","<<NC_num<<","<<dc_num<<","<<GR_num<<","<<i<<","<<num_count<<","<<-1<<"\n";
@@ -929,6 +935,9 @@ int main(int argc, char **argv)
                   event_count++;
                   got_event=true;
                   evt_num++;
+                  nu_event_in_volume++;
+                  nu_in_volume++;
+
                 }
                 NC_num++;
                 change=false;
@@ -967,6 +976,9 @@ int main(int argc, char **argv)
                     event_count++;
                     got_event=true;
                     evt_num++;
+                    nu_event_in_volume++;
+                    nu_in_volume++;
+
                   }
 
                   GR_num++;
@@ -1029,6 +1041,9 @@ int main(int argc, char **argv)
                     //out_gram<<i<<","<<num_count<<","<<part_pos<<","<<traversed_grammage<<","<<1<<endl;
                     got_event=true;
                     evt_num++;
+                    nu_in_volume++;
+                    nu_event_in_volume++;
+
                   }
 
                   if(lepton_type!=11) 
@@ -1141,6 +1156,9 @@ int main(int argc, char **argv)
                 //outLep<<log10(part_energy)<<","<<frac_loss<<","<<log10(part_energy*frac_loss)<<","<<pos[0]<<","<<pos[1]<<","<<pos[2]<<","<<x_step<<","<<y_step<<","<<z_step<<","<<sto.sto_type<<","<<i<<","<<num_count<<","<<part_type<<","<<sto_num<<endl;
                 sto_num++;
                 evt_num++;
+                lep_event_in_volume++;
+                lep_in_volume++;
+
               }
 
               // update position and energy
@@ -1274,6 +1292,8 @@ int main(int argc, char **argv)
                 //out_gram<<i<<","<<num_count<<","<<part_pos<<","<<traversed_grammage<<","<<1<<endl;
                 got_event=true;
                 evt_num++;
+                lep_event_in_volume++;
+                lep_in_volume++;
               }
               dc_num++;
               
@@ -1329,9 +1349,20 @@ int main(int argc, char **argv)
           {
             if (config.save_final_part_state)
             {
+              if(going_still>0)
+              {
+                if(part_type%2==0) 
+                  nu_in_volume++;
+                else
+                  lep_in_volume++;
+              }
+              
               int isPrimary = (parent_type%2==0) && (parent_energy==Energy_GeV);
+              //out_counts << i <<","<< isPrimary << "," << starting_type << "," << part_type*anti<<","<< Energy_GeV <<","<< part_energy<<","
+              //           << x_step << "," << y_step << "," << z_step << "," << pos[0] << "," << pos[1] << "," << pos[2] <<","<<going_still<<","<<evt_num<<"\n";
               out_counts << i <<","<< isPrimary << "," << starting_type << "," << part_type*anti<<","<< Energy_GeV <<","<< part_energy<<","
-                         << x_step << "," << y_step << "," << z_step << "," << pos[0] << "," << pos[1] << "," << pos[2] <<","<<going_still<<","<<evt_num<<"\n";
+                         << x_step << "," << y_step << "," << z_step << "," << pos[0] << "," << pos[1] << "," << pos[2] <<","<<going_still<<","<<(nu_in_volume>0)<<","
+                         <<(nu_event_in_volume>0)<<","<<(lep_in_volume>0)<<","<<(lep_event_in_volume>0)<<"\n";
             }
             break;
           }
