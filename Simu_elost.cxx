@@ -155,7 +155,7 @@ int main(int argc, char **argv)
     for(int i=0;i<5;i++) cout<<type_to_save[i]<<" "; //print which particles will be saved
   #endif
 
-  printf("Lepton Propagation code\n");
+  printf("======================================\nLepton Propagation code\n");
 
   
   //-------------------------------------------------
@@ -267,26 +267,18 @@ int main(int argc, char **argv)
   {
     tot_evt = (int)atof(argv[3]);
   }
-  #ifdef DBG
-    printf("Throwing %i neutrinos\n",tot_evt);
-  #endif
-  /*
-  //cccccccccccccccccccccccccccccccccccccccccccccccccccccc
-  cout << "======================================" << endl;
-  cout << "Number of neutrinos simulated = " << tot_evt << endl;
-  cout << "Type of initial neutrinos = "<<config.starting_type<<endl;
-  cout << "Energy = " << atof(argv[1]) << " eV" << endl;
-  cout << "Threshold energy = " << Elim*1.e9 << " eV" << endl;
-  //cccccccccccccccccccccccccccccccccccccccccccccccccccccc
-  */
+
 
   //for rounding energies and angle in the names
-
   double starting_energy = config.default_energy;
   if(argc > 1) starting_energy = (double)atof(argv[1]);
   if(config.energy_distribution) starting_energy=0;
 
   #ifdef DBG
+    printf("Throwing %i neutrinos\n",tot_evt);
+    cout << "======================================" << endl;
+    cout << "Type of initial neutrinos = "<<config.starting_type<<endl;
+    cout << "Threshold energy = " << Elim*1.e9 << " eV" << endl;
     printf("starting energy 10^%0.2f\n", log10(starting_energy));
   #endif
 
@@ -306,15 +298,14 @@ int main(int argc, char **argv)
 
   string ang_temp = to_string(angle);
   string angs_temp = "";
-  int count=0;
+  int count = 0;
   if(angle >= 100) count = 6;
   else count = 5;
   for(int i=0; i<count; i++) angs_temp += ang_temp[i];
-    
-  //cout<<config.starting_type<<","<<atoi(argv[8])<<endl;
+
   if(argc>9) config.starting_type=atoi(argv[9]);
   printf("overriding starting type as %i\n",config.starting_type);
-  //cout<<angs_temp<<endl;
+
   //-------------------------------------------------
   string tag = "";
   if(argc > 8)
@@ -333,12 +324,9 @@ int main(int argc, char **argv)
   tag = tag + "_counts";
   if(config.save_final_part_state) name_out_counts = make_event_dir(argc, argv, config.data_dir, es_temp,angs_temp, config.starting_type, tag); 
 
-  //string nameOutLep="";
-  //nameOutLep=make_lepton_dir(argc,argv,config.data_dir,es_temp,angs_temp,config.starting_type);
-  
   // Open outfiles and place headers
   ofstream out_counts(name_out_counts.c_str());
-  out_counts << "nu_id,is_primary,initial type,ending type,energy_i [GeV],energy_f [GeV],vx,vy,vz,vert_x,vert_y,vert_z,where_it_stopped{0=b4;1=in;>1=after}\n" << setprecision(9);
+  out_counts << "nu_id,is_primary,initial type,ending type,energy_i[GeV],energy_f[GeV],vx,vy,vz,vert_x,vert_y,vert_z,where_stopped,pure_nu_in,pure_nu_evt,nu_in,nu_evt,lep_in,lep_evt\n" << setprecision(9);
   
   ofstream outEnergies(nameEnergies.c_str());
   outEnergies << "type, anti, NC, CC, GR, DC, Gen, InitNuNum, InitNeutrinoType, OutEnergy, InitEnergy, Part_Pos.\n";
@@ -355,14 +343,6 @@ int main(int argc, char **argv)
   #endif
   outEvents<<"rad [km]: "<<config.ice_det_rad<<", depth [km]: "<<config.ice_det_depth<<", n_nu_throws per file: "<<input_num<<endl;
   
-
-  //ofstream outLep(nameOutLep.c_str());
-  //outLep<< setprecision(9)<<"logEi,f,logEd,x,y,z,vx,vy,vz,sto_type,traj,p_num,p_type,sto_num"<<endl;
-
-  //string outGrammage="lepton_test/grammage_"+es_temp+"_"+to_string(config.starting_type)+".dat";
-
-  //ofstream out_gram(outGrammage.c_str());
-  //out_gram<<"t_num,n_num,km,grammage,event"<<endl;
   // Get cross-section mode to use
   int CCmode = config.default_cc;
   if(argc>4) CCmode = atoi(argv[4]);
@@ -388,17 +368,13 @@ int main(int argc, char **argv)
   
   // Get zenith angle from input argument
   double refTheta = angle;
-  Lmax=2.*R0*cos(PI*(1.-refTheta/180.));
-  
-  // Average Earth density
-  //cout << "Average Earth density " << mean_dens_chord(refTheta) << " g/cm^3" << endl;
-  //cout << endl;
-  
-  cout << "======================================" << endl;
-  //cout << "Emerging Lepton Energy file: " << endl;
-  //cout << nameEnergies << endl;
-  //cout << endl;
+  Lmax = 2.*R0*cos(PI*(1.-refTheta/180.));
 
+  if(config.save_emerging) printf("Emerging particle file: %s\n",nameEnergies.c_str());
+  if(config.save_events) printf("Event file: %s\n",nameEvents.c_str());
+  if(config.save_final_part_state) printf("Primary state file: %s\n",name_out_counts.c_str());
+
+  printf("======================================\n");
 
   //@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
   //                                    Initiate run
@@ -406,7 +382,7 @@ int main(int argc, char **argv)
   //double maxL=sqrt((start_point[0]-end_point[0])*(start_point[0]-end_point[0])+(start_point[1]-end_point[1])*(start_point[1]-end_point[1]));
   //if(Lmax2<=0.) Lmax2=0.;                 // set to zero  if the value is negative.
 
-  if(Lmax<=0.) Lmax=0.;  
+  if(Lmax<=0.) Lmax = 0.;  
 
   // misc things
   int new_muons = 0; //count of pair of particles made. +1 for muon +1 for neutirno
@@ -434,10 +410,10 @@ int main(int argc, char **argv)
 
     if((i+1)%((int)(.1*input_num))==0) printf("ran %i trajectories for %i events\n",i+1,event_count);
 
-    int num_count=0;
-    int where_int=0;
+    int num_count = 0;
+    int where_int = 0;
     double sum_grammage = 0.;
-    double check_grammage=0;
+    double check_grammage = 0;
     double maxL;
     double earth_entrance[3];
     double earth_exit[3];
@@ -494,7 +470,7 @@ int main(int argc, char **argv)
     
     double* cumulative_grammage = new double[1000000];
     double* grammage_distance = new double[1000000]; // in cm
-    double d_grammage=0;
+    double d_grammage = 0;
     
 
 
@@ -532,21 +508,18 @@ int main(int argc, char **argv)
       }
     #endif
 
-    //----------------------------------
-    //cout<<"primary trajectory: "<<i<<endl;
-    bool got_event=false;//!got_event && num_count<1000 line below
-    int out_leptons=0;
-
+    bool got_event = false;//!got_event && num_count<1000 line below
+    int out_leptons = 0;
 
     while((config.run_throws && (num_count<config.n_throws)) || (config.run_number && (out_leptons<config.num_emerging_leptons)))
-    //while(out_leptons<500)
+    //while(out_leptons<500) // use this for min number in emerging particles files
     {
       //if(num_count%10000==0) printf("did %i thrown particles\n",num_count);
       //if(out_leptons%100==0) printf("recored %i emerging leptons\n",out_leptons);
 
       num_count++;
 
-      double pos[3]={earth_entrance[0], earth_entrance[1], earth_entrance[2]};
+      double pos[3] = {earth_entrance[0], earth_entrance[1], earth_entrance[2]};
 
       // prop specific checks
       bool has_been_saved=false;
@@ -565,38 +538,38 @@ int main(int argc, char **argv)
 
       if(config.starting_type==16) 
       {
-        part_type=16;
-        anti=1;
+        part_type = 16;
+        anti = 1;
       }
       else if(config.starting_type==-16)
       {
-        part_type=16;
-        anti=-1;
+        part_type = 16;
+        anti = -1;
       }
       else if(config.starting_type==14)
       {
-        part_type=14;
-        anti=1;
+        part_type = 14;
+        anti = 1;
       }
       else if(config.starting_type==-14)
       {
-        part_type=14;
-        anti=-1;
+        part_type = 14;
+        anti = -1;
       }
       else if(config.starting_type==12)
       {
-        part_type=12;
-        anti=1;
+        part_type = 12;
+        anti = 1;
       }
       else if(config.starting_type==-12)
       {
-        part_type=12;
-        anti=-1;
+        part_type = 12;
+        anti = -1;
       }
       else if(config.starting_type==0)
       {
-        part_type=0;
-        anti=1;
+        part_type = 0;
+        anti = 1;
       }
       else
       {
@@ -646,7 +619,16 @@ int main(int argc, char **argv)
       int CC_num = 0;
       int GR_num = 0;
       int dc_num = 0;
-      
+      int evt_num = 0;
+      int parent_type = part_type;     
+      double parent_energy = part_energy;   
+      int nu_in_volume = 0;
+      int nu_event_in_volume = 0;
+      int lep_in_volume = 0;  
+      int lep_event_in_volume = 0;
+      int prim_nu_in_volume = 0;
+      int prim_nu_event_in_volume = 0;
+ 
       if(part_pos > maxL || (pos[0]*pos[0]+pos[1]*pos[1]+pos[2]*pos[2]) > R02)
       {
         // bug catching
@@ -655,8 +637,6 @@ int main(int argc, char **argv)
         out_trajs << pos[0] << ","<< pos[1] <<"," <<pos[2] <<","<< x_step << ","<< y_step <<","<< z_step <<"\n";
       }
 
-
-    
       traversed_grammage = 0.; //initialize traversed grammage for each event
       double traversed_path = 0.;
       
@@ -664,11 +644,19 @@ int main(int argc, char **argv)
       do 
       { 
         // reset some tracking things
-        has_been_saved=false;
-        bool save_cond=false;
-        bool exit_cond=false;
-        int start_in_volume=0;
-        bool save_lep=false;
+        has_been_saved = false;
+        bool save_cond = false;
+        bool exit_cond = false;
+        int start_in_volume = 0;
+        bool save_lep = false;
+        bool checked_in = false;
+        int sto_num = 0;      
+        bool broken = false;
+        bool left_volume = false;
+        bool entered_volume = false;
+        int sto_index = 0;
+        double tau_path = 0;
+        int last_going_still = -1;
 
         // pop all particle data from the stacks to working variables
         if(!particle_data.part_type.empty())
@@ -706,23 +694,16 @@ int main(int argc, char **argv)
           if(config.save_sto_events) particle_data.start_in_volume.pop();
         }
 
-        double tau_path=0;
-        
         // check to make sure electrons or particle below threshold made it into the stack
         if(part_type==11) continue; //ignores particles of electron flavor
         if(part_energy<Elim) continue; //ignore particles below threshold in case they make it through
 
-        bool checked_in=false;
-        int sto_num=0;      
-        bool broken=false;
-        bool left_volume=false;
-        bool entered_volume=false;
-        int sto_index=0;
-        int last_going_still = -1;
-
         // core propagation loop
         while(part_pos < maxL && (pos[0]*pos[0]+pos[1]*pos[1]+pos[2]*pos[2]) < R02)
         {
+          parent_type = part_type;
+          parent_energy = part_energy;
+
           bool in_vol = in_volume(pos[0],pos[1],pos[2],config.ice_det_rad,config.ice_det_depth);
           
           //create holding arrays for reactions
@@ -734,7 +715,7 @@ int main(int argc, char **argv)
           dens = get_dens_from_coords(pos);
           if(dens<0) printf("local dens is < 0\n");
 
-          bool change=false;
+          bool change = false;
 
           //===========================
           // Particle is a neutrino
@@ -823,10 +804,7 @@ int main(int argc, char **argv)
                 //=======================
                 // CC interaction occurs (the tracked particle changes from tau neutrino to tau lepton.)
                 //=======================
-                //total_CC++;
-                //cout<<"CC-";
-                //CC_num++;
-                //cout<<"charged current of neutrinos happened \n";
+
                 // Obtain Bjorken y
                 if(part_type == 16)
                 {
@@ -851,29 +829,40 @@ int main(int argc, char **argv)
                 double initial_energy = part_energy;
                 part_energy = (1.-Bjorken_y)*part_energy;
                 double shower_energy = initial_energy-part_energy;
+                bool is_in_vol = in_volume(pos[0],pos[1],pos[2],config.ice_det_rad,config.ice_det_depth);
 
-                if(shower_energy>Elim && config.save_events && config.save_nu_events && in_volume(pos[0],pos[1],pos[2],config.ice_det_rad,config.ice_det_depth))
+                if(config.save_final_part_state && is_in_vol)
+                {
+                  if(parent_energy==Energy_GeV) 
+                  {
+                    prim_nu_in_volume++;
+                    if(shower_energy>Elim) prim_nu_event_in_volume++;
+                  }
+                  else
+                  {
+                    nu_in_volume++;
+                    if(shower_energy>Elim) nu_event_in_volume++;
+                  }
+                }
+
+                if(shower_energy>Elim && config.save_events && config.save_nu_events && is_in_vol)
                 {
                   // save the event if in volume, part of the events to save, and above threshold
                   got_event = true;
                   event_count++;
-
+                  evt_num++;
                   int shower_code=0;
+
                   if(part_type == 12)
                   {
                     Bjorken_y = 1;
                     shower_code = 2;
                   }
-
-                  //out_gram<<i<<","<<num_count<<","<<part_pos<<","<<traversed_grammage<<","<<1<<endl;
                   outEvents<<pos[0]<<","<<pos[1]<<","<<pos[2]<<","<<x_step<<","<<y_step<<","<<z_step<<","<<initial_flavor<<","<< Energy_GeV << ","<< initial_energy<<","<<Bjorken_y<<","
                   <<part_type*anti<<","<<0<<","<<shower_code<<","<<NC_num<<","<<dc_num<<","<<GR_num<<","<<i<<","<<num_count<<","<<-1<<"\n";
 
                 }
 
-                // Increment the particle counter in the event structure
-                //event.npart++;
-                //npart++;
                 generation++;
                 
                 if(part_type == 12) part_type = 11; //nue -> e
@@ -889,11 +878,8 @@ int main(int argc, char **argv)
                 //=======================
                 // NC interaction occurs (the tracked particle remains a tau neutrino with reduced energy.)
                 //=======================
-                //total_NC++;
-                //cout<<"neutral current of neutrinos happened \n";
+
                 // Obtain Bjorken y
-                //cout<<"NC-";
-                
                 if(part_type == 16)
                 {
                   if(anti == 1) tNCFinalData->ThrowFinal(log10(part_energy),finalstatecc);
@@ -914,14 +900,29 @@ int main(int argc, char **argv)
                 double shower_energy = initial_energy-part_energy;
 
                 generation++;
+                bool is_in_vol = in_volume(pos[0],pos[1],pos[2],config.ice_det_rad,config.ice_det_depth);
 
-                if(shower_energy>Elim && config.save_events && config.save_nu_events && in_volume(pos[0],pos[1],pos[2],config.ice_det_rad,config.ice_det_depth))
+                if(config.save_final_part_state && is_in_vol)
                 {
-                  //out_gram<<i<<","<<num_count<<","<<part_pos<<","<<traversed_grammage<<","<<1<<endl;
+                  if(parent_energy==Energy_GeV) 
+                  {
+                    prim_nu_in_volume++;
+                    if(shower_energy>Elim) prim_nu_event_in_volume++;
+                  }
+                  else
+                  {
+                    nu_in_volume++;
+                    if(shower_energy>Elim) nu_event_in_volume++;
+                  }
+                }
+
+                if(shower_energy>Elim && config.save_events && config.save_nu_events && is_in_vol)
+                {
                   outEvents<<pos[0]<<","<<pos[1]<<","<<pos[2]<<","<<x_step<<","<<y_step<<","<<z_step<<","<<initial_flavor<<","<<Energy_GeV << ","<<initial_energy<<","<<Bjorken_y<<","
                       <<part_type*anti<<","<<1<<","<<0<<","<<NC_num<<","<<dc_num<<","<<GR_num<<","<<i<<","<<num_count<<","<<-1<<"\n";
                   event_count++;
                   got_event=true;
+                  evt_num++;
                 }
                 NC_num++;
                 change=false;
@@ -950,15 +951,30 @@ int main(int argc, char **argv)
                   temp_channel = 0;
                   //cout<<"W+ decayed to quarks"<<endl;
                   //add in config.save_nu_ev
-                  if(initial_energy>Elim && config.save_events && config.save_nu_events && in_volume(pos[0],pos[1],pos[2],config.ice_det_rad,config.ice_det_depth))
+                  bool is_in_vol = in_volume(pos[0],pos[1],pos[2],config.ice_det_rad,config.ice_det_depth);
+
+                if(config.save_final_part_state && is_in_vol)
+                {
+                  if(parent_energy==Energy_GeV) 
+                  {
+                    prim_nu_in_volume++;
+                    if(initial_energy>Elim) prim_nu_event_in_volume++;
+                  }
+                  else
+                  {
+                    nu_in_volume++;
+                    if(initial_energy>Elim) nu_event_in_volume++;
+                  }
+                }
+                  if(initial_energy>Elim && config.save_events && config.save_nu_events && is_in_vol)
                   {
                     // save hadronic shower
-                    //out_gram<<i<<","<<num_count<<","<<part_pos<<","<<traversed_grammage<<","<<1<<endl;
                     outEvents<<pos[0]<<","<<pos[1]<<","<<pos[2]<<","<<x_step<<","<<y_step<<","<<z_step<<","<<initial_flavor<<","<<Energy_GeV << ","<<initial_energy<<","<<1<<","
                         <<part_type*anti<<","<<2<<","<<temp_channel<<","<<NC_num<<","<<dc_num<<","<<GR_num<<","<<i<<","<<num_count<<","<<-1<<"\n";
                     
                     event_count++;
                     got_event=true;
+                    evt_num++;
                   }
 
                   GR_num++;
@@ -1011,15 +1027,29 @@ int main(int argc, char **argv)
                   double gr_inel = 0;
                   if(part_type*anti == 12) gr_inel = (initial_E-part_energy)/initial_E;
                   double shower_energy = initial_E*gr_inel;
+                  bool is_in_vol = in_volume(pos[0],pos[1],pos[2],config.ice_det_rad,config.ice_det_depth);
 
-                  if(has_shower && shower_energy>Elim && config.save_events && config.save_nu_events && in_volume(pos[0],pos[1],pos[2],config.ice_det_rad,config.ice_det_depth))
+                  if(config.save_final_part_state && is_in_vol)
+                  {
+                    if(parent_energy==Energy_GeV) 
+                    {
+                      prim_nu_in_volume++;
+                      if(shower_energy>Elim) prim_nu_event_in_volume++;
+                    }
+                    else
+                    {
+                      nu_in_volume++;
+                      if(shower_energy>Elim) nu_event_in_volume++;
+                    }
+                  }
+                  if(has_shower && shower_energy>Elim && config.save_events && config.save_nu_events && is_in_vol)
                   {
                     //save shower
                     outEvents<<pos[0]<<","<<pos[1]<<","<<pos[2]<<","<<x_step<<","<<y_step<<","<<z_step<<","<<initial_flavor<<","<<Energy_GeV << ","<<initial_E<<","<<gr_inel<<","
                         <<part_type*anti<<","<<2<<","<<temp_channel<<","<<NC_num<<","<<dc_num<<","<<GR_num<<","<<i<<","<<num_count<<","<<-1<<"\n";
                     event_count++;
-                    //out_gram<<i<<","<<num_count<<","<<part_pos<<","<<traversed_grammage<<","<<1<<endl;
                     got_event=true;
+                    evt_num++;
                   }
 
                   if(lepton_type!=11) 
@@ -1121,7 +1151,14 @@ int main(int argc, char **argv)
               // cout<<"no decay"<<endl;
 
               // check to save the deposition
-              if(config.save_events && config.save_sto_events && in_volume(pos[0],pos[1],pos[2],config.ice_det_rad,config.ice_det_depth) && ((frac_loss*part_energy)>Elim))
+              bool is_in_vol = in_volume(pos[0],pos[1],pos[2],config.ice_det_rad,config.ice_det_depth);
+              if(config.save_final_part_state && is_in_vol) 
+              {
+                lep_in_volume++;
+                if((frac_loss*part_energy)>Elim) lep_event_in_volume++;
+              }
+
+              if(config.save_events && config.save_sto_events && is_in_vol && ((frac_loss*part_energy)>Elim))
               {
                 int temp_show = 0;
                 if(sto.sto_type == 0) temp_show=1;
@@ -1129,8 +1166,9 @@ int main(int argc, char **argv)
                 if(sto.sto_type == 2) temp_show=0; 
                 outEvents<<pos[0]<<","<<pos[1]<<","<<pos[2]<<","<<x_step<<","<<y_step<<","<<z_step<<","<<initial_flavor<<","<<Energy_GeV << ","<<part_energy<<","<<frac_loss<<","
                   <<part_type*anti<<","<<sto.sto_type+4<<","<<temp_show<<","<<NC_num<<","<<dc_num<<","<<GR_num<<","<<i<<","<<num_count<<","<<sto_num<<"\n";
-                //outLep<<log10(part_energy)<<","<<frac_loss<<","<<log10(part_energy*frac_loss)<<","<<pos[0]<<","<<pos[1]<<","<<pos[2]<<","<<x_step<<","<<y_step<<","<<z_step<<","<<sto.sto_type<<","<<i<<","<<num_count<<","<<part_type<<","<<sto_num<<endl;
+
                 sto_num++;
+                evt_num++;
               }
 
               // update position and energy
@@ -1153,7 +1191,7 @@ int main(int argc, char **argv)
               //=======================
               // The lepton decays
               //=======================
-              // tau or muon does decay
+
               save_lep=true;
               if(in_volume(pos[0],pos[1],pos[2],config.ice_det_rad,config.ice_det_depth))
               {
@@ -1167,20 +1205,19 @@ int main(int argc, char **argv)
 
               if(part_pos+sampled_decay_length > maxL) 
               {
-                sampled_decay_length = maxL-part_pos;//change tolmax1 for icecube
-
+                sampled_decay_length = maxL-part_pos;
               }
+
               // Calculate the traversed grammage
               traversed_grammage+=sampled_decay_length*dens;
             
-              //dc_num++;
               //cout<<"tau path length before decaying is "<<tau_path<<endl;
               //cout<<"tau energy at decay "<<part_energy<<endl;
               //cout<<"dL is "<<dL<<endl;
               
-              // Get the energy of the neutrino produced in the decay
               generation++;
 
+              // Get the energy of the neutrino produced in the decay
               //if(tag==1) TauData.ThrowFinal(finalstate);
               //if(tag==3) MuonData.ThrowFinal(finalstate);
               //Energy_GeV=finalstate[0]*Energy_GeV;
@@ -1208,7 +1245,7 @@ int main(int argc, char **argv)
                       reaction_types[j] = abs(reaction_data.tau_type[reaction_index][j]);
                       reaction_energies[j] = part_energy*reaction_data.tau_energy[reaction_index][j];
                     }
-                    // get what kind of shower will be produced !!!double check
+                    // get what kind of shower will be produced
                     if(is_had_or_em == -1 && reaction_types[j] == 0) is_had_or_em = 0;//for HAD
                     if(is_had_or_em == -1 && reaction_types[j] == 11) is_had_or_em = 1;//for EM
                     if(is_had_or_em == -1 && reaction_types[j] == 13) is_had_or_em = 2;//for HAD+EM
@@ -1254,16 +1291,24 @@ int main(int argc, char **argv)
               //  lost_energy+=reaction_energies[i];
               //}
               //double shower_energy=initial_energy-part_energy-lost_energy;
-              //add in config.save_dec
-              if((initial_energy*frac_energy_dumped>Elim) && config.save_events&&config.save_dec_events && in_volume(pos[0],pos[1],pos[2],config.ice_det_rad,config.ice_det_depth))
+
+              bool is_in_vol = in_volume(pos[0],pos[1],pos[2],config.ice_det_rad,config.ice_det_depth);
+              if(config.save_final_part_state && is_in_vol) 
+              {
+                lep_in_volume++;
+                if(initial_energy*frac_energy_dumped>Elim) lep_event_in_volume++;
+              }
+
+              if((initial_energy*frac_energy_dumped>Elim) && config.save_events && config.save_dec_events && is_in_vol)
               {
                 // save the decay event
                 outEvents<<pos[0]<<","<<pos[1]<<","<<pos[2]<<","<<x_step<<","<<y_step<<","<<z_step<<","<<initial_flavor<<","<<Energy_GeV << ","<<initial_energy<<","<<frac_energy_dumped<<","
                     <<initial_particle*anti<<","<<3<<","<<is_had_or_em<<","<<NC_num<<","<<dc_num<<","<<GR_num<<","<<i<<","<<num_count<<","<<-1<<"\n";
                 event_count++;
-                //out_gram<<i<<","<<num_count<<","<<part_pos<<","<<traversed_grammage<<","<<1<<endl;
                 got_event=true;
+                evt_num++;
               }
+
               dc_num++;
               
               if(config.conversion)
@@ -1301,22 +1346,42 @@ int main(int argc, char **argv)
 
           // double check if it's still traveling towards the in-ice det
           int going_still = still_going_towards_det(pos, step_dir, config.ice_det_rad,config.ice_det_depth);
+
           if(going_still != last_going_still)
           {
             last_going_still = going_still;
-            if (config.save_final_part_state)
-            {
-              int isPrimary = (part_type%2==0) && (NC_num<=0) && (dc_num<=0) && (sto_num<=0) && (GR_num <= 0);
-              out_counts << i <<","<< isPrimary << "," << starting_type << "," << part_type*anti<<","<< Energy_GeV <<","<< part_energy<<","
-                         << x_step << "," << y_step << "," << z_step << "," << pos[0] << "," << pos[1] << "," << pos[2] <<","<<going_still<<"\n";
-            }
           }
+
+          // is the particle traveling away from the volume
           if(going_still>1) 
           {
-            if (config.detector==1) break;
+            if (config.detector==1) broken = true;
           }
+
+          // any conditions that break the propagation loop for this particle
           if((part_type!=12 && part_type!=13 && part_type!=14 && part_type!=15 && part_type!=16) || part_energy<Elim || broken || (pos[0]*pos[0]+pos[1]*pos[1]+pos[2]*pos[2])>R02)
           {
+            if (config.save_final_part_state)
+            {
+              if(going_still>0)
+              {
+                if(parent_type%2==0) 
+                {
+                  if(parent_energy==Energy_GeV) 
+                    prim_nu_in_volume++;
+                  else
+                    nu_in_volume++;
+                }
+                else
+                  lep_in_volume++;
+              }
+              
+              int isPrimary = (parent_type%2==0) && (parent_energy==Energy_GeV);
+              out_counts << i <<","<< isPrimary << "," << starting_type << "," << part_type*anti<<","<< Energy_GeV <<","<< part_energy<<","
+                         << x_step << "," << y_step << "," << z_step << "," << pos[0] << "," << pos[1] << "," << pos[2] <<","<<going_still<<","
+                         <<(prim_nu_in_volume>0)<<","<<(prim_nu_event_in_volume>0)<<","<<(nu_in_volume>0)<<","
+                         <<(nu_event_in_volume>0)<<","<<(lep_in_volume>0)<<","<<(lep_event_in_volume>0)<<"\n";
+            }
             break;
           }
         } // ends core propagation loop
@@ -1347,31 +1412,27 @@ int main(int argc, char **argv)
   printf("taus decayed: %i, taus passing through (could have decayed): %i",decay_num,taus_passed_through);
   //outEnergies << "END" << endl; // write END in the last line of the text output file. 
   outEnergies.flush();
-  //outEvents <<"END"<<endl;
   outEvents.flush();
   out_counts.flush();
-  //out_gram<<"END"<<endl;
-  //out_gram.flush();
   out_trajs.flush();
-  //outLep<<"END"<<endl;
-  //outLep.flush();
+
   double angle_time_end = time(NULL);
   cout<<"total CC "<<total_CC<<". total NC "<<total_NC<<". total GR "<<total_GR<<endl;
-  //muon_output<<angle<<" "<<produced_muons<<endl;
+
   //output<<angle<<" "<<tot_evt<<" " <<angle_time_end-angle_time_start<<" "<<endl;
 
-  /*
-  cout<<"total CC "<<total_CC<<". total NC "<<total_NC<<endl;
-  cout<<"num of CC "<<total_CC<<endl;
-  cout<<"num of NC "<<total_NC<<endl;
-  cout<<"num tau decays "<<num_tau_decays<<endl;
-  cout<<"num muon decays "<<num_muon_decays<<endl;
-  cout<<"num distance loop per part "<<distance_loop_num/100000<<endl;
-  cout<<"taus below "<<taus_below<<endl;
-  cout<<"tau neutrinos below "<<tau_neutrinos_below<<endl;  
-  cout<<"muons below "<<muons_below<<endl;
-  cout<<"muon neutrinos below "<<muon_neutrinos_below<<endl;
-  */
+  #ifdef DBG
+    cout<<"total CC "<<total_CC<<". total NC "<<total_NC<<endl;
+    cout<<"num of CC "<<total_CC<<endl;
+    cout<<"num of NC "<<total_NC<<endl;
+    cout<<"num tau decays "<<num_tau_decays<<endl;
+    cout<<"num muon decays "<<num_muon_decays<<endl;
+    cout<<"num distance loop per part "<<distance_loop_num/100000<<endl;
+    cout<<"taus below "<<taus_below<<endl;
+    cout<<"tau neutrinos below "<<tau_neutrinos_below<<endl;  
+    cout<<"muons below "<<muons_below<<endl;
+    cout<<"muon neutrinos below "<<muon_neutrinos_below<<endl;
+  #endif
  
   double time_elapsed = time(NULL)-time_start;
   printf("Elapsed time %f with %i events\n",time_elapsed,event_count);
@@ -2428,7 +2489,6 @@ void make_dirs(string dirs)
   mkdir((dirs+"/particles").c_str(), 0755);
   mkdir((dirs+"/events").c_str(), 0755);
   mkdir((dirs+"/LUT").c_str(), 0755);
-  mkdir((dirs+"/leptons").c_str(), 0755);
 }
 
 int convert_types(int pythia_type) 
