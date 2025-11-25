@@ -21,8 +21,7 @@ temp_str = temp_str.split(",")
 rad = float(temp_str[0].split(":")[1])
 depth = float(temp_str[1].split(":")[1])
 throws = int(temp_str[2].split(":")[1])
-#throw_per_traj = int(temp_str[2].split(":")[1])
-throws_per_traj = 1
+throws_per_traj = int(temp_str[3].split(":")[1])
 
 temp_fi = input_file.split("/")[-1]
 nu_type_str = temp_fi.split("_")

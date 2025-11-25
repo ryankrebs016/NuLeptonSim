@@ -117,7 +117,8 @@ int main(int argc, char **argv)
   double tau_z = 1;
 
   // stuff for external trajectories
-  string in_file = "in_files/59068000000_Example_Trajectories.csv";
+  //string in_file = "in_files/59068000000_Example_Trajectories.csv";
+  string in_file = "in_files/30114000000_ARA_trajectories.csv";
   int input_num = config.n_traj;
   if(config.detector == 0) input_num = 1;
   double traj_weight = 1/59068000000;
@@ -343,7 +344,7 @@ int main(int argc, char **argv)
     printf("saving emerging particles to %s\n",nameEnergies.c_str());
     printf("saving events to %s\n",nameEvents.c_str());
   #endif
-  outEvents<<"rad [km]: "<<config.ice_det_rad<<", depth [km]: "<<config.ice_det_depth<<", n_nu_throws per file: "<<input_num<<endl;
+  outEvents<<"rad [km]: "<<config.ice_det_rad<<", depth [km]: "<<config.ice_det_depth<<", n_nu_throws per file: "<<input_num<<", throws_per_traj: "<<config.n_throws<<endl;
   
   // Get cross-section mode to use
   int CCmode = config.default_cc;
@@ -514,7 +515,6 @@ int main(int argc, char **argv)
     int out_leptons = 0;
 
     while((config.run_throws && (num_count<config.n_throws)) || (config.run_number && (out_leptons<config.num_emerging_leptons)))
-    //while(out_leptons<500) // use this for min number in emerging particles files
     {
       //if(num_count%10000==0) printf("did %i thrown particles\n",num_count);
       //if(out_leptons%100==0) printf("recored %i emerging leptons\n",out_leptons);
