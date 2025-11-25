@@ -332,7 +332,9 @@ int main(int argc, char **argv)
   outEnergies << "type, anti, NC, CC, GR, DC, Gen, InitNuNum, InitNeutrinoType, OutEnergy, InitEnergy, Part_Pos.\n";
 
   ofstream outEvents(nameEvents.c_str());
-  outEvents<<"vert_x,vert_y,vert_z,tra_x,tra_y,tra_z,nu_prim_flavor,E_nu_prim,E_part,inel,part_type,i_type,had_or_em,nc_num,dc_num,gr_num,traj_num,p_thrown,sto_index"<< setprecision(9)<<endl;
+  //outEvents<<"vert_x,vert_y,vert_z,tra_x,tra_y,tra_z,nu_prim_flavor,E_nu_prim,E_part,inel,part_type,i_type,had_or_em,nc_num,dc_num,gr_num,traj_num,p_thrown,sto_index"<< setprecision(9)<<endl;
+  outEvents<<"traj_num,p_thrown,shower_index,vert_x,vert_y,vert_z,tra_x,tra_y,tra_z,nu_prim_flavor,E_nu_prim,part_type,E_part,inel,i_type,had_or_em,sto_index"<< setprecision(9)<<endl;
+
   
   string out_trajectories_name = "oopsie.txt";
   ofstream out_trajs(out_trajectories_name.c_str());
@@ -628,6 +630,7 @@ int main(int argc, char **argv)
       int lep_event_in_volume = 0;
       int prim_nu_in_volume = 0;
       int prim_nu_event_in_volume = 0;
+      int shower_index = 0;
  
       if(part_pos > maxL || (pos[0]*pos[0]+pos[1]*pos[1]+pos[2]*pos[2]) > R02)
       {
@@ -787,7 +790,7 @@ int main(int argc, char **argv)
               double this_dsigCC = dsigCC(part_energy, CCmode, part_type, anti);
               double this_dsigGR = dsigGR(part_energy, part_type, anti);
               double total_cross = this_dsigNC + this_dsigCC + this_dsigGR;
-
+              //printf("%e,%e,%e,%e\n",this_dsigNC,this_dsigCC,this_dsigGR,total_cross);
               double rand_val=((double) rand() / (double)(RAND_MAX));
               if(total_cross==0) printf("total cross section is zero\n");
 
@@ -798,7 +801,7 @@ int main(int argc, char **argv)
               bool CChappens = rand_val < CCratio;
               bool NChappens = (CCratio <= rand_val && rand_val < CCratio+NCratio);
               bool GRhappens = (CCratio+NCratio <= rand_val && rand_val < CCratio+NCratio+GRratio);
-
+              //printf("%i,%i,%i\n",CChappens,NChappens,GRhappens);
               if(CChappens)
               {
                 //=======================
@@ -853,13 +856,24 @@ int main(int argc, char **argv)
                   evt_num++;
                   int shower_code=0;
 
+                  // save hadronic shower
+                  outEvents<<i<<","<<num_count<<","<<shower_index<<","<<pos[0]<<","<<pos[1]<<","<<pos[2]
+                    <<","<<x_step<<","<<y_step<<","<<z_step<<","<<initial_flavor<<","<<Energy_GeV<<","<<part_type*anti<<","<<initial_energy<<","<<Bjorken_y
+                    <<","<<0<<","<<0<<","<<-1<<"\n";
+                  shower_index++;
+
                   if(part_type == 12)
                   {
-                    Bjorken_y = 1;
-                    shower_code = 2;
+                    // if nu e save the em shower
+                    Bjorken_y = 1-Bjorken_y;
+                    outEvents<<i<<","<<num_count<<","<<shower_index<<","<<pos[0]<<","<<pos[1]<<","<<pos[2]
+                      <<","<<x_step<<","<<y_step<<","<<z_step<<","<<initial_flavor<<","<<Energy_GeV<<","<<part_type*anti<<","<<initial_energy<<","<<Bjorken_y
+                      <<","<<0<<","<<1<<","<<-1<<"\n";
+                    shower_index++;
                   }
-                  outEvents<<pos[0]<<","<<pos[1]<<","<<pos[2]<<","<<x_step<<","<<y_step<<","<<z_step<<","<<initial_flavor<<","<< Energy_GeV << ","<< initial_energy<<","<<Bjorken_y<<","
-                  <<part_type*anti<<","<<0<<","<<shower_code<<","<<NC_num<<","<<dc_num<<","<<GR_num<<","<<i<<","<<num_count<<","<<-1<<"\n";
+                  
+                  //outEvents<<pos[0]<<","<<pos[1]<<","<<pos[2]<<","<<x_step<<","<<y_step<<","<<z_step<<","<<initial_flavor<<","<< Energy_GeV << ","<< initial_energy<<","<<Bjorken_y<<","
+                  //<<part_type*anti<<","<<0<<","<<shower_code<<","<<NC_num<<","<<dc_num<<","<<GR_num<<","<<i<<","<<num_count<<","<<-1<<"\n";
 
                 }
 
@@ -878,12 +892,11 @@ int main(int argc, char **argv)
                 //=======================
                 // NC interaction occurs (the tracked particle remains a tau neutrino with reduced energy.)
                 //=======================
-
                 // Obtain Bjorken y
                 if(part_type == 16)
                 {
-                  if(anti == 1) tNCFinalData->ThrowFinal(log10(part_energy),finalstatecc);
-                  if(anti == -1) tNCBarFinalData->ThrowFinal(log10(part_energy),finalstatecc);
+                  if(anti == 1) tNCFinalData->ThrowFinal(log10(part_energy),finalstatenc);
+                  if(anti == -1) tNCBarFinalData->ThrowFinal(log10(part_energy),finalstatenc);
                 
                 }
                 if(part_type == 14 || part_type == 12)
@@ -891,7 +904,6 @@ int main(int argc, char **argv)
                   if(anti == 1) mNCFinalData->ThrowFinal(log10(part_energy),finalstatenc);
                   if(anti == -1) mNCBarFinalData->ThrowFinal(log10(part_energy),finalstatenc);
                 }
-                
                 Bjorken_y = finalstatenc[1]; 
                 
                 // Set the neutrino energy from the sampled Bjorken y.
@@ -918,9 +930,13 @@ int main(int argc, char **argv)
 
                 if(shower_energy>Elim && config.save_events && config.save_nu_events && is_in_vol)
                 {
-                  outEvents<<pos[0]<<","<<pos[1]<<","<<pos[2]<<","<<x_step<<","<<y_step<<","<<z_step<<","<<initial_flavor<<","<<Energy_GeV << ","<<initial_energy<<","<<Bjorken_y<<","
-                      <<part_type*anti<<","<<1<<","<<0<<","<<NC_num<<","<<dc_num<<","<<GR_num<<","<<i<<","<<num_count<<","<<-1<<"\n";
+                  outEvents<<i<<","<<num_count<<","<<shower_index<<","<<pos[0]<<","<<pos[1]<<","<<pos[2]
+                    <<","<<x_step<<","<<y_step<<","<<z_step<<","<<initial_flavor<<","<<Energy_GeV<<","<<part_type*anti<<","<<initial_energy<<","<<Bjorken_y
+                    <<","<<1<<","<<0<<","<<-1<<"\n";
+                  //outEvents<<pos[0]<<","<<pos[1]<<","<<pos[2]<<","<<x_step<<","<<y_step<<","<<z_step<<","<<initial_flavor<<","<<Energy_GeV << ","<<initial_energy<<","<<Bjorken_y<<","
+                  //    <<part_type*anti<<","<<1<<","<<0<<","<<NC_num<<","<<dc_num<<","<<GR_num<<","<<i<<","<<num_count<<","<<-1<<"\n";
                   event_count++;
+                  shower_index++;
                   got_event=true;
                   evt_num++;
                 }
@@ -953,24 +969,30 @@ int main(int argc, char **argv)
                   //add in config.save_nu_ev
                   bool is_in_vol = in_volume(pos[0],pos[1],pos[2],config.ice_det_rad,config.ice_det_depth);
 
-                if(config.save_final_part_state && is_in_vol)
-                {
-                  if(parent_energy==Energy_GeV) 
+                  if(config.save_final_part_state && is_in_vol)
                   {
-                    prim_nu_in_volume++;
-                    if(initial_energy>Elim) prim_nu_event_in_volume++;
+                    if(parent_energy==Energy_GeV) 
+                    {
+                      prim_nu_in_volume++;
+                      if(initial_energy>Elim) prim_nu_event_in_volume++;
+                    }
+                    else
+                    {
+                      nu_in_volume++;
+                      if(initial_energy>Elim) nu_event_in_volume++;
+                    }
                   }
-                  else
-                  {
-                    nu_in_volume++;
-                    if(initial_energy>Elim) nu_event_in_volume++;
-                  }
-                }
                   if(initial_energy>Elim && config.save_events && config.save_nu_events && is_in_vol)
                   {
                     // save hadronic shower
-                    outEvents<<pos[0]<<","<<pos[1]<<","<<pos[2]<<","<<x_step<<","<<y_step<<","<<z_step<<","<<initial_flavor<<","<<Energy_GeV << ","<<initial_energy<<","<<1<<","
-                        <<part_type*anti<<","<<2<<","<<temp_channel<<","<<NC_num<<","<<dc_num<<","<<GR_num<<","<<i<<","<<num_count<<","<<-1<<"\n";
+
+                    outEvents<<i<<","<<num_count<<","<<shower_index<<","<<pos[0]<<","<<pos[1]<<","<<pos[2]
+                      <<","<<x_step<<","<<y_step<<","<<z_step<<","<<initial_flavor<<","<<Energy_GeV<<","<<part_type*anti<<","<<initial_energy<<","<<1
+                      <<","<<2<<","<<temp_channel<<","<<-1<<"\n";
+                    shower_index++;
+
+                    //outEvents<<pos[0]<<","<<pos[1]<<","<<pos[2]<<","<<x_step<<","<<y_step<<","<<z_step<<","<<initial_flavor<<","<<Energy_GeV << ","<<initial_energy<<","<<1<<","
+                    //    <<part_type*anti<<","<<2<<","<<temp_channel<<","<<NC_num<<","<<dc_num<<","<<GR_num<<","<<i<<","<<num_count<<","<<-1<<"\n";
                     
                     event_count++;
                     got_event=true;
@@ -1004,7 +1026,7 @@ int main(int argc, char **argv)
                     part_type = 14;
                     lepton_mass = mmuon;
                     lepton_type = 13;
-                    temp_channel = 2;
+                    temp_channel = 2; // TODO: double check and remove
                     has_shower = false;
                   }
                   else if(lep_rand >= (2./3.))
@@ -1013,7 +1035,7 @@ int main(int argc, char **argv)
                     part_type = 16;
                     lepton_mass = mtau;
                     lepton_type = 15;
-                    temp_channel = 3;
+                    temp_channel = 3; // TODO: double check and remove
                     has_shower = false;
                   }
 
@@ -1045,9 +1067,13 @@ int main(int argc, char **argv)
                   if(has_shower && shower_energy>Elim && config.save_events && config.save_nu_events && is_in_vol)
                   {
                     //save shower
-                    outEvents<<pos[0]<<","<<pos[1]<<","<<pos[2]<<","<<x_step<<","<<y_step<<","<<z_step<<","<<initial_flavor<<","<<Energy_GeV << ","<<initial_E<<","<<gr_inel<<","
-                        <<part_type*anti<<","<<2<<","<<temp_channel<<","<<NC_num<<","<<dc_num<<","<<GR_num<<","<<i<<","<<num_count<<","<<-1<<"\n";
+                    outEvents<<i<<","<<num_count<<","<<shower_index<<","<<pos[0]<<","<<pos[1]<<","<<pos[2]
+                      <<","<<x_step<<","<<y_step<<","<<z_step<<","<<initial_flavor<<","<<Energy_GeV<<","<<part_type*anti<<","<<initial_energy<<","<<gr_inel
+                      <<","<<2<<","<<temp_channel<<","<<-1<<"\n";
+                    //outEvents<<pos[0]<<","<<pos[1]<<","<<pos[2]<<","<<x_step<<","<<y_step<<","<<z_step<<","<<initial_flavor<<","<<Energy_GeV << ","<<initial_E<<","<<gr_inel<<","
+                    //    <<part_type*anti<<","<<2<<","<<temp_channel<<","<<NC_num<<","<<dc_num<<","<<GR_num<<","<<i<<","<<num_count<<","<<-1<<"\n";
                     event_count++;
+                    shower_index++;
                     got_event=true;
                     evt_num++;
                   }
@@ -1164,8 +1190,13 @@ int main(int argc, char **argv)
                 if(sto.sto_type == 0) temp_show=1;
                 if(sto.sto_type == 1) temp_show=1;//sto_type==0 brem, sto_type==1 pp, sto_type==2 pn
                 if(sto.sto_type == 2) temp_show=0; 
-                outEvents<<pos[0]<<","<<pos[1]<<","<<pos[2]<<","<<x_step<<","<<y_step<<","<<z_step<<","<<initial_flavor<<","<<Energy_GeV << ","<<part_energy<<","<<frac_loss<<","
-                  <<part_type*anti<<","<<sto.sto_type+4<<","<<temp_show<<","<<NC_num<<","<<dc_num<<","<<GR_num<<","<<i<<","<<num_count<<","<<sto_num<<"\n";
+                outEvents<<i<<","<<num_count<<","<<shower_index<<","<<pos[0]<<","<<pos[1]<<","<<pos[2]
+                  <<","<<x_step<<","<<y_step<<","<<z_step<<","<<initial_flavor<<","<<Energy_GeV<<","<<part_type*anti<<","<<part_energy<<","<<frac_loss
+                  <<","<<sto.sto_type+4<<","<<temp_show<<","<<sto_num<<"\n";
+                shower_index++;
+
+                //outEvents<<pos[0]<<","<<pos[1]<<","<<pos[2]<<","<<x_step<<","<<y_step<<","<<z_step<<","<<initial_flavor<<","<<Energy_GeV << ","<<part_energy<<","<<frac_loss<<","
+                //  <<part_type*anti<<","<<sto.sto_type+4<<","<<temp_show<<","<<NC_num<<","<<dc_num<<","<<GR_num<<","<<i<<","<<num_count<<","<<sto_num<<"\n";
 
                 sto_num++;
                 evt_num++;
@@ -1259,7 +1290,7 @@ int main(int argc, char **argv)
                 // is a muon decay
                 if(config.conversion)
                 {
-                for(int j=1; j<6; j++)
+                  for(int j=1; j<6; j++)
                   {
                     if(reaction_data.mu_type[reaction_index][j] != 0) 
                     { 
@@ -1277,12 +1308,20 @@ int main(int argc, char **argv)
                 part_energy *= reaction_data.mu_energy[reaction_index][0];
                 part_type = 14; 
               }
+              double frac_em = 0;
+              double frac_had = 0;
 
               double frac_energy_dumped = 0;
               for(int frac=0; frac<6; frac++)
               {
-                if(reaction_data.tau_type[reaction_index][frac] == 0 || reaction_data.tau_type[reaction_index][frac] == 11)
-                frac_energy_dumped += reaction_data.tau_energy[reaction_index][frac];
+                if(reaction_data.tau_type[reaction_index][frac] == 0)
+                {
+                  frac_had += reaction_data.tau_energy[reaction_index][frac];
+                }
+                if(reaction_data.tau_type[reaction_index][frac] == 11)
+                {
+                  frac_em += reaction_data.tau_energy[reaction_index][frac];
+                }
               }
               //double lost_energy=0;
               //for(int i=1;i<6;i++)
@@ -1299,11 +1338,27 @@ int main(int argc, char **argv)
                 if(initial_energy*frac_energy_dumped>Elim) lep_event_in_volume++;
               }
 
-              if((initial_energy*frac_energy_dumped>Elim) && config.save_events && config.save_dec_events && is_in_vol)
+              if((initial_energy*frac_had>Elim) && config.save_events && config.save_dec_events && is_in_vol)
               {
                 // save the decay event
-                outEvents<<pos[0]<<","<<pos[1]<<","<<pos[2]<<","<<x_step<<","<<y_step<<","<<z_step<<","<<initial_flavor<<","<<Energy_GeV << ","<<initial_energy<<","<<frac_energy_dumped<<","
-                    <<initial_particle*anti<<","<<3<<","<<is_had_or_em<<","<<NC_num<<","<<dc_num<<","<<GR_num<<","<<i<<","<<num_count<<","<<-1<<"\n";
+                outEvents<<i<<","<<num_count<<","<<shower_index<<","<<pos[0]<<","<<pos[1]<<","<<pos[2]
+                  <<","<<x_step<<","<<y_step<<","<<z_step<<","<<initial_flavor<<","<<Energy_GeV<<","<<part_type*anti<<","<<part_energy<<","<<frac_had
+                  <<","<<3<<","<<0<<","<<-1<<"\n";
+                shower_index++;
+                event_count++;
+                got_event=true;
+                evt_num++;
+              }
+                
+              if((initial_energy*frac_em>Elim) && config.save_events && config.save_dec_events && is_in_vol)
+              {
+                  outEvents<<i<<","<<num_count<<","<<shower_index<<","<<pos[0]<<","<<pos[1]<<","<<pos[2]
+                  <<","<<x_step<<","<<y_step<<","<<z_step<<","<<initial_flavor<<","<<Energy_GeV<<","<<part_type*anti<<","<<part_energy<<","<<frac_had
+                  <<","<<3<<","<<1<<","<<-1<<"\n";
+                shower_index++;
+
+                //outEvents<<pos[0]<<","<<pos[1]<<","<<pos[2]<<","<<x_step<<","<<y_step<<","<<z_step<<","<<initial_flavor<<","<<Energy_GeV << ","<<initial_energy<<","<<frac_energy_dumped<<","
+                //    <<initial_particle*anti<<","<<3<<","<<is_had_or_em<<","<<NC_num<<","<<dc_num<<","<<GR_num<<","<<i<<","<<num_count<<","<<-1<<"\n";
                 event_count++;
                 got_event=true;
                 evt_num++;

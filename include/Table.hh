@@ -8,6 +8,7 @@
 #include <fstream>
 #include <cstdlib>
 #include <iostream>
+#include <stdio.h>
 
 using namespace std; 
 
@@ -15,10 +16,11 @@ using namespace std;
 //  table class - loads a table from a file and provides            //
 //  reading and interpolation utilities                             //
 //////////////////////////////////////////////////////////////////////
- class Table {
+class Table 
+{
    public:
       Table(){}
-     ~Table();
+      ~Table();
       void   InitTable (char *filename);  
       double Evaluate  (double x, double y);  // function to evaluate 2dim table
       double Evaluate  (double x);            // function to evaluate 1dim table
@@ -33,17 +35,18 @@ using namespace std;
       double   Ymax;       // value of j=jmax
       double **Tablearray;
       char    *Inputfile;
- };
+};
 
 /////////////////////////////////////////////////////////////////////
 // FinalTable assumes a table of final states, of the structure     /
 // [energy][entriesperenergy][2], where [2] could be theta and y.   /
 // ThrowFinal(energy) draws one of the final states                 /
 /////////////////////////////////////////////////////////////////////
- class FinalTable {
+class FinalTable 
+{
    public:
       FinalTable();
-     ~FinalTable();
+      ~FinalTable();
       int  IsInit()  {return Init;}  
       int  InitTable (char *filename);  
       void ThrowFinal(double energy, double final[]);  
@@ -56,7 +59,7 @@ using namespace std;
       double    Emin;
       double    Emax;
       double ***Tablearray;
- };
+};
 
 //////////////////////////////////////////////////////////////////////
 #endif 
