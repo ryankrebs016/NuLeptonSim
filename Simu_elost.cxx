@@ -882,8 +882,8 @@ int main(int argc, char **argv)
                 // Obtain Bjorken y
                 if(part_type == 16)
                 {
-                  if(anti == 1) tNCFinalData->ThrowFinal(log10(part_energy),finalstatecc);
-                  if(anti == -1) tNCBarFinalData->ThrowFinal(log10(part_energy),finalstatecc);
+                  if(anti == 1) tNCFinalData->ThrowFinal(log10(part_energy),finalstatenc);
+                  if(anti == -1) tNCBarFinalData->ThrowFinal(log10(part_energy),finalstatenc);
                 
                 }
                 if(part_type == 14 || part_type == 12)
