@@ -35,7 +35,7 @@ double Earth::GetDensity(double R_cm){
        else if (R_meters < 6346600) dens = 2.691 + 0.6924*x;
        else if (R_meters < 6356000) dens = 2.9;
        else if (R_meters < (EARTHRADIUS - depth_new_layer_meters) ) dens = 2.6;
-       else if (R_meters <= EARTHRADIUS) dens = dens_new_layer;
+       else if (R_meters <= EARTHRADIUS + 10) dens = dens_new_layer;
        else if (R_meters <= ATMORADIUS)  dens = 1.29e-3*exp(-h/8.5e3);
 
        /*else if (R_meters > ATMORADIUS){
