@@ -117,10 +117,9 @@ int main(int argc, char **argv)
   double tau_z = 1;
 
   // stuff for external trajectories
-  string in_file = "in_files/59068000000_Example_Trajectories.csv";
+  string in_file = config.trajectory_file.c_str();
   int input_num = config.n_traj;
   if(config.detector == 0) input_num = 1;
-  double traj_weight = 1/59068000000;
   input_file *input = new input_file[input_num];
   
   // initializes arrays to hold decay products and populates them from pythia file
@@ -438,7 +437,8 @@ int main(int argc, char **argv)
       earth_exit[0] = input[0].eex;
       earth_exit[1] = input[0].eey;
       earth_exit[2] = input[0].eez;
-    }  
+    } 
+
 
     if (config.detector == 1) 
       maxL = sqrt((earth_exit[0]-earth_entrance[0])*(earth_exit[0]-earth_entrance[0])
@@ -2071,6 +2071,7 @@ void load_config()
      else if ((int)line.find("save_tau")!=-1) sin>>config.save_tau;
      else if ((int)line.find("sto_force_distance")!=-1) sin>>config.sto_force_distance;
      else if ((int)line.find("ext_traj")!=-1) sin>>config.ext_traj;
+     else if ((int)line.find("trajectory_file")!=-1) sin>>config.trajectory_file;
      else if ((int)line.find("ang_cutoff")!=-1) sin>>config.ang_cutoff;
      else if ((int)line.find("save_final_part_state")!=-1) sin>>config.save_final_part_state;
   }

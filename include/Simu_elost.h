@@ -12,12 +12,12 @@ typedef struct {
   stack<double> x_pos;          // x coord. where part. is created
   stack<double> y_pos;          // y coord. where part. is created
   stack<double> z_pos;          // z coord. where part. is created
-  stack<double> traversed_gram; // traversed grammage up until particle is created 
+  stack<double> traversed_gram; // traversed grammage up until particle is created
   stack<int> start_in_volume;
 
 } particle_info_def;
 
-typedef struct 
+typedef struct
 {
   double xi,yi,zi;
   double xf,yf,zf;
@@ -32,7 +32,7 @@ typedef struct {
   double tau_energy[100000][6];  // hold energy of created particle  in tau decay
   int mu_type[100000][6];        // hold particle types created in muon decay
   double mu_energy[100000][6];   // hold energy of created particles in muon decay
-    
+
 } reaction_tables_def;
 
 typedef struct {
@@ -84,6 +84,7 @@ typedef struct {
   bool save_dec_events;
   bool save_final_part_state;
   bool ext_traj;
+  string trajectory_file;
   double ang_cutoff;
   double sto_force_distance;
 }config_init;   // data struct to hold the value read from config file
@@ -111,9 +112,9 @@ typedef struct
 }input_file;
 
 
-typedef struct 
+typedef struct
 {
-  //cylindircal
+  //cylindrical
   double inner_rad;
   double outer_rad;
   double inner_depth;
@@ -149,17 +150,17 @@ int load_input(input_file *in,int length, string filename);
 
 // -------------------------------------------------
 // Probability of tau and muon lepton decay
-double dPdesdx(double E,int type);	
-	
+double dPdesdx(double E,int type);
+
 // -------------------------------------------------
 // Tau and muon neutrino cross sections: CC,NC,GR
-double dsigCC(double E, int CCmode, int type, int AntiNu);	
+double dsigCC(double E, int CCmode, int type, int AntiNu);
 double dsigNC(double E, int CCmode, int type, int AntiNu);
 double dsigGR(double E, int type, int AntiNu);
 
 // -------------------------------------------------
 // Local density as a function of zenith angle
-double earthdens( double *x, double *par); 
+double earthdens( double *x, double *par);
 // Local density as a function of x,y,z coordinates
 double get_dens_from_coords(double *coords);
 

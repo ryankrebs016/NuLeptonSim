@@ -4,7 +4,7 @@
 #line it will pull from values here
 #----------------------------------------------------------------------------------------------------#
 #Where to place all the results
-data_dir = new_testing/
+data_dir = aeff_testing/
 
 #particle type to start the simulation with
 starting_type = 0
@@ -16,7 +16,7 @@ anti = 1
 regen = 1
 
 #allow conversion between flavors (ie tau decays to muons...)
-conversion = 1
+conversion = 0
 
 #should energies be pulled from a distribution (0 is monoenergetic neutrinos)
 energy_distribution = 0
@@ -37,7 +37,7 @@ run_number = 0
 num_emerging_leptons = 500
 
 #haw many trajectories to run
-n_traj = 10000000
+n_traj = 100000
 
 #should it save earth emerging particles
 save_emerging = 0
@@ -107,7 +107,7 @@ save_tau = 1
 
 #----------------------------------------------------------------------------------------------------#
 #for in-ice detectors, should events in the volume be saved
-save_events = 0
+save_events = 1
 
 #if save_events should it save primary neutrino interactions
 save_nu_events = 1
@@ -123,7 +123,10 @@ save_sto_events = 1
 save_final_part_state = 1
 
 #should trajectories be grabbed from an external file
-ext_traj = 0
+ext_traj = 1
+
+#should trajectories be grabbed from an external file
+trajectory_file = in_files/59068000000_Example_Trajectories.csv
 
 #cutoff angle for upgoing neutrinos
 ang_cutoff = 180
