@@ -2,6 +2,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 from scipy import integrate
 from scipy.interpolate import RegularGridInterpolator
+import time
 
 from mpl_toolkits.mplot3d import Axes3D
 from matplotlib.patches import FancyArrowPatch
@@ -35,7 +36,7 @@ def data_for_cylinder_along_z(center_x,center_y,radius,height_z, earth_radius):
 #########################################################################################
 
 def Density(R,h,rho):
-    dens = np.zeros(R.shape);
+    dens = np.zeros(R.shape)
     x = R/Earth_Radius
     dens = np.where(R<=1221.5, 13.0885 - 8.8381*x**2, dens)
     dens = np.where((1221.5<R) & (R<=3480), 12.5815 - x*(1.2638 + x*(3.6426 + x*5.5281)), dens)
@@ -58,7 +59,7 @@ Ls = L_tot[:, None]*L_ratio[None, :]
 
 rs = np.sqrt(Ls**2+Earth_Radius**2-2*Earth_Radius*Ls*np.cos(np.pi/2-theta_EEs[:, None]))
 density = Density(rs, 4, 0.92)
-Xs = integrate.cumtrapz(density, Ls*1e5, axis = -1, initial = 0)
+Xs = integrate.cumulative_trapezoid(density, Ls*1e5, axis = -1, initial = 0)
 
 depth_interpolator = RegularGridInterpolator((theta_EEs, L_ratio), Xs)
 
@@ -66,25 +67,28 @@ depth_interpolator = RegularGridInterpolator((theta_EEs, L_ratio), Xs)
 
 energy = 21
 
-Earth_Radius = 6378
+Earth_Radius = 6377.995
 
 detector_radius = 15
-detector_depth = 2.8
+detector_depth = 3.0
 
-angular_cut = 85
+angular_cut = 0
 
 desired_events = 100000
 thrown_events = 0
-number_of_samples = 4000000
+number_of_samples = 1000000
 
 #events = np.empty((6,0), float)
 events = np.empty((12,0), float)
 
 #########################################################################################
-#Randomly sam[ple two points on Earth's surface isotropically and draw a path between them
+#Randomly sample two points on Earth's surface isotropically and draw a path between them
+
+t0 = time.perf_counter_ns()
 
 while events.shape[1]<desired_events:
-    print(events.shape)
+    #print(events.shape)
+    print(f"{events.shape[1]+1} trajectories in {(time.perf_counter_ns()-t0)/1e9:.2f} s")
     thrown_events+=number_of_samples
     
     phi_local_1 = np.arccos(1-2*np.random.uniform(low = 0, high = 1, size = number_of_samples))
@@ -245,4 +249,4 @@ while events.shape[1]<desired_events:
 #########################################################################################
 #Save data
 
-np.savetxt(str(thrown_events)+"_Example_Trajectories.csv", events.T, delimiter=",")
+np.savetxt(str(thrown_events)+"_ARA_trajectories.csv", events.T, delimiter=",")

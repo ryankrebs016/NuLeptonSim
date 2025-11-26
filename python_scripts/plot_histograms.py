@@ -33,18 +33,25 @@ col_map={
     18:"sto_id"
     }
 
-index=np.arange(0,30,1)
+if len(sys.argv)>1:
+    index=[1]
+else:
+    index=np.arange(0,30,1)
 
 for i in index:
     temp_dict={}
 
-    if len(sys.argv)>2:
+    if len(sys.argv)>1:
         filename=sys.argv[1]
     else:
         filename="testing/events/mixed_events_spectrum_%i.dat"%i
+        filename="testing/events/mixed_events_19.0_%i.dat"%i
+        filename="aeff_testing/events/mixed_events_19.0_%i.dat"%i
 
-    data=np.loadtxt(filename,skiprows=2,delimiter=",").T
-
+    try:
+        data=np.loadtxt(filename,skiprows=2,delimiter=",").T
+    except:
+        continue
     for ma in range(len(col_map)):
         temp_dict[col_map[ma]]=data[ma]
 
@@ -57,6 +64,11 @@ for i in index:
 
 print(dict_data.keys())
 print(len(dict_data["rx"]), "events")
+
+nu = dict_data["sto_id"]<0
+lep = dict_data["sto_id"]>=0
+
+
 dict_data["radius"]=np.sqrt(dict_data["rx"]**2+dict_data["ry"]**2)
 
 dict_data["vxy"]=np.sqrt(dict_data["vx"]**2+dict_data["vy"]**2)
@@ -80,7 +92,8 @@ plt.close()
 
 plt.figure()
 bins=np.arange(11.5,17.5,1)
-plt.hist(np.abs(dict_data["init_flavor"]),bins=bins)
+plt.hist(np.abs(dict_data["init_flavor"][nu]),bins=bins)
+plt.hist(np.abs(dict_data["init_flavor"][lep]),bins=bins)
 plt.xlabel("part_codes")
 plt.xticks([11,12,13,14,15,16])
 plt.savefig("plots/initial_p_types.png")
@@ -106,8 +119,12 @@ plt.close()
 
 
 plt.figure()
-plt.hist(dict_data["radius"]/1e5)
-plt.xlabel("vertex radius [km]")
+bins=np.linspace(0,15,30)
+plt.hist(dict_data["radius"][lep]/1e5,density=True,bins=bins,label="Secondaries",histtype='step')
+plt.hist(dict_data["radius"][nu]/1e5,density=True,bins=bins, label="$\\nu$ Primaries", histtype='step')
+plt.xlabel("Vertex Radius [km]",fontsize=12)
+plt.ylabel("Density",fontsize=12)
+plt.legend()
 plt.savefig("plots/radius.png")
 plt.close()
 
@@ -125,8 +142,12 @@ plt.savefig("plots/ry.png")
 plt.close()
 
 plt.figure()
-plt.hist(6378-dict_data["rz"]/1e5)
-plt.xlabel("vertex depth [km]")
+bins=np.linspace(0,3,30)
+plt.hist(6378-dict_data["rz"][nu]/1e5,density=True,histtype='step',bins=bins,label="$\\nu$ Primaries")
+plt.hist(6378-dict_data["rz"][lep]/1e5,density=True,histtype='step',bins=bins,label="Secondaries")
+plt.xlabel("Vertex Depth [km]",fontsize=12)
+plt.ylabel("Density",fontsize=12)
+plt.legend()
 plt.savefig("plots/depth.png")
 plt.close()
 
@@ -158,8 +179,13 @@ plt.close()
 
 
 plt.figure()
-plt.hist(dict_data["zenith_dir"]*180/np.pi)
-plt.xlabel("direction elevation angle [deg]")
+#plt.hist(dict_data["zenith_dir"]*180/np.pi,density=True)
+bins=np.linspace(-90,90,45)
+plt.hist(dict_data["zenith_dir"][nu]*180/np.pi, density=True, bins=bins,histtype="step", label="$\\nu$ Primaries")
+plt.hist(dict_data["zenith_dir"][lep]*180/np.pi, density=True, bins=bins, histtype="step", label="Secondaries")
+plt.legend()
+plt.xlabel("Trajectory Elevation Angle [deg]",fontsize=12)
+plt.ylabel("Density",fontsize=12)
 plt.savefig("plots/elevation_angle.png")
 plt.close()
 
@@ -172,8 +198,13 @@ plt.close()
 
 
 plt.figure()
-plt.hist(np.log10(dict_data["E"]*dict_data["inel"]+.1))
-plt.xlabel("log(shower energy [GeV])")
+bins=np.linspace(7,10,12)
+#plt.hist(np.log10(dict_data["E"]*dict_data["inel"]+.1))
+plt.hist(np.log10(dict_data["E"][nu]*dict_data["inel"][nu]), density=True, bins=bins, histtype="step", label=f"$\\nu$ Primaries: n={len(dict_data['inel'][nu])}")
+plt.hist(np.log10(dict_data["E"][lep]*dict_data["inel"][lep]), density=True, bins=bins, histtype="step", label=f"Secondaries: n={len(dict_data['inel'][lep])}")
+plt.legend()
+plt.xlabel("log(E$_{shower}$ [GeV])",fontsize=12)
+plt.ylabel("Density",fontsize=12)
 plt.savefig("plots/shower_energy.png")
 plt.close()
 
