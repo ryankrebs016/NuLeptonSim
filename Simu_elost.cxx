@@ -632,7 +632,7 @@ int main(int argc, char **argv)
       if(part_pos > maxL || (pos[0]*pos[0]+pos[1]*pos[1]+pos[2]*pos[2]) > R02)
       {
         // bug catching
-        //printf("bloop, %f,%f,    %f,%f,%f   %f,%f\n",part_pos,maxL,pos[0],pos[1],pos[2],pos[0]*pos[0]+pos[1]*pos[1]+pos[2]*pos[2],R02);
+        //printf("%f,%f,    %f,%f,%f   %f,%f\n",part_pos,maxL,pos[0],pos[1],pos[2],pos[0]*pos[0]+pos[1]*pos[1]+pos[2]*pos[2],R02);
         oopsie+=1;
         out_trajs << pos[0] << ","<< pos[1] <<"," <<pos[2] <<","<< x_step << ","<< y_step <<","<< z_step <<"\n";
       }
