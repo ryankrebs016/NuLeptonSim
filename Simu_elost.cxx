@@ -632,7 +632,7 @@ int main(int argc, char **argv)
       if(part_pos > maxL || (pos[0]*pos[0]+pos[1]*pos[1]+pos[2]*pos[2]) > R02)
       {
         // bug catching
-        printf("%f,%f,    %f,%f,%f   %f,%f\n",part_pos,maxL,pos[0],pos[1],pos[2],pos[0]*pos[0]+pos[1]*pos[1]+pos[2]*pos[2],R02);
+        //printf("%f,%f,    %f,%f,%f   %f,%f\n",part_pos,maxL,pos[0],pos[1],pos[2],pos[0]*pos[0]+pos[1]*pos[1]+pos[2]*pos[2],R02);
         oopsie+=1;
         out_trajs << pos[0] << ","<< pos[1] <<"," <<pos[2] <<","<< x_step << ","<< y_step <<","<< z_step <<"\n";
       }
@@ -2122,9 +2122,25 @@ double dsigCC(double E, int CCmode, int type,int AntiNu )
 {
   AntiNu=int(abs(AntiNu-1)/2);//return AntiNu to be like a bool
   
-  if(CCmode == 0){ // CTW model using equation 7 and Table 3 from arXiv:1102.0691
+  if(CCmode < 3){ // CTW model using equation 7 and Table 3 from arXiv:1102.0691
       double log10_E_GeV = log10(E);
+ 
+      // CTW model parameters for 0=nominal, 1=upper uncertainty, and 2=lower uncertainty
+      const vector<double> C0_nu = {-1.826, -1.456, -15.35};
+      const vector<double> C0_nubar = {-1.033, -2.945, -13.08};
   
+      const vector<double> C1_nu = {-17.31,  33.47, 13.86};
+      const vector<double> C1_nubar = {-15.95, 144.5, 12.48};
+
+      const vector<double> C2_nu = {-6.406, -33.02, 39.84};
+      const vector<double> C2_nubar= {-7.247, -77.44, 33.52};
+
+      const vector<double> C3_nu = {1.431, 6.026, -9.205};
+      const vector<double> C3_nubar = {1.569, 11.90, -8.191};
+
+      const vector<double> C4_nu = {-17.91, -49.41, -253.1};
+      const vector<double> C4_nubar = {-17.72, -142.8, -216.1};
+      
       double C0;
       double C1;
       double C2;
@@ -2132,24 +2148,24 @@ double dsigCC(double E, int CCmode, int type,int AntiNu )
       double C4;
   
       if(!AntiNu){
-          C0 = -1.826;
-          C1 = -17.31;
-          C2 = -6.406;
-          C3 = 1.431;
-          C4 = -17.91;
+          C0 = C0_nu[CCmode];
+          C1 = C1_nu[CCmode];
+          C2 = C2_nu[CCmode];
+          C3 = C3_nu[CCmode];
+          C4 = C4_nu[CCmode];
       }
       
       else{
-          C0 = -1.033;
-          C1 = -15.95;
-          C2 = -7.247;
-          C3 = 1.569;
-          C4 = -17.72;
+          C0 = C0_nubar[CCmode];
+          C1 = C1_nubar[CCmode];
+          C2 = C2_nubar[CCmode];
+          C3 = C3_nubar[CCmode];
+          C4 = C4_nubar[CCmode];
       }
       
       return pow(10, C1 + C2*log(log10_E_GeV-C0) + C3*pow(log(log10_E_GeV-C0), 2) + C4/log(log10_E_GeV-C0));
   }
-  else if(CCmode < 6) {
+  else if(CCmode < 8) {
 
       // The value below determines when we switch from the parameterizations 
       // of the neutrino cross sections at ultra-high energis (e.g. CTTW standard values) 
@@ -2166,20 +2182,20 @@ double dsigCC(double E, int CCmode, int type,int AntiNu )
 
       if( E < E_switch )
       {
-        CCmode = 4 + AntiNu;
+        CCmode = 6 + AntiNu;
       }
 
       vector<double> p(4); 
-      if(CCmode==1) { // Connolly+, 2011 middle model (ARW's parametrization)
+      if(CCmode==3) { // Connolly+, 2011 middle model (ARW's parametrization)
           p = { -5.35400180e+01,   2.65901551e+00, -1.14017685e-01,   1.82495442e-03};
       }
-      else if(CCmode==2) { // Connolly+, 2011 lower model (ARW's parametrization)
+      else if(CCmode==4) { // Connolly+, 2011 lower model (ARW's parametrization)
           p = {-4.26355014e+01,   4.89151126e-01,   2.94975025e-02,  -1.32969832e-03};
       }
-      else if(CCmode==3) { // Connolly+, 2011 upper model (ARW's parametrization)
+      else if(CCmode==5) { // Connolly+, 2011 upper model (ARW's parametrization)
           p = {-5.31078363e+01,   2.72995742e+00,  -1.28808188e-01,   2.36800261e-03};
       }
-      else if(CCmode==4) { // Gandhi, Quigg, Reno 1995 Neutrino cross section
+      else if(CCmode==6) { // Gandhi, Quigg, Reno 1995 Neutrino cross section
           p = { -6.24043607e+01,   4.21769574e+00, -2.06814586e-01,   3.70730061e-03};
       }
       else { // Gandhi, Quigg, Reno 1995 Anti-Neutrino cross section
@@ -2247,8 +2263,24 @@ double dsigNC(double E, int CCmode, int type,int AntiNu )
 {
   AntiNu=int(abs(AntiNu-1)/2);//return AntiNu to be like a bool
   
-  if(CCmode == 0){ // CTW model using equation 7 and Table 3 from arXiv:1102.0691
+  if(CCmode < 3){ // CTW model using equation 7 and Table 3 from arXiv:1102.0691
       double log10_E_GeV = log10(E);
+      
+      // CTW model parameters for 0=nominal, 1=upper uncertainty, and 2=lower uncertainty
+      const vector<double> C0_nu = {-1.826, -1.456, -15.35};
+      const vector<double> C0_nubar = {-1.033, -2.945, -13.08};
+  
+      const vector<double> C1_nu = {-17.31, 32.23, 16.16};
+      const vector<double> C1_nubar = {-15.95, 143.2, 15.17};
+
+      const vector<double> C2_nu = {-6.448, -32.32,  37.71};
+      const vector<double> C2_nubar= {-7.29, -76.70, 31.19};
+
+      const vector<double> C3_nu = {1.431, 5.881, -8.801};
+      const vector<double> C3_nubar = {1.569,  11.75, -7.757};
+
+      const vector<double> C4_nu = {-18.61, -49.41, -253.1};
+      const vector<double> C4_nubar = {-18.30, -142.8, -216.1};
   
       double C0;
       double C1;
@@ -2257,24 +2289,24 @@ double dsigNC(double E, int CCmode, int type,int AntiNu )
       double C4;
       
       if(!AntiNu){
-          C0 = -1.826;
-          C1 = -17.31;
-          C2 = -6.448;
-          C3 = 1.431;
-          C4 = -18.61;
+          C0 = C0_nu[CCmode];
+          C1 = C1_nu[CCmode];
+          C2 = C2_nu[CCmode];
+          C3 = C3_nu[CCmode];
+          C4 = C4_nu[CCmode];
       }
       
       else{
-          C0 = -1.033;
-          C1 = -15.95;
-          C2 = -7.296;
-          C3 = 1.569;
-          C4 = -18.30;
+          C0 = C0_nubar[CCmode];
+          C1 = C1_nubar[CCmode];
+          C2 = C2_nubar[CCmode];
+          C3 = C3_nubar[CCmode];
+          C4 = C4_nubar[CCmode];
       }
 
       return pow(10, C1 + C2*log(log10_E_GeV-C0) + C3*pow(log(log10_E_GeV-C0), 2) + C4/log(log10_E_GeV-C0));
   }
-  else if(CCmode < 6) {
+  else if(CCmode < 8) {
 
       // The value below determines when we switch from the parameterizations 
       // of the neutrino cross sections at ultra-high energis (e.g. CTTW standard values) 
@@ -2290,20 +2322,20 @@ double dsigNC(double E, int CCmode, int type,int AntiNu )
 
       if( E < E_switch )
       {
-        CCmode = 4 + AntiNu;
+        CCmode = 6 + AntiNu;
       }
 
       vector<double> p(4);
-      if(CCmode==1) { // Connolly+, 2011 middle model (ARW's parametrization)
+      if(CCmode==3) { // Connolly+, 2011 middle model (ARW's parametrization)
         p = { -5.41463399e+01,   2.65465169e+00,  -1.11848922e-01,   1.75469643e-03};
       }
-      else if(CCmode==2) { // Connolly+, 2011 lower model (ARW's parametrization)
+      else if(CCmode==4) { // Connolly+, 2011 lower model (ARW's parametrization)
         p = {-4.42377028e+01, 7.07758518e-01, 1.55925146e-02, -1.02484763e-03};
       }
-      else if(CCmode = 3) { // Connolly+, 2011 upper model (ARW's parametrization)
+      else if(CCmode = 5) { // Connolly+, 2011 upper model (ARW's parametrization)
         p = {-5.36713302e+01,   2.72528813e+00,  -1.27067769e-01,   2.31235293e-03};
       } 
-      else if(CCmode==4) { // Gandhi, Quigg, Reno 1995 Neutrino cross section
+      else if(CCmode==6) { // Gandhi, Quigg, Reno 1995 Neutrino cross section
         p = { -6.33753554e+01,   4.26790713e+00,  -2.07426844e-01,   3.68501726e-03};
       }
       else { // Gandhi, Quigg, Reno 1995 Anti-Neutrino cross section
