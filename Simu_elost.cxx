@@ -345,7 +345,8 @@ int main(int argc, char **argv)
   // Get cross-section mode to use
   int CCmode = config.default_cc;
   if(argc>4) CCmode = atoi(argv[4]);
-  
+  cout << "Using CCmode = " << CCmode << endl; 
+ 
   // Get cross-section mode to use
   int ELOSSmode = config.default_eloss;
   if(argc > 5) ELOSSmode = atoi(argv[5]);
@@ -2146,7 +2147,7 @@ double dsigCC(double E, int CCmode, int type,int AntiNu )
       double C2;
       double C3;
       double C4;
-  
+      
       if(!AntiNu){
           C0 = C0_nu[CCmode];
           C1 = C1_nu[CCmode];
@@ -2287,7 +2288,7 @@ double dsigNC(double E, int CCmode, int type,int AntiNu )
       double C2;
       double C3;
       double C4;
-      
+
       if(!AntiNu){
           C0 = C0_nu[CCmode];
           C1 = C1_nu[CCmode];
