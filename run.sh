@@ -1,1 +1,1 @@
-parallel --eta -j6 ./Simu_elost 0 90 1 0 0 3.2 0.92 {0} :::: index.txt
+parallel --eta -j8 ./Simu_elost {1} {2} 1e5 0 0 3.2 0.92 {3} {4} :::: energies.txt angles.txt index.txt flavors.txt

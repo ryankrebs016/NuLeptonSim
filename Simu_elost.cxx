@@ -314,7 +314,7 @@ int main(int argc, char **argv)
 
   // Output file names using input arguments
   string nameEnergies = "";
-  if(config.save_emerging) nameEnergies = make_particle_dir(argc, argv, config.data_dir,  es_temp,angs_temp); 
+  if(config.save_emerging) nameEnergies = make_lepton_dir(argc, argv, config.data_dir, es_temp, angs_temp, config.starting_type); 
 
   string nameEvents = "";
   if(config.save_events) nameEvents = make_event_dir(argc, argv, config.data_dir, es_temp, angs_temp, config.starting_type, tag); 
@@ -328,7 +328,9 @@ int main(int argc, char **argv)
   out_counts << "nu_id,is_primary,initial type,ending type,energy_i[GeV],energy_f[GeV],vx,vy,vz,vert_x,vert_y,vert_z,where_stopped,pure_nu_in,pure_nu_evt,nu_in,nu_evt,lep_in,lep_evt\n" << setprecision(9);
   
   ofstream outEnergies(nameEnergies.c_str());
-  outEnergies << "type, anti, NC, CC, GR, DC, Gen, InitNuNum, InitNeutrinoType, OutEnergy, InitEnergy, Part_Pos.\n";
+  outEnergies << "type, anti, NC, CC, GR, DC, Gen, InitNuNum, InitNeutrinoType, OutEnergy[log(eV)], InitEnergy[log(eV)], Part_Pos.\n";
+  if(config.run_throws) outEnergies << "Throwing " << config.n_throws << " neutrinos\n";
+  if(config.run_number) outEnergies << "Throwing until " << config.num_emerging_leptons << " emerging charged leptons. nu count in last line.\n";
 
   ofstream outEvents(nameEvents.c_str());
   outEvents<<"vert_x,vert_y,vert_z,tra_x,tra_y,tra_z,nu_prim_flavor,E_nu_prim,E_part,inel,part_type,i_type,had_or_em,nc_num,dc_num,gr_num,traj_num,p_thrown,sto_index"<< setprecision(9)<<endl;
@@ -408,7 +410,7 @@ int main(int argc, char **argv)
   for(int i=0; i<input_num; i++)
   { 
 
-    if((i+1)%((int)(.1*input_num))==0) printf("ran %i trajectories for %i events\n",i+1,event_count);
+    //if((i+1)%((int)(.1*input_num))==0) printf("ran %i trajectories for %i events\n",i+1,event_count);
 
     int num_count = 0;
     int where_int = 0;
@@ -700,7 +702,7 @@ int main(int argc, char **argv)
         if(part_energy<Elim) continue; //ignore particles below threshold in case they make it through
 
         // core propagation loop
-        while(part_pos < maxL && (pos[0]*pos[0]+pos[1]*pos[1]+pos[2]*pos[2]) < R02)
+        while(part_pos <= maxL && (pos[0]*pos[0]+pos[1]*pos[1]+pos[2]*pos[2]) <= R02)
         {
           parent_type = part_type;
           parent_energy = part_energy;
@@ -782,7 +784,7 @@ int main(int argc, char **argv)
             //}
 
             // if the neutrino interaction is still inside Earth, simulate a NC, CC, or GR interaction and check that particle is still above the tracking energy threshold (Elim)
-            if(part_pos<maxL)
+            if(part_pos<=maxL)
             {
               double this_dsigNC = dsigNC(part_energy, CCmode, part_type, anti);
               double this_dsigCC = dsigCC(part_energy, CCmode, part_type, anti);
@@ -1318,7 +1320,7 @@ int main(int argc, char **argv)
                 for( int j=1;j<6;j++)
                 {
                     
-                  if((reaction_energies[j]>Elim) && (part_pos<maxL) && (reaction_types[j]!=0))
+                  if((reaction_energies[j]>Elim) && (part_pos<=maxL) && (reaction_types[j]!=0))
                   {
                     particle_data.part_type.push(reaction_types[j]);
                     particle_data.part_energy.push(reaction_energies[j]);
@@ -1396,10 +1398,10 @@ int main(int argc, char **argv)
           {
             out_leptons++;
             outEnergies <<part_type<<" "<<anti<<" "<<NC_num << " " << CC_num << " " << GR_num<<" "<<
-            dc_num << " " <<generation <<" "<<num_count<< " " << log10(part_energy)+9 << " " << log10(Energy_GeV)+9<<" "<<part_pos<<" "<<tau_x<<" "<<tau_y<<" "<<tau_z<<"\n";
+            dc_num << " " <<generation <<" "<<num_count<< " " << initial_flavor << " " << log10(part_energy)+9 << " " << log10(Energy_GeV)+9<<" "<<part_pos<<" "<<tau_x<<" "<<tau_y<<" "<<tau_z<<"\n";
             has_been_saved=true;
             
-            if(out_leptons==config.num_emerging_leptons) outEnergies<<num_count<<" initial neutrinos of type "<<config.starting_type<<" at energy "<<Energy_GeV*pow(10,9);
+            if(out_leptons==config.num_emerging_leptons) outEnergies << "Threw " <<num_count<<" initial neutrinos of type "<<config.starting_type<<" at energy "<<Energy_GeV*pow(10,9);
           }
         }
       } while(!particle_data.part_type.empty()); // end of stack loop
@@ -1411,7 +1413,6 @@ int main(int argc, char **argv)
   
   printf("num bad start points %i\n",oopsie);
   printf("taus decayed: %i, taus passing through (could have decayed): %i",decay_num,taus_passed_through);
-  //outEnergies << "END" << endl; // write END in the last line of the text output file. 
   outEnergies.flush();
   outEvents.flush();
   out_counts.flush();
@@ -2005,7 +2006,7 @@ string make_lepton_dir(int argc, char **argv, string out_dir, string es_temp, st
 
   string nameLeptons = "";
   nameLeptons += config.data_dir;
-  nameLeptons += "/leptons/";
+  nameLeptons += "/particles/";
   nameLeptons += type_temp;
   nameLeptons += "_leptons_";
   nameLeptons += es_temp;
